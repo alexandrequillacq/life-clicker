@@ -8,22 +8,16 @@ export function serialize(state: GameState): string {
   return JSON.stringify({
     ...state,
     money: state.money.toString(),
-    perClick: state.perClick.toString(),
+    valuePerDish: state.valuePerDish.toString(),
   });
 }
 
-export function migrate(raw: any): any {
-  const s = raw;
-  // v1 : aucune migration. Point d'extension : if (s.version < 2) { ...; s.version = 2; }
-  return s;
-}
-
 export function deserialize(json: string): GameState {
-  const migrated = migrate(JSON.parse(json));
+  const raw = JSON.parse(json);
   return {
-    ...migrated,
-    money: D(migrated.money) as Decimal,
-    perClick: D(migrated.perClick) as Decimal,
+    ...raw,
+    money: D(raw.money) as Decimal,
+    valuePerDish: D(raw.valuePerDish) as Decimal,
   };
 }
 
@@ -44,14 +38,16 @@ export function load(now: number): GameState {
   const json = localStorage.getItem(KEY);
   if (!json) return createInitialState(now);
   try {
-    const state = deserialize(json);
-    if (state.version > SAVE_VERSION) {
-      console.warn("Save d'une version plus récente — démarrage à neuf");
+    const raw = JSON.parse(json);
+    // Pas de migration entre modèles incompatibles : on archive et on repart à neuf.
+    // (Point d'extension : migrer ici quand le schéma évolue de façon compatible.)
+    if (raw.version !== SAVE_VERSION) {
+      localStorage.setItem(BACKUP_KEY, json);
       return createInitialState(now);
     }
-    return state;
+    return deserialize(json);
   } catch (e) {
-    console.error("Save corrompue — backup et démarrage à neuf", e);
+    console.error("Save corrompue — archivage et démarrage à neuf", e);
     localStorage.setItem(BACKUP_KEY, json);
     return createInitialState(now);
   }

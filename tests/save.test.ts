@@ -6,14 +6,17 @@ import { serialize, deserialize, save, load } from "../src/engine/save";
 describe("save", () => {
   beforeEach(() => localStorage.clear());
 
-  it("round-trip préserve money en Decimal", () => {
+  it("round-trip préserve money et valuePerDish en Decimal", () => {
     const s = createInitialState(0);
     s.money = s.money.add(123.45);
-    s.generators["collegue"] = 3;
+    s.generators["lave_vaisselle"] = 3;
+    s.upgrades["gants"] = true;
     const back = deserialize(serialize(s));
     expect(back.money.toNumber()).toBeCloseTo(123.45);
-    expect(back.generators["collegue"]).toBe(3);
-    expect(typeof back.money.add).toBe("function"); // c'est bien un Decimal
+    expect(back.valuePerDish.toNumber()).toBeCloseTo(0.05);
+    expect(back.generators["lave_vaisselle"]).toBe(3);
+    expect(back.upgrades["gants"]).toBe(true);
+    expect(typeof back.money.add).toBe("function");
   });
 
   it("load renvoie un état neuf sans save", () => {
@@ -29,7 +32,14 @@ describe("save", () => {
     expect(load(0).money.toNumber()).toBeCloseTo(50);
   });
 
-  it("save corrompue → backup + état neuf", () => {
+  it("save d'une autre version → archive + état neuf", () => {
+    localStorage.setItem("life-clicker-save", JSON.stringify({ version: 1, money: "999" }));
+    const s = load(7);
+    expect(s.money.toNumber()).toBe(0);
+    expect(localStorage.getItem("life-clicker-save-backup")).toContain("999");
+  });
+
+  it("save corrompue → archive + état neuf", () => {
     localStorage.setItem("life-clicker-save", "{pas du json");
     const s = load(7);
     expect(s.money.toNumber()).toBe(0);

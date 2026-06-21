@@ -68,13 +68,24 @@ Pour chaque phase : **métier**, **nouveau verbe/mécanique** (couche 2, espacé
 
 ### ACTE I — Réaliste & banal
 
-**P0 · Plongeur** *(~3 min)*
-- **Métier :** plongeur. Bouton **« Laver une assiette »** (+0,05 €). Cold open : rien d'autre à l'écran.
-- **Couche 2 (1 seule) :** ~1:30, « Un collègue couvre un créneau » → **premier revenu automatique** (introduit l'idle, seul).
-- **Couche 1 :** éponge, gants, organisation → +€/clic.
-- **UI :** monochrome, le compteur € apparaît au 1er clic ; passage centimes→euros = 1er jalon visuel.
-- **Vie/Famille/Sens :** aucun.
-- **Sortie :** assez d'€ pour « acheter ton premier livre » → P1.
+**P0 · Plongeur** *(arc révisé — l'apprentissage de l'idle pas à pas)*
+
+> **Règle de conception appliquée ici :** chaque mécanique doit être *logique* vis-à-vis de sa métaphore. En particulier : **l'Énergie ne module que le travail *manuel* du joueur, jamais une machine** (un lave-vaisselle ne fatigue pas). Monnaie unique = **€** ; « assiettes/clic » et « assiettes/min » sont l'**habillage du débit** (1 assiette = `valeur par assiette` €).
+
+| # | Déblocage | Effet mécanique | Logique |
+|---|---|---|---|
+| 1 | « Laver une assiette » | +1 assiette → +€ par clic. Compteur Argent au 1er clic. | — |
+| 2 | Upgrades **distincts, une fois chacun** : Gants de plonge → Meilleure éponge → … (puis « Gants pro ») | montent les **assiettes/clic** | objets concrets différents, pas 30× les mêmes gants |
+| 3 | « Prendre le coup de main » | lavage **continu à la main** (1er passif) → apparition **assiettes/min** **et** jauge **Énergie** | tu deviens machinal ; l'effort se ressent |
+| 4 | (toujours en manuel) | l'effort continu **draine l'Énergie** ; le rendement **manuel** baisse quand l'Énergie chute | la fatigue ralentit *tes mains* |
+| 5 | **Lave-vaisselle** (machine) | revenu passif **indépendant de l'Énergie** | une machine ne fatigue pas |
+| 6 | Au 2ᵉ lave-vaisselle : **« Poser les gants »** | stoppe tout le manuel (clic + continu) ; devient inévitable car l'Énergie s'épuise et les machines assurent | épuisement + l'automatisation suffit |
+| 7 | **La Vie apparaît** | panneau Vie + action « Se reposer » (recharge l'Énergie). Graine de l'axe Vie/Sens. | enfin du temps libre |
+
+**Règle d'Énergie (globale) :** l'Énergie ne multiplie que les **actions actives du joueur** (le « clic » de chaque phase), jamais les revenus passifs/automatisés. Une fois le travail automatisé, l'Énergie cesse de peser sur le revenu ; son rôle **pivote vers la Vie/le Sens** (se reposer/vivre pour ce que ça apporte, pas pour produire) — à préciser phase par phase.
+
+- **UI :** fond blanc, texte brut (esprit Paperclips). Le compteur € apparaît au 1er clic.
+- **Sortie :** une fois les gants posés et la Vie entrevue → enchaînement « étudier » (livres → compétences) vers P1/P2.
 
 **P1 · Plongeur qui étudie** *(~5 min)*
 - **Métier :** toujours plongeur ; boutons **« Lire un livre »**, **« Cours du soir »**.

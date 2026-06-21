@@ -5,18 +5,18 @@ export interface GeneratorDef {
   label: string;
   baseCost: Decimal;
   growth: number;
-  baseOutput: Decimal; // €/s par unité
+  dishesPerSec: Decimal; // débit en assiettes/s par unité (indépendant de l'énergie)
   unlockAtMoney: Decimal; // seuil de révélation
 }
 
 export const GENERATORS: GeneratorDef[] = [
   {
-    id: "collegue",
+    id: "lave_vaisselle",
     label: "Lave-vaisselle",
-    baseCost: D(1),
+    baseCost: D(8),
     growth: 1.15,
-    baseOutput: D(0.1),
-    unlockAtMoney: D(0.5),
+    dishesPerSec: D(4),
+    unlockAtMoney: D(6),
   },
 ];
 

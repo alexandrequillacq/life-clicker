@@ -1,37 +1,83 @@
 import { describe, it, expect } from "vitest";
-import { createInitialState } from "../src/engine/state";
-import { tick, updateFlags } from "../src/engine/loop";
-import { production } from "../src/engine/economy";
 import { D } from "../src/engine/numbers";
+import { createInitialState, ENERGY_MAX } from "../src/engine/state";
+import { tick, updateFlags } from "../src/engine/loop";
+import { GENERATORS_BY_ID } from "../src/engine/content/generators";
 
-describe("loop", () => {
-  it("production = 0 sans générateur", () => {
+const LV = GENERATORS_BY_ID["lave_vaisselle"].dishesPerSec.toNumber();
+
+describe("tick : revenu", () => {
+  it("les machines produisent du revenu", () => {
     const s = createInitialState(0);
-    expect(production(s).toNumber()).toBe(0);
-  });
-  it("tick accumule la production sur dt", () => {
-    const s = createInitialState(0);
-    s.generators["collegue"] = 2; // 2 × 0.1 = 0.2 €/s
-    tick(s, 10); // 10 s
-    expect(s.money.toNumber()).toBeCloseTo(2);
+    s.generators["lave_vaisselle"] = 2;
+    tick(s, 10);
+    const expected = 2 * LV * s.valuePerDish.toNumber() * 10;
+    expect(s.money.toNumber()).toBeCloseTo(expected);
   });
   it("le tempo accélère le temps", () => {
     const s = createInitialState(0);
-    s.generators["collegue"] = 1; // 0.1 €/s
+    s.generators["lave_vaisselle"] = 1;
     s.tempo = 2;
-    tick(s, 10); // 10 s × 2 = 20 s → 2 €
-    expect(s.money.toNumber()).toBeCloseTo(2);
+    tick(s, 10); // ×2 → 20 s
+    const expected = LV * s.valuePerDish.toNumber() * 10 * 2;
+    expect(s.money.toNumber()).toBeCloseTo(expected);
   });
-  it("updateFlags révèle le compteur après un clic", () => {
+});
+
+describe("tick : énergie", () => {
+  it("le continu intensif fait chuter l'énergie (drain ∝ débit)", () => {
+    const s = createInitialState(0);
+    s.handWashing = true;
+    s.handRate = 10; // drain plein = 0,5 × 10 = 5/s > regen 3/s
+    s.flags.energyVisible = true;
+    tick(s, 1); // net (3 - 5) = -2 → 98
+    expect(s.energy).toBeCloseTo(98);
+  });
+  it("régénère quand on ne lave pas en continu", () => {
+    const s = createInitialState(0);
+    s.flags.energyVisible = true;
+    s.energy = 50;
+    tick(s, 10); // +3/s × 10 → plafonné à 80
+    expect(s.energy).toBeCloseTo(80);
+  });
+  it("plafonnée à 100", () => {
+    const s = createInitialState(0);
+    s.flags.energyVisible = true;
+    s.energy = 95;
+    tick(s, 10);
+    expect(s.energy).toBe(ENERGY_MAX);
+  });
+});
+
+describe("révélation progressive", () => {
+  it("compteur révélé après un clic", () => {
     const s = createInitialState(0);
     s.totalClicks = 1;
     updateFlags(s);
     expect(s.flags.moneyVisible).toBe(true);
   });
-  it("updateFlags débloque le générateur au seuil", () => {
+  it("énergie révélée dès le continu à la main", () => {
     const s = createInitialState(0);
-    s.money = D(0.5);
+    s.handWashing = true;
     updateFlags(s);
-    expect(s.flags["gen_collegue_unlocked"]).toBe(true);
+    expect(s.flags.energyVisible).toBe(true);
+  });
+  it("« Poser les gants » proposé à 2 machines", () => {
+    const s = createInitialState(0);
+    s.generators["lave_vaisselle"] = 2;
+    updateFlags(s);
+    expect(s.flags.poseGantsVisible).toBe(true);
+  });
+  it("la Vie apparaît une fois les gants posés", () => {
+    const s = createInitialState(0);
+    s.manualRetired = true;
+    updateFlags(s);
+    expect(s.flags.lifeVisible).toBe(true);
+  });
+  it("machine révélée au seuil d'argent", () => {
+    const s = createInitialState(0);
+    s.money = D(40);
+    updateFlags(s);
+    expect(s.flags["gen_lave_vaisselle_unlocked"]).toBe(true);
   });
 });

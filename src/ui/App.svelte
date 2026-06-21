@@ -5,11 +5,19 @@
     buyGenerator,
     generatorCost,
     canBuyGenerator,
+    buyUpgrade,
+    canBuyUpgrade,
+    upgradeAvailable,
+    poseGants,
+    rest,
   } from "../engine/actions";
   import { GENERATORS } from "../engine/content/generators";
+  import { UPGRADES } from "../engine/content/upgrades";
   import { fmtMoney } from "../engine/numbers";
+  import { dishesPerMinute } from "../engine/economy";
 
   const s = $derived(game.state);
+  const dpm = $derived(dishesPerMinute(s).toNumber());
 </script>
 
 <button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
@@ -19,25 +27,55 @@
     <p class="counter">Argent : {fmtMoney(s.money)}</p>
   {/if}
 
+  {#if s.flags.energyVisible}
+    <p class="line">Énergie : {Math.round(s.energy)} / 100</p>
+  {/if}
+
+  {#if dpm > 0}
+    <p class="line muted">{dpm.toFixed(0)} assiettes / min</p>
+  {/if}
+
   <p class="job">Métier : Plongeur</p>
 
-  <button class="action" onclick={() => clickWork(s)}>Laver une assiette</button>
+  {#if !s.manualRetired}
+    <button class="action" onclick={() => clickWork(s)}>Laver une assiette</button>
+  {/if}
 
-  {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`]}
-      <div class="gen">
-        <div class="gen-head">
-          <button
-            class="buy"
-            disabled={!canBuyGenerator(s, g.id)}
-            onclick={() => buyGenerator(s, g.id)}
-          >{g.label}</button>
-          {#if s.generators[g.id]}<span class="gen-count">{s.generators[g.id]}</span>{/if}
+  {#each UPGRADES as u (u.id)}
+    {#if upgradeAvailable(s, u)}
+      <div class="item">
+        <div class="item-head">
+          <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
+            >{u.label}</button>
         </div>
-        <p class="gen-price">Prix : {fmtMoney(generatorCost(s, g.id))}</p>
+        <p class="price">Prix : {fmtMoney(u.cost)}</p>
       </div>
     {/if}
   {/each}
+
+  {#each GENERATORS as g (g.id)}
+    {#if s.flags[`gen_${g.id}_unlocked`]}
+      <div class="item">
+        <div class="item-head">
+          <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}
+            >{g.label}</button>
+          {#if s.generators[g.id]}<span class="count">{s.generators[g.id]}</span>{/if}
+        </div>
+        <p class="price">Prix : {fmtMoney(generatorCost(s, g.id))}</p>
+      </div>
+    {/if}
+  {/each}
+
+  {#if s.flags.poseGantsVisible}
+    <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
+  {/if}
+
+  {#if s.flags.lifeVisible}
+    <section class="life">
+      <p class="job">Vie</p>
+      <button class="action" onclick={() => rest(s)}>Se reposer</button>
+    </section>
+  {/if}
 </main>
 
 <style>
@@ -47,7 +85,7 @@
   }
 
   main[data-act="1"] {
-    /* Tokens de l'Acte I : texte brut, fond blanc, minimal (esprit Paperclips). */
+    /* Acte I : texte brut, fond blanc, minimal (esprit Paperclips). */
     --bg: #ffffff;
     --fg: #111111;
     --muted: #777777;
@@ -62,20 +100,28 @@
     box-sizing: border-box;
     max-width: 560px;
     padding: 2.5rem 1.5rem;
-    /* aligné en haut à gauche, comme un document brut */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .counter {
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.25rem;
     font-variant-numeric: tabular-nums;
   }
 
+  .line {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
   .job {
-    margin: 0 0 0.5rem;
+    margin: 0.5rem 0 0.25rem;
     color: var(--muted);
   }
 
@@ -94,11 +140,11 @@
     padding: 0.25rem 0.6rem;
   }
 
-  .gen {
-    margin: 0.45rem 0;
+  .item {
+    margin: 0.4rem 0;
   }
 
-  .gen-head {
+  .item-head {
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
@@ -108,12 +154,12 @@
     padding: 0.25rem 0.6rem;
   }
 
-  .gen-count {
+  .count {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  .gen-price {
+  .price {
     margin: 0.15rem 0 0;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
@@ -129,7 +175,14 @@
     cursor: default;
   }
 
-  /* Bouton de test discret, en haut à droite. */
+  .life {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .reset {
     position: fixed;
     top: 0.5rem;
