@@ -13,15 +13,15 @@
 </script>
 
 <main data-act="1">
-  <h1>Plongeur</h1>
-
   {#if game.offlineEarned}
     <p class="offline">Pendant ton absence, tu as gagné {fmtMoney(game.offlineEarned)}.</p>
   {/if}
 
   {#if s.flags.moneyVisible}
-    <div class="counter">{fmtMoney(s.money)}</div>
+    <p class="counter">Argent : {fmtMoney(s.money)}</p>
   {/if}
+
+  <p class="job">Plongeur</p>
 
   <button class="action" onclick={() => clickWork(s)}>Laver une assiette</button>
 
@@ -32,70 +32,82 @@
         disabled={!canBuyGenerator(s, g.id)}
         onclick={() => buyGenerator(s, g.id)}
       >
-        {g.label} — {fmtMoney(generatorCost(s, g.id))}
-        {#if s.generators[g.id]}<span class="owned">×{s.generators[g.id]}</span>{/if}
+        {g.label} — {fmtMoney(generatorCost(s, g.id))}{#if s.generators[g.id]}
+          <span class="owned">(×{s.generators[g.id]})</span>{/if}
       </button>
     {/if}
   {/each}
 </main>
 
 <style>
-  :global(body) {
+  :global(html, body) {
     margin: 0;
+    background: #ffffff;
   }
+
   main[data-act="1"] {
-    --bg: #0a0a0a;
-    --fg: #d6d6d6;
-    --line: #333;
+    /* Tokens de l'Acte I : texte brut, fond blanc, minimal (esprit Paperclips). */
+    --bg: #ffffff;
+    --fg: #111111;
+    --muted: #777777;
+    --line: #cccccc;
+
     background: var(--bg);
     color: var(--fg);
-    font-family: "Courier New", monospace;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    font-size: 16px;
+    line-height: 1.7;
     min-height: 100vh;
+    box-sizing: border-box;
+    max-width: 560px;
+    padding: 2.5rem 1.5rem;
+    /* aligné en haut à gauche, comme un document brut */
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.25rem;
-    padding: 2rem;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
-  h1 {
-    font-weight: normal;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    font-size: 1rem;
-    opacity: 0.6;
-    margin: 0;
-  }
+
   .counter {
-    font-size: 2.5rem;
+    margin: 0 0 0.5rem;
     font-variant-numeric: tabular-nums;
   }
+
+  .job {
+    margin: 0 0 0.25rem;
+    color: var(--muted);
+  }
+
   .offline {
-    opacity: 0.7;
+    margin: 0 0 0.75rem;
+    color: var(--muted);
     font-style: italic;
   }
+
   button {
-    background: transparent;
+    display: inline-block;
+    margin: 0.15rem 0;
+    padding: 0.25rem 0.6rem;
+    background: var(--bg);
     color: var(--fg);
     border: 1px solid var(--line);
-    padding: 0.6rem 1.2rem;
+    border-radius: 0;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: inherit;
     cursor: pointer;
-    transition: border-color 0.15s;
   }
+
   button:hover:not(:disabled) {
-    border-color: var(--fg);
+    background: #f0f0f0;
   }
+
   button:disabled {
-    opacity: 0.35;
+    color: var(--muted);
+    border-color: #e5e5e5;
     cursor: default;
   }
-  .action {
-    font-size: 1.1rem;
-  }
+
   .owned {
-    opacity: 0.6;
-    margin-left: 0.5rem;
+    color: var(--muted);
   }
 </style>

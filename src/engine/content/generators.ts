@@ -12,7 +12,7 @@ export interface GeneratorDef {
 export const GENERATORS: GeneratorDef[] = [
   {
     id: "collegue",
-    label: "Un collègue couvre un créneau",
+    label: "Lave-vaisselle",
     baseCost: D(1),
     growth: 1.15,
     baseOutput: D(0.1),
