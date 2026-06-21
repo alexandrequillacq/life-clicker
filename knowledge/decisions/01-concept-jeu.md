@@ -46,10 +46,10 @@ Carrière (verticale) = les phases ; **Famille** = volet parallèle de l'axe Vie
 3. ✅ ~~Durée~~ → **A (~2-3h borné + New Game+)** + tempo confirmé, acté.
 4. ✅ ~~Structure de l'ossature~~ → **agréée** (9 phases + épilogue, famille parallèle).
 5. ✅ ~~Métiers + détail par phase~~ → **dans le spec** (départ plongeur confirmé).
-6. 🔲 **Stack technique** + plan d'implémentation — prochaine étape (après relecture du spec).
+6. ✅ ~~Stack technique~~ → **Svelte 5 + Vite + TS, moteur pur séparé de l'UI, break_infinity, Vitest, save localStorage versionnée, GitHub Pages** ([spec technique](../../docs/superpowers/specs/2026-06-21-stack-technique-design.md)). Fondations + **P0 jouable** implémentés et testés (26 tests).
 
 ## Le spec de design (GDD v1)
 Tout le détail (9 phases, cadence 2-couches, UI par acte, économie, ordre de réalisation) est consolidé dans 📐 [`docs/.../2026-06-21-idlegame-design.md`](../../docs/superpowers/specs/2026-06-21-idlegame-design.md).
 
 ## Prochaine étape
-Relecture du spec par l'utilisateur → puis plan d'implémentation (skill writing-plans) + choix de stack.
+Fondations + P0 livrés. Prochain plan : **P1** (panneau Compétences via « Lire un livre » + axe Vie/Énergie/Sens), en réutilisant le socle data-driven (tick, save/migrate, theming par tokens).

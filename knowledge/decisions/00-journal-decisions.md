@@ -4,6 +4,13 @@ Chaque décision de design, datée, avec sa justification et un lien vers le(s) 
 
 ---
 
+## 2026-06-21 · Stack technique actée + fondations + P0 implémentés
+**Décision :** **Svelte 5 + Vite + TypeScript (strict)**, `break_infinity.js` pour les gros nombres, **Vitest** (qui sert aussi de harnais d'équilibrage), sauvegarde `localStorage` versionnée, déploiement **GitHub Pages**.
+**Principe d'archi clé :** **moteur de jeu en TS pur** (`src/engine/`, 100 % testable, aucun import Svelte) **séparé de l'UI** (`src/ui/`, couche mince qui s'abonne). Theming par **variables CSS + `data-act`** pour l'UI qui évolue sur 3 actes (changer de tokens, pas réécrire l'écran).
+**Pourquoi :** réactivité fine idéale pour les dizaines de valeurs qui montent à chaque tick ; peu de boilerplate (itération solo) ; moteur testable = équilibrage fiable. Détail dans le [spec technique](../../docs/superpowers/specs/2026-06-21-stack-technique-design.md).
+**Livré :** scaffold + moteur complet (numbers, economy, state, actions, loop, save, offline) + **P0 jouable** (plongeur, 1 bouton, 1er revenu auto, hors-ligne, tempo, thème monochrome). **26 tests verts** (dont 1 test DOM qui prouve la réactivité). Plan : [`docs/.../plans/2026-06-21-fondations-et-p0.md`](../../docs/superpowers/plans/2026-06-21-fondations-et-p0.md).
+**Statut :** ✅ stack actée ; ✅ fondations + P0 implémentés et testés. 🔲 P1 (compétences + Vie/Énergie/Sens) = prochain plan.
+
 ## 2026-06-21 · Arbitrage rythme (2 couches) + Sens caché tôt + métiers concrets
 **Arbitrage rythme (demandé par l'utilisateur, « pas trop vite pour les nouvelles mécaniques ») :** séparer **2 couches** — (1) contenu familier en flux rapide = tient le zéro-ventre-mou ; (2) nouvelles mécaniques **espacées et en solo** pour laisser le temps de se familiariser. Détail dans [08 · pacing](../principes/08-rythme-pacing.md). On arbitre **phase par phase**.
 **Sens caché tôt :** le **Sens/Bonheur** n'est PAS un panneau à gérer au début ; il s'accumule en coulisse et n'est **révélé que lorsqu'il commence à se vider** (fin Acte II / Acte III). Allège la charge cognitive ET sert le twist. → [05 · twist](../principes/05-twist-narratif.md).

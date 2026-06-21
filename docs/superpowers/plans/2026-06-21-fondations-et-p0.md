@@ -61,26 +61,27 @@
 
 - [ ] **Step 2: Créer les configs**
 
-`vite.config.ts` :
+`vite.config.ts` (les conditions `browser` en mode test sont nécessaires pour monter un composant Svelte 5 côté client dans le test DOM de la Task 10) :
 ```ts
 /// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: "/life-clicker/",
   plugins: [svelte()],
+  resolve: mode === "test" ? { conditions: ["browser"] } : {},
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
   },
-});
+}));
 ```
 
-`svelte.config.js` :
+`svelte.config.js` (`style: false` désactive le hook CSS de Vite — inutile sans SCSS/PostCSS — et évite un crash de `vitePreprocess` sous Vitest ; le scoping CSS reste géré par Svelte) :
 ```js
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
-export default { preprocess: vitePreprocess() };
+export default { preprocess: vitePreprocess({ style: false }) };
 ```
 
 `tsconfig.json` :
@@ -223,12 +224,12 @@ Expected : FAIL (`numbers.ts` introuvable).
 
 - [ ] **Step 3: Implémenter**
 
-`src/engine/numbers.ts` :
+`src/engine/numbers.ts` (break_infinity@2 exporte le type `DecimalSource`, pas `Decimal.Value` ; et on retire le `+` de l'exposant pour un affichage idle propre) :
 ```ts
-import Decimal from "break_infinity.js";
+import Decimal, { type DecimalSource } from "break_infinity.js";
 
-export type { Decimal };
-export const D = (x: Decimal.Value): Decimal => new Decimal(x);
+export type { Decimal, DecimalSource };
+export const D = (x: DecimalSource): Decimal => new Decimal(x);
 export const ZERO: Decimal = new Decimal(0);
 
 export function fmtMoney(value: Decimal): string {
@@ -238,7 +239,7 @@ export function fmtMoney(value: Decimal): string {
   if (value.lt(1e6)) {
     return `${value.toFixed(2)} €`;
   }
-  return `${value.toExponential(2)} €`;
+  return `${value.toExponential(2).replace("e+", "e")} €`;
 }
 ```
 
