@@ -13,28 +13,27 @@
 </script>
 
 <main data-act="1">
-  {#if game.offlineEarned}
-    <p class="offline">Pendant ton absence, tu as gagné {fmtMoney(game.offlineEarned)}.</p>
-  {/if}
-
   {#if s.flags.moneyVisible}
     <p class="counter">Argent : {fmtMoney(s.money)}</p>
   {/if}
 
-  <p class="job">Plongeur</p>
+  <p class="job">Métier : Plongeur</p>
 
   <button class="action" onclick={() => clickWork(s)}>Laver une assiette</button>
 
   {#each GENERATORS as g (g.id)}
     {#if s.flags[`gen_${g.id}_unlocked`]}
-      <button
-        class="buy"
-        disabled={!canBuyGenerator(s, g.id)}
-        onclick={() => buyGenerator(s, g.id)}
-      >
-        {g.label} — {fmtMoney(generatorCost(s, g.id))}{#if s.generators[g.id]}
-          <span class="owned">(×{s.generators[g.id]})</span>{/if}
-      </button>
+      <div class="gen">
+        <button
+          class="buy"
+          disabled={!canBuyGenerator(s, g.id)}
+          onclick={() => buyGenerator(s, g.id)}
+        >
+          <span class="buy-label">{g.label}</span>
+          <span class="buy-cost">{fmtMoney(generatorCost(s, g.id))}</span>
+        </button>
+        {#if s.generators[g.id]}<span class="gen-count">{s.generators[g.id]}</span>{/if}
+      </div>
     {/if}
   {/each}
 </main>
@@ -78,23 +77,40 @@
     color: var(--muted);
   }
 
-  .offline {
-    margin: 0 0 0.75rem;
-    color: var(--muted);
-    font-style: italic;
-  }
-
   button {
-    display: inline-block;
-    margin: 0.15rem 0;
-    padding: 0.25rem 0.6rem;
-    background: var(--bg);
-    color: var(--fg);
-    border: 1px solid var(--line);
-    border-radius: 0;
     font-family: inherit;
     font-size: inherit;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 0;
     cursor: pointer;
+  }
+
+  .action {
+    margin: 0.15rem 0;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .gen {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0.15rem 0;
+  }
+
+  .buy {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-width: 16rem;
+    padding: 0.25rem 0.6rem;
+    text-align: left;
+  }
+
+  .buy-cost {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
 
   button:hover:not(:disabled) {
@@ -107,7 +123,12 @@
     cursor: default;
   }
 
-  .owned {
+  .buy:disabled .buy-cost {
     color: var(--muted);
+  }
+
+  .gen-count {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
 </style>
