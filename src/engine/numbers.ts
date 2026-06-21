@@ -8,8 +8,12 @@ export function fmtMoney(value: Decimal): string {
   if (value.lt(1)) {
     return `${value.mul(100).toFixed(0)} c`;
   }
-  if (value.lt(1e6)) {
+  if (value.lt(10)) {
     return `${value.toFixed(2)} €`;
+  }
+  // Au-delà de 10 €, on n'affiche plus les centimes (ils défileraient sans cesse).
+  if (value.lt(1e6)) {
+    return `${value.toFixed(0)} €`;
   }
   return `${value.toExponential(2).replace("e+", "e")} €`;
 }

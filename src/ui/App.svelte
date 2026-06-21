@@ -1,7 +1,7 @@
 <script lang="ts">
   import { game, resetGame } from "./store.svelte";
   import {
-    clickWork,
+    work,
     buyGenerator,
     generatorCost,
     canBuyGenerator,
@@ -12,16 +12,21 @@
     rest,
     study,
     canStudy,
-    bookCost,
-    becomeOffice,
-    processFile,
+    becomeDeveloper,
+    promote,
+    canPromote,
   } from "../engine/actions";
   import { GENERATORS } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
+  import { JOBS, nextPromotion } from "../engine/content/career";
+  import { nextBook } from "../engine/content/studies";
   import { fmtMoney } from "../engine/numbers";
 
   const s = $derived(game.state);
-  const jobLabel = $derived(s.job === "bureau" ? "Employé de bureau" : "Plongeur");
+  const job = $derived(JOBS[s.job]);
+  const book = $derived(nextBook(s.studyLevel));
+  const promo = $derived(nextPromotion(s.job));
+  const clickLabel = $derived(s.job === "plongeur" ? "Laver des assiettes" : job.clickLabel);
 </script>
 
 <button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
@@ -35,30 +40,28 @@
     <p class="line">Énergie : {Math.round(s.energy)} / 100</p>
   {/if}
 
-  <p class="job">Métier : {jobLabel}</p>
+  <p class="job">Métier : {job.label}</p>
 
-  {#if s.job === "bureau"}
-    <button class="action" onclick={() => processFile(s)}>Traiter un dossier</button>
-  {:else if !s.manualRetired}
-    <button class="action" onclick={() => clickWork(s)}>Laver des assiettes</button>
+  {#if !(s.job === "plongeur" && s.manualRetired)}
+    <button class="action" onclick={() => work(s)}>{clickLabel}</button>
   {/if}
 
-  {#if s.job === "plongeur"}
-    {#each UPGRADES as u (u.id)}
-      {#if upgradeAvailable(s, u)}
-        <div class="item">
-          <div class="item-head">
-            <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
-              >{u.label}</button>
-          </div>
-          <p class="price">Prix : {fmtMoney(u.cost)}</p>
+  <!-- Upgrades du métier courant -->
+  {#each UPGRADES as u (u.id)}
+    {#if upgradeAvailable(s, u)}
+      <div class="item">
+        <div class="item-head">
+          <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
+            >{u.label}</button>
         </div>
-      {/if}
-    {/each}
-  {/if}
+        <p class="price">Prix : {fmtMoney(u.cost)}</p>
+      </div>
+    {/if}
+  {/each}
 
+  <!-- Générateurs : plonge (si plongeur) ou dev (sinon) -->
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`]}
+    {#if s.flags[`gen_${g.id}_unlocked`] && ((g.kind === "plonge" && s.job === "plongeur") || (g.kind === "dev" && s.job !== "plongeur"))}
       <div class="item">
         <div class="item-head">
           <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}
@@ -70,8 +73,13 @@
     {/if}
   {/each}
 
-  {#if s.flags.poseGantsVisible && !s.manualRetired}
+  {#if s.flags.poseGantsVisible && !s.manualRetired && s.job === "plongeur"}
     <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
+  {/if}
+
+  <!-- Promotion vers le métier suivant -->
+  {#if promo && canPromote(s)}
+    <button class="action" onclick={() => promote(s)}>{promo.cta}</button>
   {/if}
 
   {#if s.flags.lifeVisible}
@@ -83,17 +91,23 @@
 
   {#if s.flags.studyVisible && s.job === "plongeur"}
     <section class="block">
-      <p class="job">Études : {s.studyLevel}</p>
-      <div class="item">
-        <div class="item-head">
-          <button class="buy" disabled={!canStudy(s)} onclick={() => study(s)}>Lire un livre</button>
+      <p class="job">Études</p>
+      {#if book}
+        <div class="item">
+          <div class="item-head">
+            <button class="buy" disabled={!canStudy(s)} onclick={() => study(s)}>Lire « {book.label} »</button>
+          </div>
+          <p class="price">Prix : {fmtMoney(book.cost)}</p>
         </div>
-        <p class="price">Prix : {fmtMoney(bookCost(s))}</p>
-      </div>
+      {/if}
       {#if s.flags.postulerVisible}
-        <button class="action" onclick={() => becomeOffice(s)}>Postuler à un poste de bureau</button>
+        <button class="action" onclick={() => becomeDeveloper(s)}>Postuler comme développeur</button>
       {/if}
     </section>
+  {/if}
+
+  {#if s.job === "entrepreneur"}
+    <p class="line muted">Ta boîte d'IA est lancée. (la suite arrive)</p>
   {/if}
 </main>
 
@@ -133,6 +147,10 @@
   .line {
     margin: 0;
     font-variant-numeric: tabular-nums;
+  }
+
+  .muted {
+    color: var(--muted);
   }
 
   .job {

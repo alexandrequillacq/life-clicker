@@ -10,7 +10,7 @@ import {
 import { createInitialState } from "../src/engine/state";
 import { GENERATORS_BY_ID } from "../src/engine/content/generators";
 
-const LV = GENERATORS_BY_ID["lave_vaisselle"].dishesPerSec.toNumber();
+const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
 
 describe("costOf", () => {
   it("vaut le prix de base quand rien n'est possédé", () => {

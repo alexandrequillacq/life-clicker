@@ -3,7 +3,7 @@ import { createInitialState, ENERGY_MAX } from "../src/engine/state";
 import { applyOffline, OFFLINE_CAP_SECONDS } from "../src/engine/offline";
 import { GENERATORS_BY_ID } from "../src/engine/content/generators";
 
-const LV = GENERATORS_BY_ID["lave_vaisselle"].dishesPerSec.toNumber();
+const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
 
 describe("applyOffline", () => {
   it("crédite SEULEMENT les machines (pas le travail à la main)", () => {

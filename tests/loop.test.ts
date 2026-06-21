@@ -3,9 +3,9 @@ import { D } from "../src/engine/numbers";
 import { createInitialState, ENERGY_MAX } from "../src/engine/state";
 import { tick, updateFlags } from "../src/engine/loop";
 import { GENERATORS_BY_ID } from "../src/engine/content/generators";
-import { STUDY_THRESHOLD } from "../src/engine/content/studies";
+import { STUDIES } from "../src/engine/content/studies";
 
-const LV = GENERATORS_BY_ID["lave_vaisselle"].dishesPerSec.toNumber();
+const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
 
 describe("tick : revenu", () => {
   it("les machines produisent du revenu", () => {
@@ -81,9 +81,9 @@ describe("révélation progressive", () => {
     updateFlags(s);
     expect(s.flags.studyVisible).toBe(true);
   });
-  it("« Postuler » s'ouvre au seuil d'études", () => {
+  it("« Postuler » s'ouvre quand tous les livres sont lus", () => {
     const s = createInitialState(0);
-    s.studyLevel = STUDY_THRESHOLD;
+    s.studyLevel = STUDIES.length;
     updateFlags(s);
     expect(s.flags.postulerVisible).toBe(true);
   });

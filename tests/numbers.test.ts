@@ -11,8 +11,11 @@ describe("numbers", () => {
   it("fmtMoney affiche les centimes sous 1 €", () => {
     expect(fmtMoney(D(0.05))).toBe("5 c");
   });
-  it("fmtMoney affiche les euros à 2 décimales", () => {
-    expect(fmtMoney(D(12.3))).toBe("12.30 €");
+  it("fmtMoney affiche 2 décimales entre 1 et 10 €", () => {
+    expect(fmtMoney(D(5.5))).toBe("5.50 €");
+  });
+  it("fmtMoney n'affiche plus les centimes au-delà de 10 €", () => {
+    expect(fmtMoney(D(12.3))).toBe("12 €");
   });
   it("fmtMoney passe en exponentiel pour les grands nombres", () => {
     expect(fmtMoney(D(1.23e8))).toBe("1.23e8 €");

@@ -16,34 +16,57 @@ export function energyFactor(state: GameState): number {
   return Math.max(0, state.energy) / ENERGY_MAX;
 }
 
-/** Assiettes/s lavées à la main en continu, modulé par l'énergie. */
+/** Assiettes/s lavées à la main en continu (plonge uniquement), modulé par l'énergie. */
 export function handDishesPerSec(state: GameState): number {
-  if (state.manualRetired || !state.handWashing) return 0;
+  if (state.job !== "plongeur" || state.manualRetired || !state.handWashing) return 0;
   return state.handRate * energyFactor(state);
 }
 
-/** Assiettes/s produites par les machines (indépendant de l'énergie). */
+/** Assiettes/s produites par les machines de plonge. */
 export function machineDishesPerSec(state: GameState): Decimal {
   let total = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
-    if (!def) continue;
-    total = total.add(def.dishesPerSec.mul(state.generators[id]));
+    if (!def || def.kind !== "plonge") continue;
+    total = total.add(def.output.mul(state.generators[id]));
   }
   return total;
 }
 
-/** Débit total en assiettes/s (machines + main). */
+/** Débit total de plonge en assiettes/s (machines + main). */
 export function dishesPerSec(state: GameState): Decimal {
   return machineDishesPerSec(state).add(handDishesPerSec(state));
 }
 
-/** Débit affiché en assiettes/min. */
 export function dishesPerMinute(state: GameState): Decimal {
   return dishesPerSec(state).mul(60);
 }
 
-/** Revenu en €/s. */
+/** €/s des générateurs dev (automatisation, indépendant de l'énergie). */
+export function devIncomePerSec(state: GameState): Decimal {
+  let total = ZERO;
+  for (const id in state.generators) {
+    const def = GENERATORS_BY_ID[id];
+    if (!def || def.kind !== "dev") continue;
+    total = total.add(def.output.mul(state.generators[id]));
+  }
+  return total;
+}
+
+/** Revenu passif (hors clic et hors lavage à la main) : machines de plonge si encore plongeur + dev. */
+export function passiveIncomePerSec(state: GameState): Decimal {
+  let total = devIncomePerSec(state);
+  if (state.job === "plongeur") {
+    total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
+  }
+  return total;
+}
+
+/** Revenu/s en jeu : passif + lavage continu à la main (plonge). */
 export function incomePerSec(state: GameState): Decimal {
-  return dishesPerSec(state).mul(state.valuePerDish);
+  let total = passiveIncomePerSec(state);
+  if (state.job === "plongeur") {
+    total = total.add(D(handDishesPerSec(state)).mul(state.valuePerDish));
+  }
+  return total;
 }

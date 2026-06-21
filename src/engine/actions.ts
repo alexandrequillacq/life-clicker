@@ -1,23 +1,34 @@
 import { type Decimal } from "./numbers";
 import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
-import { costOf } from "./economy";
+import { costOf, energyFactor } from "./economy";
 import { GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
-import {
-  BOOK_BASE_COST,
-  BOOK_GROWTH,
-  OFFICE_VALUE_PER_CLICK,
-  STUDY_THRESHOLD,
-} from "./content/studies";
+import { JOBS, nextPromotion } from "./content/career";
+import { nextBook, studiesComplete } from "./content/studies";
 
-/** Clic plonge : lave `dishesPerClick` assiettes à pleine valeur (effort ponctuel, sans coût d'énergie). */
+// --- Clic actif (dépend du métier) ---
+
+/** Clic plonge : lave `dishesPerClick` assiettes à pleine valeur (effort ponctuel, sans énergie). */
 export function clickWork(state: GameState): void {
   if (state.manualRetired) return;
   state.money = state.money.add(state.valuePerDish.mul(state.dishesPerClick));
   state.totalClicks += 1;
 }
 
-// --- Machines (générateurs) ---
+/** Action active du métier courant. Le plongeur lave ; les métiers dev coûtent de l'énergie. */
+export function work(state: GameState): void {
+  if (state.job === "plongeur") {
+    clickWork(state);
+    return;
+  }
+  const job = JOBS[state.job];
+  const gained = job.clickValue.mul(state.devClickMult).mul(energyFactor(state));
+  state.money = state.money.add(gained);
+  state.energy = Math.max(0, state.energy - job.clickEnergyCost);
+  state.totalClicks += 1;
+}
+
+// --- Machines / générateurs ---
 
 export function generatorCost(state: GameState, id: string): Decimal {
   const def = GENERATORS_BY_ID[id];
@@ -42,6 +53,8 @@ export function buyGenerator(state: GameState, id: string): boolean {
 export function upgradeAvailable(state: GameState, def: UpgradeDef): boolean {
   if (state.upgrades[def.id]) return false;
   if (def.requires && !state.upgrades[def.requires]) return false;
+  if (def.phase === "plonge" && state.job !== "plongeur") return false;
+  if (def.phase === "dev" && state.job === "plongeur") return false;
   return state.money.gte(def.unlockAtMoney);
 }
 
@@ -58,12 +71,13 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.setDishesPerClick !== undefined) state.dishesPerClick = def.setDishesPerClick;
   if (def.unlocksHand) state.handWashing = true;
   if (def.setHandRate !== undefined) state.handRate = def.setHandRate;
+  if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
   return true;
 }
 
-// --- Bascule & Vie ---
+// --- Bascule plonge & Vie ---
 
-/** Poser les gants : stoppe tout le travail manuel (clic + continu). */
+/** Poser les gants : stoppe tout le travail manuel à la plonge (clic + continu). */
 export function poseGants(state: GameState): void {
   state.manualRetired = true;
   state.handWashing = false;
@@ -74,39 +88,47 @@ export function rest(state: GameState): void {
   state.energy = Math.min(ENERGY_MAX, state.energy + REST_ENERGY);
 }
 
-// --- Études & changement de métier ---
+// --- Études & carrière ---
 
-export function bookCost(state: GameState): Decimal {
-  return costOf(BOOK_BASE_COST, BOOK_GROWTH, state.studyLevel);
+export function bookCost(state: GameState): Decimal | null {
+  return nextBook(state.studyLevel)?.cost ?? null;
 }
 
 export function canStudy(state: GameState): boolean {
-  return state.money.gte(bookCost(state));
+  const cost = bookCost(state);
+  return cost !== null && state.money.gte(cost);
 }
 
-/** Lire un livre : monte le niveau d'études. */
+/** Lire le prochain livre : monte le niveau d'études. */
 export function study(state: GameState): boolean {
   const cost = bookCost(state);
-  if (state.money.lt(cost)) return false;
+  if (cost === null || state.money.lt(cost)) return false;
   state.money = state.money.sub(cost);
   state.studyLevel += 1;
   return true;
 }
 
-export function canBecomeOffice(state: GameState): boolean {
-  return state.job === "plongeur" && state.studyLevel >= STUDY_THRESHOLD;
+export function canBecomeDeveloper(state: GameState): boolean {
+  return state.job === "plongeur" && studiesComplete(state.studyLevel);
 }
 
-/** Postuler : on confie la plonge (qui tourne en automatique) et on passe employé de bureau. */
-export function becomeOffice(state: GameState): boolean {
-  if (!canBecomeOffice(state)) return false;
-  state.job = "bureau";
+/** Postuler : on quitte la plonge (le revenu de plonge s'arrête) et on devient développeur. */
+export function becomeDeveloper(state: GameState): boolean {
+  if (!canBecomeDeveloper(state)) return false;
+  state.job = "developpeur";
+  state.flags.energyVisible = true; // le travail de dev sollicite l'énergie
   return true;
 }
 
-/** Clic bureau : traiter un dossier (bien plus rémunérateur qu'une assiette). */
-export function processFile(state: GameState): void {
-  if (state.job !== "bureau") return;
-  state.money = state.money.add(OFFICE_VALUE_PER_CLICK);
-  state.totalClicks += 1;
+export function canPromote(state: GameState): boolean {
+  const promo = nextPromotion(state.job);
+  return promo !== null && state.money.gte(promo.moneyThreshold);
+}
+
+/** Promotion vers le métier suivant (lead dev → CTO → fondateur). */
+export function promote(state: GameState): boolean {
+  const promo = nextPromotion(state.job);
+  if (!promo || state.money.lt(promo.moneyThreshold)) return false;
+  state.job = promo.to;
+  return true;
 }

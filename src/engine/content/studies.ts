@@ -1,11 +1,26 @@
 import { D, type Decimal } from "../numbers";
 
-// Études : « Lire un livre » coûte de l'argent (acheter des livres) et fait
-// monter le niveau. Le but n'est pas de mieux gagner à la plonge (un plongeur
-// instruit ne lave pas mieux), mais de débloquer un vrai métier.
-export const BOOK_BASE_COST: Decimal = D(5);
-export const BOOK_GROWTH = 1.5;
-export const STUDY_THRESHOLD = 5; // niveaux requis pour postuler en bureau
+export interface StudyDef {
+  id: string;
+  label: string;
+  cost: Decimal;
+}
 
-// Métier de bureau : « Traiter un dossier » rapporte bien plus qu'une assiette.
-export const OFFICE_VALUE_PER_CLICK: Decimal = D(0.5);
+// Suite de livres de complexité croissante pour devenir développeur.
+// Logique : on étudie pour CHANGER de métier, pas pour mieux laver les assiettes.
+export const STUDIES: StudyDef[] = [
+  { id: "logique", label: "Initiation à la logique", cost: D(4) },
+  { id: "html", label: "HTML & CSS", cost: D(8) },
+  { id: "js", label: "JavaScript", cost: D(16) },
+  { id: "algo", label: "Algorithmes & structures de données", cost: D(32) },
+  { id: "archi", label: "Architecture logicielle", cost: D(60) },
+];
+
+/** Coût du prochain livre (null si tous lus). */
+export function nextBook(studyLevel: number): StudyDef | null {
+  return STUDIES[studyLevel] ?? null;
+}
+
+export function studiesComplete(studyLevel: number): boolean {
+  return studyLevel >= STUDIES.length;
+}

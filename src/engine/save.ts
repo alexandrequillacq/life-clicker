@@ -21,6 +21,7 @@ export function deserialize(json: string): GameState {
     // Valeurs par défaut pour les champs ajoutés à un schéma de même version.
     studyLevel: raw.studyLevel ?? 0,
     job: raw.job ?? "plongeur",
+    devClickMult: raw.devClickMult ?? 1,
   };
 }
 

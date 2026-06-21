@@ -6,7 +6,7 @@ import {
 } from "./state";
 import { incomePerSec, handDishesPerSec } from "./economy";
 import { GENERATORS } from "./content/generators";
-import { STUDY_THRESHOLD } from "./content/studies";
+import { studiesComplete } from "./content/studies";
 
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
@@ -32,11 +32,11 @@ export function updateFlags(state: GameState): void {
   if (!state.flags.studyVisible && state.flags.lifeVisible) {
     state.flags.studyVisible = true;
   }
-  // Postuler en bureau quand on a assez étudié.
+  // Postuler comme développeur quand tous les livres sont lus.
   if (
     !state.flags.postulerVisible &&
     state.job === "plongeur" &&
-    state.studyLevel >= STUDY_THRESHOLD
+    studiesComplete(state.studyLevel)
   ) {
     state.flags.postulerVisible = true;
   }

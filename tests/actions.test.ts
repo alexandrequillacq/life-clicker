@@ -3,6 +3,7 @@ import { D } from "../src/engine/numbers";
 import { createInitialState, ENERGY_MAX } from "../src/engine/state";
 import {
   clickWork,
+  work,
   buyGenerator,
   generatorCost,
   buyUpgrade,
@@ -12,13 +13,14 @@ import {
   rest,
   study,
   canStudy,
-  bookCost,
-  becomeOffice,
-  canBecomeOffice,
-  processFile,
+  becomeDeveloper,
+  canBecomeDeveloper,
+  promote,
+  canPromote,
 } from "../src/engine/actions";
 import { UPGRADES_BY_ID } from "../src/engine/content/upgrades";
-import { STUDY_THRESHOLD, OFFICE_VALUE_PER_CLICK } from "../src/engine/content/studies";
+import { STUDIES } from "../src/engine/content/studies";
+import { JOBS } from "../src/engine/content/career";
 
 describe("clic", () => {
   it("lave dishesPerClick assiettes", () => {
@@ -100,36 +102,53 @@ describe("machines & vie", () => {
   });
 });
 
-describe("études & bureau", () => {
+describe("études & carrière", () => {
   it("lire un livre monte le niveau et débite", () => {
     const s = createInitialState(0);
-    s.money = bookCost(s);
+    s.money = STUDIES[0].cost;
     expect(canStudy(s)).toBe(true);
     expect(study(s)).toBe(true);
     expect(s.studyLevel).toBe(1);
     expect(s.money.toNumber()).toBeCloseTo(0);
   });
-  it("le coût des livres augmente avec le niveau", () => {
+  it("le coût des livres augmente d'un thème à l'autre", () => {
     const s = createInitialState(0);
-    const c0 = bookCost(s).toNumber();
+    s.money = D(100000);
+    study(s); // livre 0
+    expect(STUDIES[1].cost.toNumber()).toBeGreaterThan(STUDIES[0].cost.toNumber());
+  });
+  it("on devient développeur seulement après avoir tout lu (et la plonge s'arrête)", () => {
+    const s = createInitialState(0);
+    expect(canBecomeDeveloper(s)).toBe(false);
+    s.studyLevel = STUDIES.length;
+    expect(canBecomeDeveloper(s)).toBe(true);
+    expect(becomeDeveloper(s)).toBe(true);
+    expect(s.job).toBe("developpeur");
+    expect(s.flags.energyVisible).toBe(true);
+  });
+  it("travailler en dev rapporte et coûte de l'énergie", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    s.flags.energyVisible = true;
+    s.energy = 100;
+    work(s);
+    expect(s.money.toNumber()).toBeCloseTo(JOBS["developpeur"].clickValue.toNumber());
+    expect(s.energy).toBe(100 - JOBS["developpeur"].clickEnergyCost);
+  });
+  it("un upgrade dev multiplie la valeur du clic", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    s.money = UPGRADES_BY_ID["ide"].cost;
+    buyUpgrade(s, "ide");
+    expect(s.devClickMult).toBe(UPGRADES_BY_ID["ide"].mulClickValue);
+  });
+  it("on ne promeut qu'au capital requis", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    expect(canPromote(s)).toBe(false);
     s.money = D(1000);
-    study(s);
-    expect(bookCost(s).toNumber()).toBeGreaterThan(c0);
-  });
-  it("on ne peut postuler qu'au seuil d'études", () => {
-    const s = createInitialState(0);
-    expect(canBecomeOffice(s)).toBe(false);
-    s.studyLevel = STUDY_THRESHOLD;
-    expect(canBecomeOffice(s)).toBe(true);
-    expect(becomeOffice(s)).toBe(true);
-    expect(s.job).toBe("bureau");
-  });
-  it("traiter un dossier ne rapporte qu'en bureau", () => {
-    const s = createInitialState(0);
-    processFile(s); // encore plongeur → rien
-    expect(s.money.toNumber()).toBe(0);
-    s.job = "bureau";
-    processFile(s);
-    expect(s.money.toNumber()).toBeCloseTo(OFFICE_VALUE_PER_CLICK.toNumber());
+    expect(canPromote(s)).toBe(true);
+    expect(promote(s)).toBe(true);
+    expect(s.job).toBe("lead_dev");
   });
 });
