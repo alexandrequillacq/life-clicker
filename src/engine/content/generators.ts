@@ -1,16 +1,18 @@
 import { D, type Decimal } from "../numbers";
 
-export type GeneratorKind = "plonge" | "dev" | "ia";
+export type GeneratorKind = "plonge" | "dev" | "ia" | "biz";
 
 export interface GeneratorDef {
   id: string;
   label: string;
   baseCost: Decimal;
   growth: number;
-  output: Decimal; // plonge → assiettes/s ; dev → €/s ; ia → ignoré (multiplicateur, voir aiIncomePerSec)
+  output: Decimal; // plonge → assiettes/s ; dev/biz → €/s ; ia → ignoré (voir aiIncomePerSec)
   unlockAtMoney: Decimal; // seuil de révélation
   kind: GeneratorKind;
   requiresFlag?: string; // ne se révèle que si ce flag est posé
+  scalesWithGpu?: boolean; // biz : la production est multipliée par (1 + gpuProductBoost × nbGPU)
+  bonusGpu?: number; // à l'achat, ajoute ce nombre de GPU au parc (acquisition qui absorbe l'infra)
 }
 
 // L'IA résout les bugs en continu (sans énergie) ; chaque GPU multiplie son débit.
@@ -68,6 +70,27 @@ export const GENERATORS: GeneratorDef[] = [
     unlockAtMoney: D(9000),
     kind: "ia",
     requiresFlag: "aiResolving",
+  },
+  // Boîte d'IA (entrepreneur) : les produits tournent sur l'armée de GPU.
+  {
+    id: "produit_ia",
+    label: "Mettre un produit IA en marché",
+    baseCost: D(60000),
+    growth: 1.18,
+    output: D(1200), // €/s × (1 + gpuProductBoost × nbGPU)
+    unlockAtMoney: D(45000),
+    kind: "biz",
+    scalesWithGpu: true,
+  },
+  {
+    id: "acquisition",
+    label: "Racheter une boîte d'IA",
+    baseCost: D(600000),
+    growth: 1.22,
+    output: D(18000), // €/s
+    unlockAtMoney: D(300000),
+    kind: "biz",
+    bonusGpu: 2,
   },
 ];
 

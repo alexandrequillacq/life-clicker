@@ -6,6 +6,7 @@ import {
   dishesPerMinute,
   incomePerSec,
   aiIncomePerSec,
+  bizIncomePerSec,
   energyFactor,
 } from "../src/engine/economy";
 import { createInitialState } from "../src/engine/state";
@@ -68,5 +69,21 @@ describe("revenu IA (GPU)", () => {
     s.flags.aiResolving = true;
     s.generators["gpu"] = 4;
     expect(aiIncomePerSec(s).toNumber()).toBeCloseTo(AI_BASE_INCOME * (1 + GPU_MULT_PER_UNIT * 4));
+  });
+});
+
+describe("revenu de la boîte (entrepreneur)", () => {
+  it("les produits IA scalent avec le nombre de GPU", () => {
+    const s = createInitialState(0);
+    const base = GENERATORS_BY_ID["produit_ia"].output.toNumber();
+    s.generators["produit_ia"] = 1;
+    s.generators["gpu"] = 10; // ×(1 + 0,1×10) = ×2
+    expect(bizIncomePerSec(s).toNumber()).toBeCloseTo(base * (1 + 0.1 * 10));
+  });
+  it("les acquisitions rapportent un débit fixe", () => {
+    const s = createInitialState(0);
+    const acq = GENERATORS_BY_ID["acquisition"].output.toNumber();
+    s.generators["acquisition"] = 2;
+    expect(bizIncomePerSec(s).toNumber()).toBeCloseTo(acq * 2);
   });
 });

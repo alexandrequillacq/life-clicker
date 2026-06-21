@@ -32,7 +32,7 @@
 
 <button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
 
-<main data-act="1">
+<main data-act={s.flags.act2 ? "2" : "1"} class:firstcolor={s.flags.firstColor && !s.flags.act2}>
   {#if s.flags.moneyVisible}
     <p class="counter">Argent : {fmtMoney(s.money)}</p>
   {/if}
@@ -59,14 +59,18 @@
           <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
             >{u.label}</button>
         </div>
-        <p class="price">Prix : {fmtMoney(u.cost)}</p>
+        {#if u.grantCash}
+          <p class="price">Rapporte : {fmtMoney(u.grantCash)}</p>
+        {:else}
+          <p class="price">Prix : {fmtMoney(u.cost)}</p>
+        {/if}
       </div>
     {/if}
   {/each}
 
   <!-- Générateurs : plonge (si plongeur) ou dev (sinon) -->
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`] && (g.kind === "plonge" ? s.job === "plongeur" : s.job !== "plongeur")}
+    {#if s.flags[`gen_${g.id}_unlocked`] && (g.kind === "plonge" ? s.job === "plongeur" : g.kind === "biz" ? s.job === "entrepreneur" : s.job !== "plongeur")}
       <div class="item">
         <div class="item-head">
           <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}
@@ -122,12 +126,13 @@
     background: #ffffff;
   }
 
-  main[data-act="1"] {
+  main {
     /* Acte I : texte brut, fond blanc, minimal (esprit Paperclips). */
     --bg: #ffffff;
     --fg: #111111;
     --muted: #777777;
     --line: #cccccc;
+    --accent: #111111;
 
     background: var(--bg);
     color: var(--fg);
@@ -147,6 +152,30 @@
   .counter {
     margin: 0 0 0.25rem;
     font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  /* Première couleur : récompense de fin d'Acte I (on devient développeur). */
+  main.firstcolor {
+    --accent: #2f6df0;
+  }
+
+  /* Acte II : épuré, coloré, agréable (apogée du confort). */
+  main[data-act="2"] {
+    --bg: #f6f8fb;
+    --fg: #1b2433;
+    --muted: #5b6b82;
+    --line: #c8d4e3;
+    --accent: #2f6df0;
+    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  main[data-act="2"] button {
+    border-radius: 6px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  main[data-act="2"] button:hover:not(:disabled) {
+    background: #e8eef9;
+    border-color: var(--accent);
   }
 
   .line {

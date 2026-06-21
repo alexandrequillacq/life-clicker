@@ -162,3 +162,45 @@ describe("études & carrière", () => {
     expect(s.job).toBe("lead_dev");
   });
 });
+
+describe("entrepreneur (boîte d'IA)", () => {
+  it("promu entrepreneur, l'Acte II se déclenche", () => {
+    const s = createInitialState(0);
+    s.job = "cto";
+    s.money = D(30000);
+    promote(s);
+    expect(s.job).toBe("entrepreneur");
+    expect(s.flags.act2).toBe(true);
+  });
+  it("une levée injecte du capital (cash one-shot)", () => {
+    const s = createInitialState(0);
+    s.job = "entrepreneur";
+    s.money = D(80000);
+    buyUpgrade(s, "leve_amorcage");
+    expect(s.money.toNumber()).toBeCloseTo(80000 + 150000);
+    expect(s.upgrades["leve_amorcage"]).toBe(true);
+  });
+  it("racheter une boîte ajoute des GPU au parc", () => {
+    const s = createInitialState(0);
+    s.job = "entrepreneur";
+    s.generators["gpu"] = 3;
+    s.money = generatorCost(s, "acquisition");
+    buyGenerator(s, "acquisition");
+    expect(s.generators["acquisition"]).toBe(1);
+    expect(s.generators["gpu"]).toBe(5); // +2
+  });
+  it("le data center monte le boost GPU des produits", () => {
+    const s = createInitialState(0);
+    s.job = "entrepreneur";
+    s.money = D(1500000);
+    buyUpgrade(s, "data_center");
+    expect(s.gpuProductBoost).toBeCloseTo(0.15);
+  });
+  it("engager une nounou pose le flag d'automatisation de la vie", () => {
+    const s = createInitialState(0);
+    s.job = "entrepreneur";
+    s.money = D(120000);
+    buyUpgrade(s, "nounou");
+    expect(s.flags.vieAutomatisee).toBe(true);
+  });
+});

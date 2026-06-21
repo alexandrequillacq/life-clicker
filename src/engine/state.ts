@@ -13,7 +13,7 @@ export const REST_ENERGY = 40; // « Se reposer » regagne ceci
 // lavées. Comme le débit baisse avec l'énergie, la dépense baisse aussi :
 // l'énergie se stabilise à un palier soutenable au lieu de tomber à zéro.
 
-export type Job = "plongeur" | "developpeur" | "lead_dev" | "cto" | "entrepreneur";
+export type Job = "plongeur" | "developpeur" | "lead_dev" | "cto" | "entrepreneur" | "celebrite";
 
 export interface GameState {
   version: number;
@@ -29,6 +29,7 @@ export interface GameState {
   studyLevel: number; // index du prochain livre à lire (progrès vers développeur)
   job: Job; // métier courant
   devClickMult: number; // multiplicateur de valeur du clic (upgrades dev)
+  gpuProductBoost: number; // boost par GPU sur la production des produits IA (data center le monte)
   flags: Record<string, boolean>; // déblocages d'UI (révélation progressive)
   tempo: number;
   startedAt: number;
@@ -51,6 +52,7 @@ export function createInitialState(now: number): GameState {
     studyLevel: 0,
     job: "plongeur",
     devClickMult: 1,
+    gpuProductBoost: 0.1,
     flags: {},
     tempo: 1,
     startedAt: now,

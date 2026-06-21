@@ -37,8 +37,14 @@ export const JOBS: Record<Job, JobDef> = {
   },
   entrepreneur: {
     label: "Fondateur",
-    clickLabel: "Pitcher aux investisseurs",
+    clickLabel: "Arbitrer la roadmap",
     clickValue: D(300),
+    clickEnergyCost: 6,
+  },
+  celebrite: {
+    label: "Icône médiatique",
+    clickLabel: "Publier un post",
+    clickValue: D(2000),
     clickEnergyCost: 6,
   },
 };
@@ -53,7 +59,8 @@ export interface PromotionDef {
 export const PROMOTIONS: PromotionDef[] = [
   { from: "developpeur", to: "lead_dev", cta: "Devenir lead developer", moneyThreshold: D(150) },
   { from: "lead_dev", to: "cto", cta: "Devenir CTO", moneyThreshold: D(1500) },
-  { from: "cto", to: "entrepreneur", cta: "Monter ta boîte d'IA", moneyThreshold: D(25000) },
+  { from: "cto", to: "entrepreneur", cta: "Monter ta boîte d'IA", moneyThreshold: D(30000) },
+  { from: "entrepreneur", to: "celebrite", cta: "Devenir une icône médiatique", moneyThreshold: D(8_000_000) },
 ];
 
 export function nextPromotion(job: Job): PromotionDef | null {

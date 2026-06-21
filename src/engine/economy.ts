@@ -60,9 +60,23 @@ export function aiIncomePerSec(state: GameState): Decimal {
   return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus);
 }
 
-/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA. */
+/** €/s de la boîte (entrepreneur) : produits (scalés par l'armée de GPU) + acquisitions. */
+export function bizIncomePerSec(state: GameState): Decimal {
+  let total = ZERO;
+  const gpus = state.generators["gpu"] ?? 0;
+  const gpuFactor = 1 + state.gpuProductBoost * gpus;
+  for (const id in state.generators) {
+    const def = GENERATORS_BY_ID[id];
+    if (!def || def.kind !== "biz") continue;
+    const unit = def.scalesWithGpu ? def.output.mul(gpuFactor) : def.output;
+    total = total.add(unit.mul(state.generators[id]));
+  }
+  return total;
+}
+
+/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA + boîte. */
 export function passiveIncomePerSec(state: GameState): Decimal {
-  let total = devIncomePerSec(state).add(aiIncomePerSec(state));
+  let total = devIncomePerSec(state).add(aiIncomePerSec(state)).add(bizIncomePerSec(state));
   if (state.job === "plongeur") {
     total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
   }

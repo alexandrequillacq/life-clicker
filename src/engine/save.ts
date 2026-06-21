@@ -22,6 +22,7 @@ export function deserialize(json: string): GameState {
     studyLevel: raw.studyLevel ?? 0,
     job: raw.job ?? "plongeur",
     devClickMult: raw.devClickMult ?? 1,
+    gpuProductBoost: raw.gpuProductBoost ?? 0.1,
   };
 }
 

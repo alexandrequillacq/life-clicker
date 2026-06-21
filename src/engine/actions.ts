@@ -41,10 +41,13 @@ export function canBuyGenerator(state: GameState, id: string): boolean {
 }
 
 export function buyGenerator(state: GameState, id: string): boolean {
+  const def = GENERATORS_BY_ID[id];
   const cost = generatorCost(state, id);
   if (state.money.lt(cost)) return false;
   state.money = state.money.sub(cost);
   state.generators[id] = (state.generators[id] ?? 0) + 1;
+  // Acquisition : on absorbe l'infra (des GPU s'ajoutent au parc).
+  if (def.bonusGpu) state.generators["gpu"] = (state.generators["gpu"] ?? 0) + def.bonusGpu;
   return true;
 }
 
@@ -55,6 +58,7 @@ export function upgradeAvailable(state: GameState, def: UpgradeDef): boolean {
   if (def.requires && !state.upgrades[def.requires]) return false;
   if (def.phase === "plonge" && state.job !== "plongeur") return false;
   if (def.phase === "dev" && state.job === "plongeur") return false;
+  if (def.phase === "biz" && state.job !== "entrepreneur") return false;
   return state.money.gte(def.unlockAtMoney);
 }
 
@@ -74,6 +78,9 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
   if (def.unlocksAi) state.flags.aiUnlocked = true;
   if (def.startsAi) state.flags.aiResolving = true;
+  if (def.grantCash) state.money = state.money.add(def.grantCash);
+  if (def.setGpuProductBoost !== undefined) state.gpuProductBoost = def.setGpuProductBoost;
+  if (def.automatesLife) state.flags.vieAutomatisee = true;
   return true;
 }
 
@@ -119,6 +126,7 @@ export function becomeDeveloper(state: GameState): boolean {
   if (!canBecomeDeveloper(state)) return false;
   state.job = "developpeur";
   state.flags.energyVisible = true; // le travail de dev sollicite l'énergie
+  state.flags.firstColor = true; // récompense de fin d'Acte I : la 1ère couleur apparaît
   return true;
 }
 
@@ -132,5 +140,6 @@ export function promote(state: GameState): boolean {
   const promo = nextPromotion(state.job);
   if (!promo || state.money.lt(promo.moneyThreshold)) return false;
   state.job = promo.to;
+  if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
   return true;
 }
