@@ -13,6 +13,8 @@ export interface UpgradeDef {
   unlocksHand?: boolean; // plonge : débloque le lavage continu à la main
   setHandRate?: number; // plonge : fixe le débit continu (assiettes/s)
   mulClickValue?: number; // dev : multiplie la valeur du clic (résoudre un bug)
+  unlocksAi?: boolean; // dev : débloque l'orchestration d'agents IA
+  startsAi?: boolean; // dev : active l'IA qui résout les bugs en continu (révèle les GPU)
 }
 
 export const UPGRADES: UpgradeDef[] = [
@@ -25,6 +27,10 @@ export const UPGRADES: UpgradeDef[] = [
   // --- Développeur (multiplient la valeur d'un bug résolu) ---
   { id: "ide", label: "Meilleur IDE", cost: D(120), unlockAtMoney: D(90), phase: "dev", mulClickValue: 2 },
   { id: "copilot", label: "Assistant de code IA", cost: D(1500), unlockAtMoney: D(1200), phase: "dev", requires: "ide", mulClickValue: 3 },
+
+  // --- Pont IA : automatiser le travail (sain), prépare l'armée d'IA de la future boîte ---
+  { id: "orchestrer_ia", label: "Orchestrer des agents IA", cost: D(5000), unlockAtMoney: D(4000), phase: "dev", requires: "copilot", unlocksAi: true },
+  { id: "laisser_ia", label: "Laisser l'IA résoudre les bugs", cost: D(9000), unlockAtMoney: D(7000), phase: "dev", requires: "orchestrer_ia", startsAi: true },
 ];
 
 export const UPGRADES_BY_ID: Record<string, UpgradeDef> =

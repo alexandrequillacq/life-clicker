@@ -1,6 +1,6 @@
 import { D, ZERO, type Decimal } from "./numbers";
 import { ENERGY_MAX, type GameState } from "./state";
-import { GENERATORS_BY_ID } from "./content/generators";
+import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, GENERATORS_BY_ID } from "./content/generators";
 
 export function costOf(base: Decimal, growth: number, owned: number, count = 1): Decimal {
   const g = D(growth);
@@ -53,9 +53,16 @@ export function devIncomePerSec(state: GameState): Decimal {
   return total;
 }
 
-/** Revenu passif (hors clic et hors lavage à la main) : machines de plonge si encore plongeur + dev. */
+/** €/s de l'IA : un socle de base, multiplié par le nombre de GPU. 0 tant que l'IA n'est pas activée. */
+export function aiIncomePerSec(state: GameState): Decimal {
+  if (!state.flags.aiResolving) return ZERO;
+  const gpus = state.generators["gpu"] ?? 0;
+  return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus);
+}
+
+/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA. */
 export function passiveIncomePerSec(state: GameState): Decimal {
-  let total = devIncomePerSec(state);
+  let total = devIncomePerSec(state).add(aiIncomePerSec(state));
   if (state.job === "plongeur") {
     total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
   }

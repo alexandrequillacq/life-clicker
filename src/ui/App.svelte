@@ -21,6 +21,7 @@
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
   import { fmtMoney } from "../engine/numbers";
+  import { aiIncomePerSec } from "../engine/economy";
 
   const s = $derived(game.state);
   const job = $derived(JOBS[s.job]);
@@ -38,6 +39,10 @@
 
   {#if s.flags.energyVisible}
     <p class="line">Énergie : {Math.round(s.energy)} / 100</p>
+  {/if}
+
+  {#if s.flags.aiResolving}
+    <p class="line muted">L'IA résout les bugs : {fmtMoney(aiIncomePerSec(s))} / s</p>
   {/if}
 
   <p class="job">Métier : {job.label}</p>
@@ -61,7 +66,7 @@
 
   <!-- Générateurs : plonge (si plongeur) ou dev (sinon) -->
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`] && ((g.kind === "plonge" && s.job === "plongeur") || (g.kind === "dev" && s.job !== "plongeur"))}
+    {#if s.flags[`gen_${g.id}_unlocked`] && (g.kind === "plonge" ? s.job === "plongeur" : s.job !== "plongeur")}
       <div class="item">
         <div class="item-head">
           <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}

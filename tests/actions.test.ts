@@ -142,6 +142,16 @@ describe("études & carrière", () => {
     buyUpgrade(s, "ide");
     expect(s.devClickMult).toBe(UPGRADES_BY_ID["ide"].mulClickValue);
   });
+  it("le pont IA pose les flags aiUnlocked puis aiResolving", () => {
+    const s = createInitialState(0);
+    s.job = "cto";
+    s.money = UPGRADES_BY_ID["orchestrer_ia"].cost;
+    buyUpgrade(s, "orchestrer_ia");
+    expect(s.flags.aiUnlocked).toBe(true);
+    s.money = UPGRADES_BY_ID["laisser_ia"].cost;
+    buyUpgrade(s, "laisser_ia");
+    expect(s.flags.aiResolving).toBe(true);
+  });
   it("on ne promeut qu'au capital requis", () => {
     const s = createInitialState(0);
     s.job = "developpeur";

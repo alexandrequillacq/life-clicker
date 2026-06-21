@@ -40,10 +40,11 @@ export function updateFlags(state: GameState): void {
   ) {
     state.flags.postulerVisible = true;
   }
-  // Révélation des machines au seuil d'argent.
+  // Révélation des générateurs au seuil d'argent (et flag requis le cas échéant).
   for (const g of GENERATORS) {
     const flag = `gen_${g.id}_unlocked`;
-    if (!state.flags[flag] && state.money.gte(g.unlockAtMoney)) {
+    const flagOk = !g.requiresFlag || state.flags[g.requiresFlag];
+    if (!state.flags[flag] && flagOk && state.money.gte(g.unlockAtMoney)) {
       state.flags[flag] = true;
     }
   }

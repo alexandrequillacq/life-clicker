@@ -1,16 +1,22 @@
 import { D, type Decimal } from "../numbers";
 
-export type GeneratorKind = "plonge" | "dev";
+export type GeneratorKind = "plonge" | "dev" | "ia";
 
 export interface GeneratorDef {
   id: string;
   label: string;
   baseCost: Decimal;
   growth: number;
-  output: Decimal; // plonge → assiettes/s par unité ; dev → €/s par unité
+  output: Decimal; // plonge → assiettes/s ; dev → €/s ; ia → ignoré (multiplicateur, voir aiIncomePerSec)
   unlockAtMoney: Decimal; // seuil de révélation
   kind: GeneratorKind;
+  requiresFlag?: string; // ne se révèle que si ce flag est posé
 }
+
+// L'IA résout les bugs en continu (sans énergie) ; chaque GPU multiplie son débit.
+// Ces GPU persistent et deviennent l'armée d'IA de la boîte fondée en P3.
+export const AI_BASE_INCOME = 80; // €/s de base une fois l'IA activée
+export const GPU_MULT_PER_UNIT = 0.25; // chaque GPU : +25 % du débit IA
 
 export const GENERATORS: GeneratorDef[] = [
   // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
@@ -51,14 +57,17 @@ export const GENERATORS: GeneratorDef[] = [
     unlockAtMoney: D(1800),
     kind: "dev",
   },
+  // IA : le GPU multiplie le débit de l'IA (apex de fin d'Acte, fidèle à la thèse :
+  // automatiser le travail avec l'IA est le plus puissant).
   {
-    id: "equipe",
-    label: "Monter une équipe",
-    baseCost: D(25000),
-    growth: 1.17,
-    output: D(350),
-    unlockAtMoney: D(18000),
-    kind: "dev",
+    id: "gpu",
+    label: "Ajouter un GPU",
+    baseCost: D(9000),
+    growth: 1.18,
+    output: D(0), // non utilisé : l'effet passe par le multiplicateur IA
+    unlockAtMoney: D(9000),
+    kind: "ia",
+    requiresFlag: "aiResolving",
   },
 ];
 

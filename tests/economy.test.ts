@@ -5,10 +5,11 @@ import {
   machineDishesPerSec,
   dishesPerMinute,
   incomePerSec,
+  aiIncomePerSec,
   energyFactor,
 } from "../src/engine/economy";
 import { createInitialState } from "../src/engine/state";
-import { GENERATORS_BY_ID } from "../src/engine/content/generators";
+import { GENERATORS_BY_ID, AI_BASE_INCOME, GPU_MULT_PER_UNIT } from "../src/engine/content/generators";
 
 const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
 
@@ -48,5 +49,24 @@ describe("débit & revenu", () => {
     expect(energyFactor(s)).toBe(1);
     s.flags.energyVisible = true;
     expect(energyFactor(s)).toBeCloseTo(0.5);
+  });
+});
+
+describe("revenu IA (GPU)", () => {
+  it("nul tant que l'IA n'est pas activée", () => {
+    const s = createInitialState(0);
+    s.generators["gpu"] = 5;
+    expect(aiIncomePerSec(s).toNumber()).toBe(0);
+  });
+  it("socle de base une fois l'IA activée", () => {
+    const s = createInitialState(0);
+    s.flags.aiResolving = true;
+    expect(aiIncomePerSec(s).toNumber()).toBeCloseTo(AI_BASE_INCOME);
+  });
+  it("chaque GPU multiplie le débit de l'IA", () => {
+    const s = createInitialState(0);
+    s.flags.aiResolving = true;
+    s.generators["gpu"] = 4;
+    expect(aiIncomePerSec(s).toNumber()).toBeCloseTo(AI_BASE_INCOME * (1 + GPU_MULT_PER_UNIT * 4));
   });
 });

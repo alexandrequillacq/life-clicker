@@ -72,6 +72,8 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.unlocksHand) state.handWashing = true;
   if (def.setHandRate !== undefined) state.handRate = def.setHandRate;
   if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
+  if (def.unlocksAi) state.flags.aiUnlocked = true;
+  if (def.startsAi) state.flags.aiResolving = true;
   return true;
 }
 
