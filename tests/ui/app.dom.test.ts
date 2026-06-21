@@ -15,7 +15,7 @@ describe("App P0 (DOM)", () => {
     // Au départ : un bouton d'action, pas de compteur (révélation progressive).
     const action = target.querySelector("button.action") as HTMLButtonElement;
     expect(action).not.toBeNull();
-    expect(action.textContent).toContain("Laver une assiette");
+    expect(action.textContent).toContain("Laver des assiettes");
     expect(target.querySelector(".counter")).toBeNull();
 
     // Clic : ajoute 0,05 € ; un tick déclenche updateFlags qui révèle le compteur.

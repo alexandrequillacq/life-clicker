@@ -10,14 +10,18 @@
     upgradeAvailable,
     poseGants,
     rest,
+    study,
+    canStudy,
+    bookCost,
+    becomeOffice,
+    processFile,
   } from "../engine/actions";
   import { GENERATORS } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { fmtMoney } from "../engine/numbers";
-  import { dishesPerMinute } from "../engine/economy";
 
   const s = $derived(game.state);
-  const dpm = $derived(dishesPerMinute(s).toNumber());
+  const jobLabel = $derived(s.job === "bureau" ? "Employé de bureau" : "Plongeur");
 </script>
 
 <button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
@@ -31,27 +35,27 @@
     <p class="line">Énergie : {Math.round(s.energy)} / 100</p>
   {/if}
 
-  {#if dpm > 0}
-    <p class="line muted">{dpm.toFixed(0)} assiettes / min</p>
+  <p class="job">Métier : {jobLabel}</p>
+
+  {#if s.job === "bureau"}
+    <button class="action" onclick={() => processFile(s)}>Traiter un dossier</button>
+  {:else if !s.manualRetired}
+    <button class="action" onclick={() => clickWork(s)}>Laver des assiettes</button>
   {/if}
 
-  <p class="job">Métier : Plongeur</p>
-
-  {#if !s.manualRetired}
-    <button class="action" onclick={() => clickWork(s)}>Laver une assiette</button>
-  {/if}
-
-  {#each UPGRADES as u (u.id)}
-    {#if upgradeAvailable(s, u)}
-      <div class="item">
-        <div class="item-head">
-          <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
-            >{u.label}</button>
+  {#if s.job === "plongeur"}
+    {#each UPGRADES as u (u.id)}
+      {#if upgradeAvailable(s, u)}
+        <div class="item">
+          <div class="item-head">
+            <button class="buy" disabled={!canBuyUpgrade(s, u.id)} onclick={() => buyUpgrade(s, u.id)}
+              >{u.label}</button>
+          </div>
+          <p class="price">Prix : {fmtMoney(u.cost)}</p>
         </div>
-        <p class="price">Prix : {fmtMoney(u.cost)}</p>
-      </div>
-    {/if}
-  {/each}
+      {/if}
+    {/each}
+  {/if}
 
   {#each GENERATORS as g (g.id)}
     {#if s.flags[`gen_${g.id}_unlocked`]}
@@ -66,14 +70,29 @@
     {/if}
   {/each}
 
-  {#if s.flags.poseGantsVisible}
+  {#if s.flags.poseGantsVisible && !s.manualRetired}
     <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
   {/if}
 
   {#if s.flags.lifeVisible}
-    <section class="life">
+    <section class="block">
       <p class="job">Vie</p>
       <button class="action" onclick={() => rest(s)}>Se reposer</button>
+    </section>
+  {/if}
+
+  {#if s.flags.studyVisible && s.job === "plongeur"}
+    <section class="block">
+      <p class="job">Études : {s.studyLevel}</p>
+      <div class="item">
+        <div class="item-head">
+          <button class="buy" disabled={!canStudy(s)} onclick={() => study(s)}>Lire un livre</button>
+        </div>
+        <p class="price">Prix : {fmtMoney(bookCost(s))}</p>
+      </div>
+      {#if s.flags.postulerVisible}
+        <button class="action" onclick={() => becomeOffice(s)}>Postuler à un poste de bureau</button>
+      {/if}
     </section>
   {/if}
 </main>
@@ -114,10 +133,6 @@
   .line {
     margin: 0;
     font-variant-numeric: tabular-nums;
-  }
-
-  .muted {
-    color: var(--muted);
   }
 
   .job {
@@ -175,7 +190,7 @@
     cursor: default;
   }
 
-  .life {
+  .block {
     margin-top: 1rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--line);

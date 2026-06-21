@@ -3,6 +3,7 @@ import { D } from "../src/engine/numbers";
 import { createInitialState, ENERGY_MAX } from "../src/engine/state";
 import { tick, updateFlags } from "../src/engine/loop";
 import { GENERATORS_BY_ID } from "../src/engine/content/generators";
+import { STUDY_THRESHOLD } from "../src/engine/content/studies";
 
 const LV = GENERATORS_BY_ID["lave_vaisselle"].dishesPerSec.toNumber();
 
@@ -73,6 +74,18 @@ describe("révélation progressive", () => {
     s.manualRetired = true;
     updateFlags(s);
     expect(s.flags.lifeVisible).toBe(true);
+  });
+  it("les études s'ouvrent une fois la Vie là", () => {
+    const s = createInitialState(0);
+    s.flags.lifeVisible = true;
+    updateFlags(s);
+    expect(s.flags.studyVisible).toBe(true);
+  });
+  it("« Postuler » s'ouvre au seuil d'études", () => {
+    const s = createInitialState(0);
+    s.studyLevel = STUDY_THRESHOLD;
+    updateFlags(s);
+    expect(s.flags.postulerVisible).toBe(true);
   });
   it("machine révélée au seuil d'argent", () => {
     const s = createInitialState(0);

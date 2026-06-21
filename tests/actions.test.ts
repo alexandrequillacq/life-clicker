@@ -10,8 +10,15 @@ import {
   upgradeAvailable,
   poseGants,
   rest,
+  study,
+  canStudy,
+  bookCost,
+  becomeOffice,
+  canBecomeOffice,
+  processFile,
 } from "../src/engine/actions";
 import { UPGRADES_BY_ID } from "../src/engine/content/upgrades";
+import { STUDY_THRESHOLD, OFFICE_VALUE_PER_CLICK } from "../src/engine/content/studies";
 
 describe("clic", () => {
   it("lave dishesPerClick assiettes", () => {
@@ -89,6 +96,40 @@ describe("machines & vie", () => {
     const s = createInitialState(0);
     s.energy = 80;
     rest(s);
-    expect(s.energy).toBe(ENERGY_MAX); // 80 + 30 plafonné à 100
+    expect(s.energy).toBe(ENERGY_MAX); // 80 + 40 plafonné à 100
+  });
+});
+
+describe("études & bureau", () => {
+  it("lire un livre monte le niveau et débite", () => {
+    const s = createInitialState(0);
+    s.money = bookCost(s);
+    expect(canStudy(s)).toBe(true);
+    expect(study(s)).toBe(true);
+    expect(s.studyLevel).toBe(1);
+    expect(s.money.toNumber()).toBeCloseTo(0);
+  });
+  it("le coût des livres augmente avec le niveau", () => {
+    const s = createInitialState(0);
+    const c0 = bookCost(s).toNumber();
+    s.money = D(1000);
+    study(s);
+    expect(bookCost(s).toNumber()).toBeGreaterThan(c0);
+  });
+  it("on ne peut postuler qu'au seuil d'études", () => {
+    const s = createInitialState(0);
+    expect(canBecomeOffice(s)).toBe(false);
+    s.studyLevel = STUDY_THRESHOLD;
+    expect(canBecomeOffice(s)).toBe(true);
+    expect(becomeOffice(s)).toBe(true);
+    expect(s.job).toBe("bureau");
+  });
+  it("traiter un dossier ne rapporte qu'en bureau", () => {
+    const s = createInitialState(0);
+    processFile(s); // encore plongeur → rien
+    expect(s.money.toNumber()).toBe(0);
+    s.job = "bureau";
+    processFile(s);
+    expect(s.money.toNumber()).toBeCloseTo(OFFICE_VALUE_PER_CLICK.toNumber());
   });
 });

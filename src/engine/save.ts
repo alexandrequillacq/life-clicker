@@ -18,6 +18,9 @@ export function deserialize(json: string): GameState {
     ...raw,
     money: D(raw.money) as Decimal,
     valuePerDish: D(raw.valuePerDish) as Decimal,
+    // Valeurs par défaut pour les champs ajoutés à un schéma de même version.
+    studyLevel: raw.studyLevel ?? 0,
+    job: raw.job ?? "plongeur",
   };
 }
 

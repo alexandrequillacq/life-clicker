@@ -6,6 +6,7 @@ import {
 } from "./state";
 import { incomePerSec, handDishesPerSec } from "./economy";
 import { GENERATORS } from "./content/generators";
+import { STUDY_THRESHOLD } from "./content/studies";
 
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
@@ -26,6 +27,18 @@ export function updateFlags(state: GameState): void {
   // La Vie apparaît une fois les gants posés.
   if (!state.flags.lifeVisible && state.manualRetired) {
     state.flags.lifeVisible = true;
+  }
+  // Les études s'ouvrent une fois la Vie là (on a enfin le temps).
+  if (!state.flags.studyVisible && state.flags.lifeVisible) {
+    state.flags.studyVisible = true;
+  }
+  // Postuler en bureau quand on a assez étudié.
+  if (
+    !state.flags.postulerVisible &&
+    state.job === "plongeur" &&
+    state.studyLevel >= STUDY_THRESHOLD
+  ) {
+    state.flags.postulerVisible = true;
   }
   // Révélation des machines au seuil d'argent.
   for (const g of GENERATORS) {

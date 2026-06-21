@@ -13,6 +13,8 @@ export const REST_ENERGY = 40; // « Se reposer » regagne ceci
 // lavées. Comme le débit baisse avec l'énergie, la dépense baisse aussi :
 // l'énergie se stabilise à un palier soutenable au lieu de tomber à zéro.
 
+export type Job = "plongeur" | "bureau";
+
 export interface GameState {
   version: number;
   money: Decimal;
@@ -20,10 +22,12 @@ export interface GameState {
   dishesPerClick: number; // assiettes lavées par clic manuel
   handRate: number; // assiettes/s en continu à la main (0 tant que non débloqué)
   handWashing: boolean; // le lavage continu à la main est-il débloqué
-  manualRetired: boolean; // gants posés → plus aucun travail manuel
+  manualRetired: boolean; // gants posés → plus aucun travail manuel à la plonge
   energy: number; // 0..ENERGY_MAX
   generators: Record<string, number>; // machines (lave-vaisselle…), id → quantité
   upgrades: Record<string, boolean>; // upgrades one-shot achetés
+  studyLevel: number; // livres lus → progrès vers un vrai métier
+  job: Job; // métier courant
   flags: Record<string, boolean>; // déblocages d'UI (révélation progressive)
   tempo: number;
   startedAt: number;
@@ -43,6 +47,8 @@ export function createInitialState(now: number): GameState {
     energy: ENERGY_MAX,
     generators: {},
     upgrades: {},
+    studyLevel: 0,
+    job: "plongeur",
     flags: {},
     tempo: 1,
     startedAt: now,
