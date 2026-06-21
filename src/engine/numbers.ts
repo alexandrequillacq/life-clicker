@@ -1,7 +1,7 @@
-import Decimal from "break_infinity.js";
+import Decimal, { type DecimalSource } from "break_infinity.js";
 
-export type { Decimal };
-export const D = (x: Decimal.Value): Decimal => new Decimal(x);
+export type { Decimal, DecimalSource };
+export const D = (x: DecimalSource): Decimal => new Decimal(x);
 export const ZERO: Decimal = new Decimal(0);
 
 export function fmtMoney(value: Decimal): string {
