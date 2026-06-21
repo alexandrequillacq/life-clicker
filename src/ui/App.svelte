@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { game } from "./store.svelte";
+  import { game, resetGame } from "./store.svelte";
   import {
     clickWork,
     buyGenerator,
@@ -11,6 +11,8 @@
 
   const s = $derived(game.state);
 </script>
+
+<button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
 
 <main data-act="1">
   {#if s.flags.moneyVisible}
@@ -24,15 +26,15 @@
   {#each GENERATORS as g (g.id)}
     {#if s.flags[`gen_${g.id}_unlocked`]}
       <div class="gen">
-        <button
-          class="buy"
-          disabled={!canBuyGenerator(s, g.id)}
-          onclick={() => buyGenerator(s, g.id)}
-        >
-          <span class="buy-label">{g.label}</span>
-          <span class="buy-cost">{fmtMoney(generatorCost(s, g.id))}</span>
-        </button>
-        {#if s.generators[g.id]}<span class="gen-count">{s.generators[g.id]}</span>{/if}
+        <div class="gen-head">
+          <button
+            class="buy"
+            disabled={!canBuyGenerator(s, g.id)}
+            onclick={() => buyGenerator(s, g.id)}
+          >{g.label}</button>
+          {#if s.generators[g.id]}<span class="gen-count">{s.generators[g.id]}</span>{/if}
+        </div>
+        <p class="gen-price">Prix : {fmtMoney(generatorCost(s, g.id))}</p>
       </div>
     {/if}
   {/each}
@@ -73,7 +75,7 @@
   }
 
   .job {
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.5rem;
     color: var(--muted);
   }
 
@@ -93,22 +95,26 @@
   }
 
   .gen {
+    margin: 0.45rem 0;
+  }
+
+  .gen-head {
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
-    margin: 0.15rem 0;
   }
 
   .buy {
-    display: flex;
-    justify-content: space-between;
-    gap: 1.5rem;
-    min-width: 16rem;
     padding: 0.25rem 0.6rem;
-    text-align: left;
   }
 
-  .buy-cost {
+  .gen-count {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gen-price {
+    margin: 0.15rem 0 0;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
@@ -123,12 +129,21 @@
     cursor: default;
   }
 
-  .buy:disabled .buy-cost {
-    color: var(--muted);
+  /* Bouton de test discret, en haut à droite. */
+  .reset {
+    position: fixed;
+    top: 0.5rem;
+    right: 0.75rem;
+    border: none;
+    background: transparent;
+    color: #dddddd;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    font-size: 12px;
+    padding: 0.15rem 0.3rem;
   }
 
-  .gen-count {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
+  .reset:hover {
+    color: #999999;
+    background: transparent;
   }
 </style>

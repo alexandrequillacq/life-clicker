@@ -27,6 +27,11 @@ export function deserialize(json: string): GameState {
   };
 }
 
+export function clearSave(): void {
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(BACKUP_KEY);
+}
+
 export function save(state: GameState): void {
   try {
     localStorage.setItem(KEY, serialize(state));
