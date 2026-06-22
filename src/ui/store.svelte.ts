@@ -13,3 +13,8 @@ export function resetGame(): void {
   clearSave();
   game.state = createInitialState(Date.now());
 }
+
+// Bouton de test : double l'argent courant (pour avancer plus vite en playtest).
+export function doubleMoney(): void {
+  game.state.money = game.state.money.mul(2);
+}

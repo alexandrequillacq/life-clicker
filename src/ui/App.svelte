@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { game, resetGame } from "./store.svelte";
+  import { game, resetGame, doubleMoney } from "./store.svelte";
   import {
     work,
     buyGenerator,
@@ -24,20 +24,29 @@
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
   import { fmtMoney, fmtNumber } from "../engine/numbers";
-  import { aiIncomePerSec } from "../engine/economy";
+  import { aiIncomePerSec, incomePerSec } from "../engine/economy";
 
   const s = $derived(game.state);
   const job = $derived(JOBS[s.job]);
   const book = $derived(nextBook(s.studyLevel));
   const promo = $derived(nextPromotion(s.job));
   const clickLabel = $derived(s.job === "plongeur" ? "Laver des assiettes" : job.clickLabel);
+  const perMinute = $derived(incomePerSec(s).mul(60));
 </script>
 
-<button class="reset" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
+<div class="debug">
+  <button class="dbg" onclick={doubleMoney} aria-label="Doubler l'argent (test)">×2</button>
+  <button class="dbg" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
+  <span class="ver">{__GIT_HASH__}</span>
+</div>
 
 <main data-act={s.flags.act2 ? "2" : "1"} class:firstcolor={s.flags.firstColor && !s.flags.act2}>
   {#if s.flags.moneyVisible}
     <p class="counter">Argent : {fmtMoney(s.money)}</p>
+  {/if}
+
+  {#if s.flags.moneyVisible && perMinute.gt(0)}
+    <p class="line muted">Revenu : {fmtMoney(perMinute)} / min</p>
   {/if}
 
   {#if s.flags.energyVisible}
@@ -276,10 +285,17 @@
     box-sizing: border-box;
   }
 
-  .reset {
+  /* Outils de test, volontairement discrets (haut droite). */
+  .debug {
     position: fixed;
     top: 0.5rem;
     right: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .dbg {
     border: none;
     background: transparent;
     color: #dddddd;
@@ -288,8 +304,14 @@
     padding: 0.15rem 0.3rem;
   }
 
-  .reset:hover {
+  .dbg:hover {
     color: #999999;
     background: transparent;
+  }
+
+  .ver {
+    color: #e2e2e2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
   }
 </style>
