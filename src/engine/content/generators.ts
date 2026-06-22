@@ -1,6 +1,21 @@
 import { D, type Decimal } from "../numbers";
+import type { Job } from "../state";
 
-export type GeneratorKind = "plonge" | "dev" | "ia" | "biz";
+export type GeneratorKind = "plonge" | "dev" | "ia" | "biz" | "audience";
+
+/** Quels générateurs sont achetables selon le métier courant. */
+export function generatorVisible(kind: GeneratorKind, job: Job): boolean {
+  switch (kind) {
+    case "plonge":
+      return job === "plongeur";
+    case "biz":
+      return job === "entrepreneur";
+    case "audience":
+      return job === "celebrite";
+    default: // dev, ia
+      return job === "developpeur" || job === "lead_dev" || job === "cto" || job === "entrepreneur";
+  }
+}
 
 export interface GeneratorDef {
   id: string;
@@ -91,6 +106,16 @@ export const GENERATORS: GeneratorDef[] = [
     unlockAtMoney: D(300000),
     kind: "biz",
     bonusGpu: 2,
+  },
+  // Célébrité : les campagnes d'image produisent des followers/s (vanité passive).
+  {
+    id: "campagne",
+    label: "Lancer une campagne d'image",
+    baseCost: D(25000),
+    growth: 1.18,
+    output: D(2000), // followers/s
+    unlockAtMoney: D(0),
+    kind: "audience",
   },
 ];
 

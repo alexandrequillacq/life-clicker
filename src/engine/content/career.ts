@@ -44,7 +44,13 @@ export const JOBS: Record<Job, JobDef> = {
   celebrite: {
     label: "Icône médiatique",
     clickLabel: "Publier un post",
-    clickValue: D(2000),
+    clickValue: D(0), // le clic donne des followers, pas de l'argent (voir work())
+    clickEnergyCost: 6,
+  },
+  politique: {
+    label: "Figure politique",
+    clickLabel: "Tenir un meeting",
+    clickValue: D(50000),
     clickEnergyCost: 6,
   },
 };
@@ -53,7 +59,8 @@ export interface PromotionDef {
   from: Job;
   to: Job;
   cta: string; // libellé du bouton de promotion
-  moneyThreshold: Decimal; // capital requis pour débloquer
+  moneyThreshold: Decimal; // capital requis (ignoré si followersThreshold est défini)
+  followersThreshold?: Decimal; // si défini, la promotion se débloque sur les followers, pas l'argent
 }
 
 export const PROMOTIONS: PromotionDef[] = [
@@ -61,6 +68,7 @@ export const PROMOTIONS: PromotionDef[] = [
   { from: "lead_dev", to: "cto", cta: "Devenir CTO", moneyThreshold: D(1500) },
   { from: "cto", to: "entrepreneur", cta: "Monter ta boîte d'IA", moneyThreshold: D(30000) },
   { from: "entrepreneur", to: "celebrite", cta: "Devenir une icône médiatique", moneyThreshold: D(8_000_000) },
+  { from: "celebrite", to: "politique", cta: "Entrer en politique", moneyThreshold: D(0), followersThreshold: D(50_000_000) },
 ];
 
 export function nextPromotion(job: Job): PromotionDef | null {

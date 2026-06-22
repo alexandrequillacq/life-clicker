@@ -15,12 +15,15 @@
     becomeDeveloper,
     promote,
     canPromote,
+    buyFollowers,
+    canBuyFollowers,
+    followerPackCost,
   } from "../engine/actions";
-  import { GENERATORS } from "../engine/content/generators";
+  import { GENERATORS, generatorVisible } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
-  import { fmtMoney } from "../engine/numbers";
+  import { fmtMoney, fmtNumber } from "../engine/numbers";
   import { aiIncomePerSec } from "../engine/economy";
 
   const s = $derived(game.state);
@@ -43,6 +46,15 @@
 
   {#if s.flags.aiResolving}
     <p class="line muted">L'IA résout les bugs : {fmtMoney(aiIncomePerSec(s))} / s</p>
+  {/if}
+
+  {#if s.job === "celebrite" || s.followers.gt(0)}
+    <p class="line">Followers : {fmtNumber(s.followers)}</p>
+  {/if}
+
+  {#if s.flags.sensRevealed}
+    <p class="line sens">Tu as tout.</p>
+    <p class="line sens">Sens : {Math.round(s.sens)} / 100</p>
   {/if}
 
   <p class="job">Métier : {job.label}</p>
@@ -70,7 +82,7 @@
 
   <!-- Générateurs : plonge (si plongeur) ou dev (sinon) -->
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`] && (g.kind === "plonge" ? s.job === "plongeur" : g.kind === "biz" ? s.job === "entrepreneur" : s.job !== "plongeur")}
+    {#if s.flags[`gen_${g.id}_unlocked`] && generatorVisible(g.kind, s.job)}
       <div class="item">
         <div class="item-head">
           <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}
@@ -84,6 +96,15 @@
 
   {#if s.flags.poseGantsVisible && !s.manualRetired && s.job === "plongeur"}
     <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
+  {/if}
+
+  {#if s.job === "celebrite"}
+    <div class="item">
+      <div class="item-head">
+        <button class="buy" disabled={!canBuyFollowers(s)} onclick={() => buyFollowers(s)}>Acheter des followers</button>
+      </div>
+      <p class="price">Prix : {fmtMoney(followerPackCost(s))}</p>
+    </div>
   {/if}
 
   <!-- Promotion vers le métier suivant -->
@@ -115,8 +136,8 @@
     </section>
   {/if}
 
-  {#if s.job === "entrepreneur"}
-    <p class="line muted">Ta boîte d'IA est lancée. (la suite arrive)</p>
+  {#if s.job === "politique"}
+    <p class="line muted">Tu entres en politique. (la suite arrive)</p>
   {/if}
 </main>
 
@@ -184,6 +205,11 @@
   }
 
   .muted {
+    color: var(--muted);
+  }
+
+  /* Jauge de Sens : volontairement terne et sans couleur d'alarme. */
+  .sens {
     color: var(--muted);
   }
 

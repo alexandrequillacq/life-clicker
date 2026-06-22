@@ -1,10 +1,18 @@
-import { type Decimal } from "./numbers";
+import { D, type Decimal } from "./numbers";
 import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
 import { costOf, energyFactor } from "./economy";
 import { GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, nextPromotion } from "./content/career";
 import { nextBook, studiesComplete } from "./content/studies";
+import {
+  FOLLOWERS_PER_POST,
+  FOLLOWER_PACK_BASE_COST,
+  FOLLOWER_PACK_GROWTH,
+  FOLLOWER_PACK_SIZE,
+  SENS_PER_AUTOMATION,
+  SENS_PER_REST,
+} from "./content/audience";
 
 // --- Clic actif (dépend du métier) ---
 
@@ -15,17 +23,40 @@ export function clickWork(state: GameState): void {
   state.totalClicks += 1;
 }
 
-/** Action active du métier courant. Le plongeur lave ; les métiers dev coûtent de l'énergie. */
+/** Action active du métier courant. Le plongeur lave ; la célébrité publie (followers) ; le reste gagne de l'argent. Tout coûte de l'énergie hors plonge. */
 export function work(state: GameState): void {
   if (state.job === "plongeur") {
     clickWork(state);
     return;
   }
   const job = JOBS[state.job];
-  const gained = job.clickValue.mul(state.devClickMult).mul(energyFactor(state));
-  state.money = state.money.add(gained);
+  if (state.job === "celebrite") {
+    state.followers = state.followers.add(D(FOLLOWERS_PER_POST).mul(energyFactor(state)));
+  } else {
+    state.money = state.money.add(job.clickValue.mul(state.devClickMult).mul(energyFactor(state)));
+  }
   state.energy = Math.max(0, state.energy - job.clickEnergyCost);
   state.totalClicks += 1;
+}
+
+// --- Audience (célébrité) ---
+
+export function followerPackCost(state: GameState): Decimal {
+  return D(FOLLOWER_PACK_BASE_COST).mul(D(FOLLOWER_PACK_GROWTH).pow(state.followerPacks));
+}
+
+export function canBuyFollowers(state: GameState): boolean {
+  return state.money.gte(followerPackCost(state));
+}
+
+/** Acheter des followers : vanité manufacturée, mauvais ROI assumé. */
+export function buyFollowers(state: GameState): boolean {
+  const cost = followerPackCost(state);
+  if (state.money.lt(cost)) return false;
+  state.money = state.money.sub(cost);
+  state.followers = state.followers.add(FOLLOWER_PACK_SIZE);
+  state.followerPacks += 1;
+  return true;
 }
 
 // --- Machines / générateurs ---
@@ -80,7 +111,11 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.startsAi) state.flags.aiResolving = true;
   if (def.grantCash) state.money = state.money.add(def.grantCash);
   if (def.setGpuProductBoost !== undefined) state.gpuProductBoost = def.setGpuProductBoost;
-  if (def.automatesLife) state.flags.vieAutomatisee = true;
+  if (def.automatesLife) {
+    state.flags.vieAutomatisee = true;
+    state.vieAutomatiseeCount += 1;
+    if (state.flags.sensRevealed) state.sens = Math.max(0, state.sens - SENS_PER_AUTOMATION);
+  }
   return true;
 }
 
@@ -92,9 +127,12 @@ export function poseGants(state: GameState): void {
   state.handWashing = false;
 }
 
-/** Se reposer : regagne de l'énergie (graine de l'axe Vie). */
+/** Se reposer / vivre : regagne de l'énergie, et compte comme un geste de vie réel (nourrit le Sens). */
 export function rest(state: GameState): void {
   state.energy = Math.min(ENERGY_MAX, state.energy + REST_ENERGY);
+  state.vieVecueTicks += 1;
+  state.secsSinceLife = 0;
+  if (state.flags.sensRevealed) state.sens = Math.min(100, state.sens + SENS_PER_REST);
 }
 
 // --- Études & carrière ---
@@ -130,15 +168,21 @@ export function becomeDeveloper(state: GameState): boolean {
   return true;
 }
 
-export function canPromote(state: GameState): boolean {
-  const promo = nextPromotion(state.job);
-  return promo !== null && state.money.gte(promo.moneyThreshold);
+function promotionReady(state: GameState, promo: { moneyThreshold: Decimal; followersThreshold?: Decimal }): boolean {
+  return promo.followersThreshold
+    ? state.followers.gte(promo.followersThreshold)
+    : state.money.gte(promo.moneyThreshold);
 }
 
-/** Promotion vers le métier suivant (lead dev → CTO → fondateur). */
+export function canPromote(state: GameState): boolean {
+  const promo = nextPromotion(state.job);
+  return promo !== null && promotionReady(state, promo);
+}
+
+/** Promotion vers le métier suivant (lead dev → CTO → fondateur → icône → politique). */
 export function promote(state: GameState): boolean {
   const promo = nextPromotion(state.job);
-  if (!promo || state.money.lt(promo.moneyThreshold)) return false;
+  if (!promo || !promotionReady(state, promo)) return false;
   state.job = promo.to;
   if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
   return true;

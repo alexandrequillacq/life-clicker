@@ -1,6 +1,7 @@
 import { D, ZERO, type Decimal } from "./numbers";
 import { ENERGY_MAX, type GameState } from "./state";
 import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, GENERATORS_BY_ID } from "./content/generators";
+import { sponsoringIncomePerSec } from "./content/audience";
 
 export function costOf(base: Decimal, growth: number, owned: number, count = 1): Decimal {
   const g = D(growth);
@@ -74,9 +75,23 @@ export function bizIncomePerSec(state: GameState): Decimal {
   return total;
 }
 
-/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA + boîte. */
+/** Followers/s produits par les campagnes d'image (audience passive). */
+export function audienceFollowersPerSec(state: GameState): Decimal {
+  let total = ZERO;
+  for (const id in state.generators) {
+    const def = GENERATORS_BY_ID[id];
+    if (!def || def.kind !== "audience") continue;
+    total = total.add(def.output.mul(state.generators[id]));
+  }
+  return total;
+}
+
+/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA + boîte + sponsoring. */
 export function passiveIncomePerSec(state: GameState): Decimal {
-  let total = devIncomePerSec(state).add(aiIncomePerSec(state)).add(bizIncomePerSec(state));
+  let total = devIncomePerSec(state)
+    .add(aiIncomePerSec(state))
+    .add(bizIncomePerSec(state))
+    .add(sponsoringIncomePerSec(state));
   if (state.job === "plongeur") {
     total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
   }

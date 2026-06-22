@@ -13,7 +13,7 @@ export const REST_ENERGY = 40; // « Se reposer » regagne ceci
 // lavées. Comme le débit baisse avec l'énergie, la dépense baisse aussi :
 // l'énergie se stabilise à un palier soutenable au lieu de tomber à zéro.
 
-export type Job = "plongeur" | "developpeur" | "lead_dev" | "cto" | "entrepreneur" | "celebrite";
+export type Job = "plongeur" | "developpeur" | "lead_dev" | "cto" | "entrepreneur" | "celebrite" | "politique";
 
 export interface GameState {
   version: number;
@@ -30,6 +30,12 @@ export interface GameState {
   job: Job; // métier courant
   devClickMult: number; // multiplicateur de valeur du clic (upgrades dev)
   gpuProductBoost: number; // boost par GPU sur la production des produits IA (data center le monte)
+  followers: Decimal; // audience (célébrité) : vanité, revenu propre dérisoire
+  followerPacks: number; // nombre de paquets de followers achetés (coût croissant)
+  sens: number; // 0..100, révélé en P5 ; reflète la vie vécue vs sacrifiée
+  vieVecueTicks: number; // nombre de gestes de vie réels posés (alimente le Sens)
+  vieAutomatiseeCount: number; // nombre d'automatisations de la vie achetées (creuse le Sens)
+  secsSinceLife: number; // secondes écoulées depuis le dernier geste de vie
   flags: Record<string, boolean>; // déblocages d'UI (révélation progressive)
   tempo: number;
   startedAt: number;
@@ -53,6 +59,12 @@ export function createInitialState(now: number): GameState {
     job: "plongeur",
     devClickMult: 1,
     gpuProductBoost: 0.1,
+    followers: ZERO,
+    followerPacks: 0,
+    sens: 0,
+    vieVecueTicks: 0,
+    vieAutomatiseeCount: 0,
+    secsSinceLife: 0,
     flags: {},
     tempo: 1,
     startedAt: now,

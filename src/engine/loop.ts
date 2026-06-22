@@ -4,9 +4,10 @@ import {
   ENERGY_REGEN_PER_SEC,
   type GameState,
 } from "./state";
-import { incomePerSec, handDishesPerSec } from "./economy";
-import { GENERATORS } from "./content/generators";
+import { incomePerSec, handDishesPerSec, audienceFollowersPerSec } from "./economy";
+import { GENERATORS, generatorVisible } from "./content/generators";
 import { studiesComplete } from "./content/studies";
+import { computeInitialSens, NEGLECT_SECONDS, SENS_DRIFT_PER_SEC } from "./content/audience";
 
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
@@ -32,6 +33,15 @@ export function updateFlags(state: GameState): void {
   if (!state.flags.studyVisible && state.flags.lifeVisible) {
     state.flags.studyVisible = true;
   }
+  // Révélation du Sens (célébrité) : causée par la NÉGLIGENCE de la vie ou son automatisation, jamais par l'argent.
+  if (
+    !state.flags.sensRevealed &&
+    state.job === "celebrite" &&
+    (state.secsSinceLife > NEGLECT_SECONDS || state.vieAutomatiseeCount >= 1)
+  ) {
+    state.flags.sensRevealed = true;
+    state.sens = computeInitialSens(state);
+  }
   // Postuler comme développeur quand tous les livres sont lus.
   if (
     !state.flags.postulerVisible &&
@@ -40,11 +50,16 @@ export function updateFlags(state: GameState): void {
   ) {
     state.flags.postulerVisible = true;
   }
-  // Révélation des générateurs au seuil d'argent (et flag requis le cas échéant).
+  // Révélation des générateurs au seuil d'argent (et flag requis + bon métier).
   for (const g of GENERATORS) {
     const flag = `gen_${g.id}_unlocked`;
     const flagOk = !g.requiresFlag || state.flags[g.requiresFlag];
-    if (!state.flags[flag] && flagOk && state.money.gte(g.unlockAtMoney)) {
+    if (
+      !state.flags[flag] &&
+      flagOk &&
+      generatorVisible(g.kind, state.job) &&
+      state.money.gte(g.unlockAtMoney)
+    ) {
       state.flags[flag] = true;
     }
   }
@@ -55,6 +70,16 @@ export function tick(state: GameState, dt: number): void {
 
   // Revenu : assiettes × valeur. Le manuel est modulé par l'énergie ; les machines non.
   state.money = state.money.add(incomePerSec(state).mul(t));
+
+  // Audience : followers passifs des campagnes d'image.
+  state.followers = state.followers.add(audienceFollowersPerSec(state).mul(t));
+
+  // Suivi de la vie : temps écoulé depuis le dernier geste de vie.
+  state.secsSinceLife += t;
+  // Sens (une fois révélé) : dérive lentement vers le bas si la vie est négligée.
+  if (state.flags.sensRevealed && state.secsSinceLife > NEGLECT_SECONDS) {
+    state.sens = Math.max(0, state.sens - SENS_DRIFT_PER_SEC * t);
+  }
 
   // Énergie : le lavage continu à la main la draine proportionnellement aux assiettes
   // lavées ; régénération constante par ailleurs → palier soutenable, jamais bloqué à 0.

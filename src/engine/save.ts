@@ -9,6 +9,7 @@ export function serialize(state: GameState): string {
     ...state,
     money: state.money.toString(),
     valuePerDish: state.valuePerDish.toString(),
+    followers: state.followers.toString(),
   });
 }
 
@@ -23,6 +24,12 @@ export function deserialize(json: string): GameState {
     job: raw.job ?? "plongeur",
     devClickMult: raw.devClickMult ?? 1,
     gpuProductBoost: raw.gpuProductBoost ?? 0.1,
+    followers: D(raw.followers ?? 0) as Decimal,
+    followerPacks: raw.followerPacks ?? 0,
+    sens: raw.sens ?? 0,
+    vieVecueTicks: raw.vieVecueTicks ?? 0,
+    vieAutomatiseeCount: raw.vieAutomatiseeCount ?? (raw.flags?.vieAutomatisee ? 1 : 0),
+    secsSinceLife: raw.secsSinceLife ?? 0,
   };
 }
 
