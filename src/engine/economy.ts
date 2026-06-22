@@ -43,13 +43,22 @@ export function dishesPerMinute(state: GameState): Decimal {
   return dishesPerSec(state).mul(60);
 }
 
-/** €/s des générateurs dev (automatisation, indépendant de l'énergie). */
+/**
+ * €/s des générateurs dev (automatisation, indépendant de l'énergie).
+ * Les juniors : brut érodé par les GPU (l'IA reprend leur travail) moins un salaire fixe.
+ * Le net peut devenir négatif quand l'IA est forte → on est poussé à remplacer l'équipe.
+ */
 export function devIncomePerSec(state: GameState): Decimal {
+  const gpus = state.generators["gpu"] ?? 0;
   let total = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "dev") continue;
-    total = total.add(def.output.mul(state.generators[id]));
+    const grossPerUnit = def.redundancyPerGpu
+      ? def.output.sub(def.redundancyPerGpu * gpus).max(0)
+      : def.output;
+    const netPerUnit = def.salaryPerSec ? grossPerUnit.sub(def.salaryPerSec) : grossPerUnit;
+    total = total.add(netPerUnit.mul(state.generators[id]));
   }
   return total;
 }

@@ -69,7 +69,8 @@ export function tick(state: GameState, dt: number): void {
   const t = dt * state.tempo;
 
   // Revenu : assiettes × valeur. Le manuel est modulé par l'énergie ; les machines non.
-  state.money = state.money.add(incomePerSec(state).mul(t));
+  // Le net peut être négatif (équipe de juniors en perte sous IA forte) ; jamais d'argent négatif.
+  state.money = state.money.add(incomePerSec(state).mul(t)).max(0);
 
   // Audience : followers passifs des campagnes d'image.
   state.followers = state.followers.add(audienceFollowersPerSec(state).mul(t));

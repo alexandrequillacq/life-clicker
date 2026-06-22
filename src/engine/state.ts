@@ -1,6 +1,6 @@
 import { D, type Decimal, ZERO } from "./numbers";
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;

@@ -18,6 +18,8 @@
     buyFollowers,
     canBuyFollowers,
     followerPackCost,
+    fireTeam,
+    canFireTeam,
   } from "../engine/actions";
   import { GENERATORS, generatorVisible } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
@@ -91,7 +93,7 @@
 
   <!-- Générateurs : plonge (si plongeur) ou dev (sinon) -->
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`] && generatorVisible(g.kind, s.job)}
+    {#if s.flags[`gen_${g.id}_unlocked`] && generatorVisible(g.kind, s.job) && !(g.id === "junior" && s.flags.equipeRemplacee)}
       <div class="item">
         <div class="item-head">
           <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}
@@ -105,6 +107,10 @@
 
   {#if s.flags.poseGantsVisible && !s.manualRetired && s.job === "plongeur"}
     <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
+  {/if}
+
+  {#if canFireTeam(s)}
+    <button class="action" onclick={() => fireTeam(s)}>Remplacer l'équipe par l'IA</button>
   {/if}
 
   {#if s.job === "celebrite"}

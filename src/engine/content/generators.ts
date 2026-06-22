@@ -28,12 +28,17 @@ export interface GeneratorDef {
   requiresFlag?: string; // ne se révèle que si ce flag est posé
   scalesWithGpu?: boolean; // biz : la production est multipliée par (1 + gpuProductBoost × nbGPU)
   bonusGpu?: number; // à l'achat, ajoute ce nombre de GPU au parc (acquisition qui absorbe l'infra)
+  salaryPerSec?: Decimal; // dev : salaire versé en continu (soustrait du brut → rendement net)
+  redundancyPerGpu?: number; // dev : brut érodé par GPU (l'IA fait peu à peu le travail des juniors)
 }
 
 // L'IA résout les bugs en continu (sans énergie) ; chaque GPU multiplie son débit.
 // Ces GPU persistent et deviennent l'armée d'IA de la boîte fondée en P3.
-export const AI_BASE_INCOME = 80; // €/s de base une fois l'IA activée
-export const GPU_MULT_PER_UNIT = 0.25; // chaque GPU : +25 % du débit IA
+export const AI_BASE_INCOME = 70; // €/s de base une fois l'IA activée
+export const GPU_MULT_PER_UNIT = 0.3; // chaque GPU : +30 % du débit IA
+
+// Prime versée par junior lors du remplacement de l'équipe par l'IA (one-shot, irréversible).
+export const JUNIOR_SETTLEMENT = 1200;
 
 export const GENERATORS: GeneratorDef[] = [
   // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
@@ -46,33 +51,28 @@ export const GENERATORS: GeneratorDef[] = [
     unlockAtMoney: D(6),
     kind: "plonge",
   },
-  // Développeur : automatisation qui résout des bugs toute seule (€/s, sans énergie).
   {
-    id: "tests",
-    label: "Écrire des tests",
-    baseCost: D(20),
+    id: "lave_vaisselle_pro",
+    label: "Lave-vaisselle pro",
+    baseCost: D(90),
     growth: 1.15,
-    output: D(1), // €/s
-    unlockAtMoney: D(12),
-    kind: "dev",
+    output: D(20), // assiettes/s : la machine industrielle qui fait accélérer la plonge
+    unlockAtMoney: D(70),
+    kind: "plonge",
   },
-  {
-    id: "ci",
-    label: "Pipeline CI/CD",
-    baseCost: D(180),
-    growth: 1.15,
-    output: D(8),
-    unlockAtMoney: D(130),
-    kind: "dev",
-  },
+  // Développeur : une équipe de juniors résout les bugs (€/s, sans énergie).
+  // Brut érodé par les GPU (l'IA fait peu à peu leur travail) moins un salaire fixe :
+  // utile au début, puis pure charge une fois l'IA forte → on est poussé à les remplacer.
   {
     id: "junior",
     label: "Embaucher un junior",
-    baseCost: D(2500),
+    baseCost: D(60),
     growth: 1.16,
-    output: D(45),
-    unlockAtMoney: D(1800),
+    output: D(14), // brut €/s par junior (avant salaire et redondance IA)
+    unlockAtMoney: D(40),
     kind: "dev",
+    salaryPerSec: D(6),
+    redundancyPerGpu: 1.5,
   },
   // IA : le GPU multiplie le débit de l'IA (apex de fin d'Acte, fidèle à la thèse :
   // automatiser le travail avec l'IA est le plus puissant).

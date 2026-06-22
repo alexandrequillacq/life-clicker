@@ -1,7 +1,7 @@
 import { D, type Decimal } from "./numbers";
 import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
 import { costOf, energyFactor } from "./economy";
-import { GENERATORS_BY_ID } from "./content/generators";
+import { GENERATORS_BY_ID, JUNIOR_SETTLEMENT } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, nextPromotion } from "./content/career";
 import { nextBook, studiesComplete } from "./content/studies";
@@ -68,10 +68,12 @@ export function generatorCost(state: GameState, id: string): Decimal {
 }
 
 export function canBuyGenerator(state: GameState, id: string): boolean {
+  if (id === "junior" && state.flags.equipeRemplacee) return false; // équipe remplacée par l'IA : irréversible
   return state.money.gte(generatorCost(state, id));
 }
 
 export function buyGenerator(state: GameState, id: string): boolean {
+  if (id === "junior" && state.flags.equipeRemplacee) return false;
   const def = GENERATORS_BY_ID[id];
   const cost = generatorCost(state, id);
   if (state.money.lt(cost)) return false;
@@ -79,6 +81,25 @@ export function buyGenerator(state: GameState, id: string): boolean {
   state.generators[id] = (state.generators[id] ?? 0) + 1;
   // Acquisition : on absorbe l'infra (des GPU s'ajoutent au parc).
   if (def.bonusGpu) state.generators["gpu"] = (state.generators["gpu"] ?? 0) + def.bonusGpu;
+  return true;
+}
+
+/** L'IA tourne et il reste des juniors à remplacer (décision unique, irréversible). */
+export function canFireTeam(state: GameState): boolean {
+  return (
+    !!state.flags.aiResolving &&
+    (state.generators["junior"] ?? 0) > 0 &&
+    !state.flags.equipeRemplacee
+  );
+}
+
+/** Remplacer l'équipe par l'IA : verse une prime par junior, vide l'équipe, geste irréversible. */
+export function fireTeam(state: GameState): boolean {
+  if (!canFireTeam(state)) return false;
+  const n = state.generators["junior"] ?? 0;
+  state.money = state.money.add(D(JUNIOR_SETTLEMENT).mul(n));
+  state.generators["junior"] = 0;
+  state.flags.equipeRemplacee = true;
   return true;
 }
 
