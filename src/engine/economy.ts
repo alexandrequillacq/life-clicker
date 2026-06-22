@@ -1,6 +1,6 @@
 import { D, ZERO, type Decimal } from "./numbers";
 import { ENERGY_MAX, type GameState } from "./state";
-import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, GENERATORS_BY_ID } from "./content/generators";
+import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS_BY_ID } from "./content/generators";
 import { sponsoringIncomePerSec } from "./content/audience";
 
 export function costOf(base: Decimal, growth: number, owned: number, count = 1): Decimal {
@@ -82,6 +82,21 @@ export function bizIncomePerSec(state: GameState): Decimal {
     total = total.add(unit.mul(state.generators[id]));
   }
   return total;
+}
+
+/**
+ * Emprise/s (Acte III) : produite par l'appareil de pouvoir, MULTIPLIÉE par l'armée de GPU
+ * (la même IA qui a fait la fortune contrôle désormais le monde). Compteur de sortie, pas une monnaie.
+ */
+export function emprisePerSec(state: GameState): Decimal {
+  let total = ZERO;
+  for (const id in state.generators) {
+    const def = GENERATORS_BY_ID[id];
+    if (!def || def.kind !== "emprise") continue;
+    total = total.add(def.output.mul(state.generators[id]));
+  }
+  const gpus = state.generators["gpu"] ?? 0;
+  return total.mul(1 + EMPRISE_GPU_BOOST * gpus);
 }
 
 /** Followers/s produits par les campagnes d'image (audience passive). */

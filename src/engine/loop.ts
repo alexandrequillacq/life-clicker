@@ -4,10 +4,11 @@ import {
   ENERGY_REGEN_PER_SEC,
   type GameState,
 } from "./state";
-import { incomePerSec, handDishesPerSec, audienceFollowersPerSec } from "./economy";
+import { incomePerSec, handDishesPerSec, audienceFollowersPerSec, emprisePerSec } from "./economy";
 import { GENERATORS, generatorAvailable } from "./content/generators";
 import { studiesComplete } from "./content/studies";
 import { computeInitialSens, NEGLECT_SECONDS, SENS_DRIFT_PER_SEC } from "./content/audience";
+import { EPILOGUE_EMPRISE } from "./content/power";
 
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
@@ -36,11 +37,15 @@ export function updateFlags(state: GameState): void {
   // Révélation du Sens (célébrité) : causée par la NÉGLIGENCE de la vie ou son automatisation, jamais par l'argent.
   if (
     !state.flags.sensRevealed &&
-    state.job === "celebrite" &&
-    (state.secsSinceLife > NEGLECT_SECONDS || state.vieAutomatiseeCount >= 1)
+    ((state.job === "celebrite" && (state.secsSinceLife > NEGLECT_SECONDS || state.vieAutomatiseeCount >= 1)) ||
+      state.flags.act3)
   ) {
     state.flags.sensRevealed = true;
     state.sens = computeInitialSens(state);
+  }
+  // Épilogue : empereur cosmique au-delà du seuil final d'Emprise.
+  if (!state.flags.epilogue && state.job === "empereur" && state.emprise.gte(EPILOGUE_EMPRISE)) {
+    state.flags.epilogue = true;
   }
   // Postuler comme développeur quand tous les livres sont lus.
   if (
@@ -74,6 +79,10 @@ export function tick(state: GameState, dt: number): void {
 
   // Audience : followers passifs des campagnes d'image.
   state.followers = state.followers.add(audienceFollowersPerSec(state).mul(t));
+
+  // Acte III : l'Emprise s'accumule (appareil de pouvoir × armée de GPU). Délai des actes.
+  state.emprise = state.emprise.add(emprisePerSec(state).mul(t));
+  if (state.acteCooldown > 0) state.acteCooldown = Math.max(0, state.acteCooldown - t);
 
   // Suivi de la vie : temps écoulé depuis le dernier geste de vie.
   state.secsSinceLife += t;

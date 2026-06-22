@@ -1,7 +1,7 @@
 import { D, type Decimal } from "../numbers";
 import type { Job } from "../state";
 
-export type GeneratorKind = "plonge" | "dev" | "ia" | "biz" | "audience";
+export type GeneratorKind = "plonge" | "dev" | "ia" | "biz" | "audience" | "emprise";
 
 /** Quels générateurs sont achetables selon le métier courant. */
 export function generatorVisible(kind: GeneratorKind, job: Job): boolean {
@@ -43,6 +43,10 @@ export const GPU_MULT_PER_UNIT = 0.3; // chaque GPU : +30 % du débit IA
 // Primes versées par tête lors du remplacement de l'équipe par l'IA (one-shot, irréversible).
 export const JUNIOR_SETTLEMENT = 1200;
 export const SENIOR_SETTLEMENT = 4000;
+
+// Acte III : l'Emprise est produite par la MÊME armée de GPU (l'IA contrôle aussi le monde).
+// C'est ce couplage qui rend vrai « tu as automatisé jusqu'au pouvoir » (et donc creux).
+export const EMPRISE_GPU_BOOST = 0.15;
 
 export const GENERATORS: GeneratorDef[] = [
   // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
@@ -137,6 +141,87 @@ export const GENERATORS: GeneratorDef[] = [
     output: D(2000), // followers/s
     unlockAtMoney: D(0),
     kind: "audience",
+  },
+  // Acte III : appareil de pouvoir. Acheté en €, produit de l'Emprise/s, scalé par l'armée de GPU.
+  {
+    id: "propagande",
+    label: "Ferme à propagande",
+    baseCost: D(2e6),
+    growth: 1.18,
+    output: D(5),
+    unlockAtMoney: D(1.5e6),
+    kind: "emprise",
+    jobs: ["politique", "president", "monde", "empereur"],
+  },
+  {
+    id: "influence",
+    label: "Réseau d'influence",
+    baseCost: D(1.5e7),
+    growth: 1.2,
+    output: D(40),
+    unlockAtMoney: D(1e7),
+    kind: "emprise",
+    jobs: ["politique", "president", "monde", "empereur"],
+  },
+  {
+    id: "surveillance_ia",
+    label: "Surveillance de masse par IA",
+    baseCost: D(1e8),
+    growth: 1.2,
+    output: D(400),
+    unlockAtMoney: D(8e7),
+    kind: "emprise",
+    jobs: ["president", "monde", "empereur"],
+  },
+  {
+    id: "capture_medias",
+    label: "Capture des médias",
+    baseCost: D(7e8),
+    growth: 1.22,
+    output: D(3000),
+    unlockAtMoney: D(5e8),
+    kind: "emprise",
+    jobs: ["president", "monde", "empereur"],
+  },
+  {
+    id: "drones",
+    label: "Essaim de drones autonomes",
+    baseCost: D(4e9),
+    growth: 1.22,
+    output: D(30000),
+    unlockAtMoney: D(3e9),
+    kind: "emprise",
+    jobs: ["monde", "empereur"],
+  },
+  {
+    id: "surveillance_totale",
+    label: "Surveillance totale",
+    baseCost: D(3e10),
+    growth: 1.24,
+    output: D(250000),
+    unlockAtMoney: D(2e10),
+    kind: "emprise",
+    jobs: ["monde", "empereur"],
+  },
+  {
+    id: "sondes",
+    label: "Sondes von Neumann",
+    baseCost: D(2e11),
+    growth: 1.24,
+    output: D(4e6),
+    unlockAtMoney: D(1.5e11),
+    kind: "emprise",
+    jobs: ["empereur"],
+  },
+  {
+    id: "moissonneuse",
+    label: "Moissonneuse stellaire",
+    baseCost: D(1.5e12),
+    growth: 1.26,
+    output: D(5e8),
+    unlockAtMoney: D(1e12),
+    kind: "emprise",
+    jobs: ["empereur"],
   },
 ];
 

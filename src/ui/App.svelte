@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { game, resetGame, doubleMoney } from "./store.svelte";
+  import { game, resetGame, doubleMoney, reincarnate } from "./store.svelte";
   import {
     work,
     buyGenerator,
@@ -22,14 +22,18 @@
     canFireTeam,
     buyHome,
     canBuyHome,
+    fireActe,
+    canActe,
+    ruleTheVoid,
   } from "../engine/actions";
   import { GENERATORS, generatorAvailable } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
   import { currentHome, nextHome } from "../engine/content/homes";
+  import { currentActe, VOID_LINES } from "../engine/content/power";
   import { fmtMoney, fmtNumber } from "../engine/numbers";
-  import { aiIncomePerSec, incomePerSec } from "../engine/economy";
+  import { aiIncomePerSec, incomePerSec, emprisePerSec } from "../engine/economy";
   import type { Job } from "../engine/state";
 
   const s = $derived(game.state);
@@ -57,8 +61,16 @@
     entrepreneur: "Console de direction",
     celebrite: "Studio d'image",
     politique: "Cabinet",
+    president: "Bureau présidentiel",
+    monde: "Centre de commandement",
+    empereur: "Trône cosmique",
   };
   const appTitle = $derived(APP_TITLES[s.job]);
+  const acte = $derived(currentActe(s.job));
+  const voidLine = $derived(VOID_LINES[s.job]);
+  const empriseRate = $derived(emprisePerSec(s));
+  const genGroupTitle = $derived(s.flags.act3 ? "Appareil de pouvoir" : "Équipe et automatisation");
+  let renouncing = $state(false);
 
   const hasUpgrades = $derived(UPGRADES.some((u) => upgradeAvailable(s, u)));
   const hasGenerators = $derived(
@@ -101,6 +113,28 @@
   {/each}
 {/snippet}
 
+{#snippet epilogue()}
+  <div class="epilogue">
+    {#if s.flags.ending}
+      <p class="ep-title">Tu règnes sur le vide.</p>
+      <p class="ep-line">L'univers t'appartient. Il est silencieux. Rien ne se passe, et plus rien n'arrivera.</p>
+      <p class="ep-line dim">Sens {Math.round(s.sens)} / 100</p>
+    {:else if renouncing}
+      <p class="ep-title">Tu lâches tout.</p>
+      <p class="ep-line">L'empire s'efface. L'Emprise retombe. Les titres se défont, un à un, jusqu'à ton nom.</p>
+      <p class="ep-line">Il te reste une vie à vivre.</p>
+      <button class="primary" onclick={() => reincarnate()}>Revivre</button>
+    {:else}
+      <p class="ep-title">Tu as tout. Il ne reste personne pour le voir.</p>
+      <p class="ep-line dim">Emprise {fmtNumber(s.emprise)}. Sens {Math.round(s.sens)} / 100. Plus aucune vie autour de toi.</p>
+      <div class="ep-choices">
+        <button class="ghost" onclick={() => ruleTheVoid(s)}>Régner sur le vide</button>
+        <button class="primary" onclick={() => (renouncing = true)}>Tout lâcher et revivre</button>
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
 <div class="debug">
   <button class="dbg" onclick={doubleMoney} aria-label="Doubler l'argent (test)">×2</button>
   <button class="dbg" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
@@ -114,6 +148,7 @@
     {#if s.flags.moneyVisible && perMinute.gt(0)}<p class="line muted">Revenu : {fmtMoney(perMinute)} / min</p>{/if}
     {#if s.flags.energyVisible}<p class="line">Énergie : {Math.round(s.energy)} / 100</p>{/if}
     <p class="job">Métier : {job.label}</p>
+    {#if s.karma > 0}<p class="line muted">Karma : {s.karma}</p>{/if}
     {#if showWork}<button class="action" onclick={() => work(s)}>{clickLabel}</button>{/if}
     {@render upgradesList()}
     {@render generatorsList()}
@@ -140,18 +175,21 @@
   </main>
 {:else}
   <!-- À partir du développeur : décor = logement du joueur, l'interface est un « écran » design. -->
-  <div class="stage" style:background-image={home.bg}>
+  <div class="stage" class:act3={s.flags.act3} style:background-image={home.bg}>
     <button class="screen-toggle" onclick={() => (screenOpen = !screenOpen)}>
       {screenOpen ? "Réduire l'écran" : "Ouvrir l'écran"}
     </button>
     {#if screenOpen}
-      <main class="screen" data-act={s.flags.act2 ? "2" : "1"} data-phase={s.job}>
+      <main class="screen" data-act={s.flags.act3 ? "3" : s.flags.act2 ? "2" : "1"} data-phase={s.job}>
         <header class="winbar">
           <span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>
           <span class="wintitle">{appTitle}</span>
         </header>
 
-        <div class="dash">
+        {#if s.flags.epilogue}
+          {@render epilogue()}
+        {:else}
+          <div class="dash">
           <div class="stats">
             {#if s.flags.moneyVisible}
               <div class="tile accent">
@@ -177,10 +215,24 @@
                 <span class="tv">{fmtNumber(s.followers)}</span>
               </div>
             {/if}
+            {#if s.emprise.gt(0) || s.flags.act3}
+              <div class="tile accent">
+                <span class="tk">Emprise</span>
+                <span class="tv">{fmtNumber(s.emprise)}</span>
+              </div>
+            {/if}
           </div>
 
           {#if s.flags.aiResolving}
             <p class="srcline"><span class="led"></span> L'IA résout les bugs : {fmtMoney(aiIncomePerSec(s))} / s</p>
+          {/if}
+
+          {#if empriseRate.gt(0)}
+            <p class="srcline"><span class="led"></span> L'IA étend ton emprise : {fmtNumber(empriseRate)} / s</p>
+          {/if}
+
+          {#if s.flags.act3 && voidLine}
+            <p class="voidline">{voidLine}</p>
           {/if}
 
           {#if s.flags.sensRevealed}
@@ -205,13 +257,23 @@
 
           {#if hasGenerators}
             <section class="group">
-              <h3>Équipe et automatisation</h3>
+              <h3>{genGroupTitle}</h3>
               {@render generatorsList()}
             </section>
           {/if}
 
           {#if canFireTeam(s)}
             <button class="primary ghost-danger" onclick={() => fireTeam(s)}>Remplacer l'équipe par l'IA</button>
+          {/if}
+
+          {#if acte}
+            <section class="group">
+              <h3>Actes de pouvoir</h3>
+              <div class="row">
+                <button class="buy" disabled={!canActe(s)} onclick={() => fireActe(s)}>{acte.label}</button>
+                <span class="price">{s.acteCooldown > 0 ? `${Math.ceil(s.acteCooldown)} s` : "prêt"}</span>
+              </div>
+            </section>
           {/if}
 
           {#if s.job === "celebrite"}
@@ -229,17 +291,19 @@
               <button class="ghost" disabled={!canBuyHome(s)} onclick={() => buyHome(s)}>{homeNext.cta} · {fmtMoney(homeNext.cost)}</button>
             {/if}
             {#if s.flags.lifeVisible}
-              <button class="ghost" onclick={() => rest(s)}>Se reposer</button>
+              {#if s.flags.act3}
+                <button class="ghost" disabled>Plus personne à retrouver.</button>
+              {:else}
+                <button class="ghost" onclick={() => rest(s)}>Se reposer</button>
+              {/if}
             {/if}
             {#if promo && canPromote(s)}
               <button class="promote" onclick={() => promote(s)}>{promo.cta}</button>
             {/if}
           </div>
 
-          {#if s.job === "politique"}
-            <p class="srcline muted">Tu entres en politique. (la suite arrive)</p>
-          {/if}
-        </div>
+          </div>
+        {/if}
       </main>
     {/if}
   </div>
@@ -345,7 +409,12 @@
   }
 
   /* ---------- L'écran : une vraie interface (fenêtre + tableau de bord) ---------- */
+  .stage.act3 {
+    box-shadow: inset 0 0 0 100vmax rgba(9, 13, 22, 0.62);
+  }
+
   .screen {
+    --panel: #ffffff;
     --fg: #1b2330;
     --muted: #6b7686;
     --line: #e4e8ef;
@@ -355,7 +424,7 @@
     max-width: 680px;
     max-height: 84vh;
     overflow-y: auto;
-    background: #ffffff;
+    background: var(--panel);
     color: var(--fg);
     font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
     font-size: 15px;
@@ -374,6 +443,29 @@
   .screen[data-phase="entrepreneur"],
   .screen[data-act="2"] {
     --accent: #b07d2a;
+  }
+  /* Acte III : le confort se fige en quelque chose de froid et dystopique. */
+  .screen[data-act="3"] {
+    --panel: #10141b;
+    --fg: #c7d0db;
+    --muted: #6f7a8a;
+    --line: #28313f;
+    --card: #19212c;
+    --accent: #5b8fb0;
+  }
+  .screen[data-act="3"] .winbar,
+  .screen[data-act="3"] .buy,
+  .screen[data-act="3"] .ghost,
+  .screen[data-act="3"] .primary.ghost-danger {
+    background: var(--panel);
+  }
+  .screen[data-act="3"] .bar {
+    background: #28313f;
+  }
+  .screen[data-act="3"] .buy:hover:not(:disabled),
+  .screen[data-act="3"] .ghost:hover:not(:disabled) {
+    background: #1c2735;
+    border-color: var(--accent);
   }
 
   .winbar {
@@ -472,6 +564,41 @@
     border-radius: 50%;
     background: #39b54a;
     box-shadow: 0 0 0 3px rgba(57, 181, 74, 0.18);
+  }
+
+  .voidline {
+    margin: 0;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .epilogue {
+    padding: 26px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+  }
+  .ep-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 500;
+  }
+  .ep-line {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .ep-line.dim {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .ep-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
   }
 
   .sensbox {

@@ -6,6 +6,7 @@ import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, nextPromotion } from "./content/career";
 import { nextBook, studiesComplete } from "./content/studies";
 import { nextHome } from "./content/homes";
+import { currentActe, ACTE_COOLDOWN } from "./content/power";
 import {
   FOLLOWERS_PER_POST,
   FOLLOWER_PACK_BASE_COST,
@@ -169,7 +170,10 @@ export function rest(state: GameState): void {
   state.energy = Math.min(ENERGY_MAX, state.energy + REST_ENERGY);
   state.vieVecueTicks += 1;
   state.secsSinceLife = 0;
-  if (state.flags.sensRevealed) state.sens = Math.min(100, state.sens + SENS_PER_REST);
+  // Le karma (vie préservée d'une vie passée) rend chaque geste de vie plus nourrissant.
+  if (state.flags.sensRevealed) {
+    state.sens = Math.min(100, state.sens + SENS_PER_REST + Math.min(5, state.karma));
+  }
 }
 
 // --- Logement (décor de fond) ---
@@ -225,10 +229,13 @@ export function becomeDeveloper(state: GameState): boolean {
   return true;
 }
 
-function promotionReady(state: GameState, promo: { moneyThreshold: Decimal; followersThreshold?: Decimal }): boolean {
-  return promo.followersThreshold
-    ? state.followers.gte(promo.followersThreshold)
-    : state.money.gte(promo.moneyThreshold);
+function promotionReady(
+  state: GameState,
+  promo: { moneyThreshold: Decimal; followersThreshold?: Decimal; empriseThreshold?: Decimal },
+): boolean {
+  if (promo.empriseThreshold) return state.emprise.gte(promo.empriseThreshold);
+  if (promo.followersThreshold) return state.followers.gte(promo.followersThreshold);
+  return state.money.gte(promo.moneyThreshold);
 }
 
 export function canPromote(state: GameState): boolean {
@@ -242,5 +249,27 @@ export function promote(state: GameState): boolean {
   if (!promo || !promotionReady(state, promo)) return false;
   state.job = promo.to;
   if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
+  if (promo.to === "politique") state.flags.act3 = true; // bascule visuelle Acte III (froid, dystopique)
   return true;
+}
+
+// --- Acte III : actes de pouvoir (seule prise du joueur) et épilogue ---
+
+/** Un acte de pouvoir est disponible si la phase en a un et que le délai est écoulé. */
+export function canActe(state: GameState): boolean {
+  return currentActe(state.job) !== null && state.acteCooldown <= 0;
+}
+
+/** Autoriser un acte de pouvoir : saut d'Emprise instantané, puis délai (jamais de coût en énergie). */
+export function fireActe(state: GameState): boolean {
+  const acte = currentActe(state.job);
+  if (!acte || state.acteCooldown > 0) return false;
+  state.emprise = state.emprise.add(acte.empriseGrant);
+  state.acteCooldown = ACTE_COOLDOWN;
+  return true;
+}
+
+/** Choix d'épilogue : régner sur le vide (l'empire persiste, rien ne se passe). */
+export function ruleTheVoid(state: GameState): void {
+  state.flags.ending = true;
 }

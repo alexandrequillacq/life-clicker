@@ -4,6 +4,7 @@ import { mount, unmount, flushSync } from "svelte";
 import App from "../../src/ui/App.svelte";
 import { game } from "../../src/ui/store.svelte";
 import { tick } from "../../src/engine/loop";
+import { D } from "../../src/engine/numbers";
 
 describe("App P0 (DOM)", () => {
   it("monte, cache le compteur, puis l'affiche et l'incrémente après clic + tick", () => {
@@ -53,6 +54,39 @@ describe("App P0 (DOM)", () => {
     toggle.click();
     flushSync();
     expect(target.querySelector("main.screen")).not.toBeNull();
+
+    unmount(component);
+  });
+
+  it("épilogue : le choix moral mène à la réincarnation (retour au plongeur, karma préservé)", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    game.state.job = "empereur";
+    game.state.flags = { ...game.state.flags, act3: true, epilogue: true, sensRevealed: true };
+    game.state.emprise = D(1e15);
+    game.state.sens = 0;
+    const component = mount(App, { target });
+    flushSync();
+
+    expect(target.querySelector(".epilogue")).not.toBeNull();
+    const lacher = [...target.querySelectorAll(".epilogue button")].find((b) =>
+      b.textContent?.includes("Tout lâcher"),
+    ) as HTMLButtonElement;
+    expect(lacher).toBeTruthy();
+    lacher.click();
+    flushSync();
+
+    const revivre = [...target.querySelectorAll(".epilogue button")].find((b) =>
+      b.textContent?.includes("Revivre"),
+    ) as HTMLButtonElement;
+    expect(revivre).toBeTruthy();
+    revivre.click();
+    flushSync();
+
+    // Réincarné : retour au plongeur, karma préservé (Sens nul → 1 point).
+    expect(target.querySelector("main.paper")).not.toBeNull();
+    expect(game.state.job).toBe("plongeur");
+    expect(game.state.karma).toBeGreaterThanOrEqual(1);
 
     unmount(component);
   });

@@ -10,6 +10,7 @@ export function serialize(state: GameState): string {
     money: state.money.toString(),
     valuePerDish: state.valuePerDish.toString(),
     followers: state.followers.toString(),
+    emprise: state.emprise.toString(),
   });
 }
 
@@ -31,6 +32,9 @@ export function deserialize(json: string): GameState {
     vieVecueTicks: raw.vieVecueTicks ?? 0,
     vieAutomatiseeCount: raw.vieAutomatiseeCount ?? (raw.flags?.vieAutomatisee ? 1 : 0),
     secsSinceLife: raw.secsSinceLife ?? 0,
+    emprise: D(raw.emprise ?? 0) as Decimal,
+    acteCooldown: raw.acteCooldown ?? 0,
+    karma: raw.karma ?? 0,
   };
 }
 

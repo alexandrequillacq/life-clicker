@@ -53,14 +53,33 @@ export const JOBS: Record<Job, JobDef> = {
     clickValue: D(50000),
     clickEnergyCost: 6,
   },
+  president: {
+    label: "Président",
+    clickLabel: "",
+    clickValue: D(0),
+    clickEnergyCost: 0,
+  },
+  monde: {
+    label: "Maître du monde",
+    clickLabel: "",
+    clickValue: D(0),
+    clickEnergyCost: 0,
+  },
+  empereur: {
+    label: "Empereur cosmique",
+    clickLabel: "",
+    clickValue: D(0),
+    clickEnergyCost: 0,
+  },
 };
 
 export interface PromotionDef {
   from: Job;
   to: Job;
   cta: string; // libellé du bouton de promotion
-  moneyThreshold: Decimal; // capital requis (ignoré si followersThreshold est défini)
-  followersThreshold?: Decimal; // si défini, la promotion se débloque sur les followers, pas l'argent
+  moneyThreshold: Decimal; // capital requis (ignoré si un autre seuil est défini)
+  followersThreshold?: Decimal; // si défini, la promotion se débloque sur les followers
+  empriseThreshold?: Decimal; // si défini, la promotion se débloque sur l'Emprise (Acte III)
 }
 
 export const PROMOTIONS: PromotionDef[] = [
@@ -69,6 +88,9 @@ export const PROMOTIONS: PromotionDef[] = [
   { from: "cto", to: "entrepreneur", cta: "Monter ta boîte d'IA", moneyThreshold: D(30000) },
   { from: "entrepreneur", to: "celebrite", cta: "Devenir une icône médiatique", moneyThreshold: D(8_000_000) },
   { from: "celebrite", to: "politique", cta: "Entrer en politique", moneyThreshold: D(0), followersThreshold: D(50_000_000) },
+  { from: "politique", to: "president", cta: "Prendre la présidence", moneyThreshold: D(0), empriseThreshold: D(5e4) },
+  { from: "president", to: "monde", cta: "Régner sur le monde", moneyThreshold: D(0), empriseThreshold: D(1e7) },
+  { from: "monde", to: "empereur", cta: "Régner sur le cosmos", moneyThreshold: D(0), empriseThreshold: D(5e9) },
 ];
 
 export function nextPromotion(job: Job): PromotionDef | null {
