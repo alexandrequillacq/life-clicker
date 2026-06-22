@@ -23,7 +23,7 @@
     buyHome,
     canBuyHome,
   } from "../engine/actions";
-  import { GENERATORS, generatorVisible } from "../engine/content/generators";
+  import { GENERATORS, generatorAvailable } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
@@ -43,11 +43,10 @@
 
   // Le clic actif (gagner de l'argent / des followers) disparaît dès qu'on devient manager.
   const showWork = $derived(
-    (s.job === "plongeur" && !s.manualRetired) ||
-      s.job === "developpeur" ||
-      s.job === "celebrite" ||
-      s.job === "politique",
+    (s.job === "plongeur" && !s.manualRetired) || s.job === "developpeur" || s.job === "celebrite",
   );
+  // Le dev IC ne peut plus cliquer s'il est épuisé : l'énergie limite la cadence (pas le gain).
+  const workExhausted = $derived(s.job === "developpeur" && s.energy < job.clickEnergyCost);
 
   // Titre de la fenêtre (l'écran ressemble à une appli ; remplace le « Métier : … »).
   const APP_TITLES: Record<Job, string> = {
@@ -66,8 +65,8 @@
     GENERATORS.some(
       (g) =>
         s.flags[`gen_${g.id}_unlocked`] &&
-        generatorVisible(g.kind, s.job) &&
-        !(g.id === "junior" && s.flags.equipeRemplacee),
+        generatorAvailable(g, s.job) &&
+        !(g.team && s.flags.equipeRemplacee),
     ),
   );
 
@@ -92,7 +91,7 @@
 
 {#snippet generatorsList()}
   {#each GENERATORS as g (g.id)}
-    {#if s.flags[`gen_${g.id}_unlocked`] && generatorVisible(g.kind, s.job) && !(g.id === "junior" && s.flags.equipeRemplacee)}
+    {#if s.flags[`gen_${g.id}_unlocked`] && generatorAvailable(g, s.job) && !(g.team && s.flags.equipeRemplacee)}
       <div class="row">
         <button class="buy" disabled={!canBuyGenerator(s, g.id)} onclick={() => buyGenerator(s, g.id)}>{g.label}</button>
         {#if s.generators[g.id]}<span class="count">×{s.generators[g.id]}</span>{/if}
@@ -192,7 +191,9 @@
           {/if}
 
           {#if showWork}
-            <button class="primary" onclick={() => work(s)}>{clickLabel}</button>
+            <button class="primary" disabled={workExhausted} onclick={() => work(s)}>
+              {workExhausted ? "Épuisé, repose-toi" : clickLabel}
+            </button>
           {/if}
 
           {#if hasUpgrades}
@@ -499,8 +500,13 @@
     font-family: inherit;
     cursor: pointer;
   }
-  .primary:hover {
+  .primary:hover:not(:disabled) {
     filter: brightness(1.06);
+  }
+  .primary:disabled {
+    background: var(--card);
+    color: var(--muted);
+    cursor: default;
   }
   .primary.ghost-danger {
     background: #ffffff;

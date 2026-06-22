@@ -2,10 +2,11 @@ import { describe, it, expect } from "vitest";
 import { D } from "../src/engine/numbers";
 import { createInitialState } from "../src/engine/state";
 import { devIncomePerSec, aiIncomePerSec, incomePerSec } from "../src/engine/economy";
-import { fireTeam, canFireTeam } from "../src/engine/actions";
+import { fireTeam, canFireTeam, work } from "../src/engine/actions";
 import { tick } from "../src/engine/loop";
-import { GENERATORS_BY_ID, JUNIOR_SETTLEMENT } from "../src/engine/content/generators";
+import { GENERATORS_BY_ID, JUNIOR_SETTLEMENT, SENIOR_SETTLEMENT, generatorAvailable } from "../src/engine/content/generators";
 import { UPGRADES_BY_ID } from "../src/engine/content/upgrades";
+import { JOBS } from "../src/engine/content/career";
 
 const J = GENERATORS_BY_ID["junior"];
 const SALARY = J.salaryPerSec!.toNumber();
@@ -110,6 +111,76 @@ describe("rework dev : juniors + IA", () => {
     const book = UPGRADES_BY_ID["orchestrer_ia"];
     expect(book.label).toContain("How to setup Claude Code");
     expect(book.unlocksAi).toBe(true);
+  });
+});
+
+describe("clic du développeur (IC) : l'énergie limite la cadence, pas le gain", () => {
+  it("le gain par clic ne dépend pas du niveau d'énergie", () => {
+    const full = createInitialState(0);
+    full.job = "developpeur";
+    full.flags.energyVisible = true;
+    full.energy = 100;
+    work(full);
+    const low = createInitialState(0);
+    low.job = "developpeur";
+    low.flags.energyVisible = true;
+    low.energy = 20;
+    work(low);
+    expect(low.money.toNumber()).toBeCloseTo(full.money.toNumber());
+    expect(low.money.toNumber()).toBeGreaterThan(0);
+  });
+
+  it("épuisé (énergie sous le coût), le clic est bloqué", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    s.flags.energyVisible = true;
+    s.energy = JOBS.developpeur.clickEnergyCost - 1;
+    const before = s.money.toNumber();
+    work(s);
+    expect(s.money.toNumber()).toBe(before);
+  });
+
+  it("un manager (lead dev) ne gagne rien au clic", () => {
+    const s = createInitialState(0);
+    s.job = "lead_dev";
+    s.energy = 100;
+    const before = s.money.toNumber();
+    work(s);
+    expect(s.money.toNumber()).toBe(before);
+  });
+});
+
+describe("équipe : juniors (manager+) et seniors (CTO+)", () => {
+  it("on n'embauche pas de junior avant d'être manager", () => {
+    const j = GENERATORS_BY_ID["junior"];
+    expect(generatorAvailable(j, "developpeur")).toBe(false);
+    expect(generatorAvailable(j, "lead_dev")).toBe(true);
+  });
+
+  it("le dev senior n'apparaît qu'à partir du CTO et frappe plus fort qu'un junior", () => {
+    const sr = GENERATORS_BY_ID["senior"];
+    expect(generatorAvailable(sr, "lead_dev")).toBe(false);
+    expect(generatorAvailable(sr, "cto")).toBe(true);
+    expect(sr.output.toNumber()).toBeGreaterThan(GENERATORS_BY_ID["junior"].output.toNumber());
+  });
+
+  it("remplacer l'équipe vire juniors ET seniors, avec leurs primes", () => {
+    const s = createInitialState(0);
+    s.job = "cto";
+    s.flags.aiResolving = true;
+    s.generators["junior"] = 3;
+    s.generators["senior"] = 2;
+    const before = s.money.toNumber();
+    expect(canFireTeam(s)).toBe(true);
+    fireTeam(s);
+    expect(s.money.toNumber()).toBeCloseTo(before + JUNIOR_SETTLEMENT * 3 + SENIOR_SETTLEMENT * 2);
+    expect(s.generators["junior"]).toBe(0);
+    expect(s.generators["senior"]).toBe(0);
+    expect(s.flags.equipeRemplacee).toBe(true);
+  });
+
+  it("« Assistant de code IA » (multiplicateur de clic devenu inutile) est supprimé", () => {
+    expect(UPGRADES_BY_ID["copilot"]).toBeUndefined();
   });
 });
 

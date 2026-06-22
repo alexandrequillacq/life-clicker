@@ -29,7 +29,10 @@ export interface GeneratorDef {
   scalesWithGpu?: boolean; // biz : la production est multipliée par (1 + gpuProductBoost × nbGPU)
   bonusGpu?: number; // à l'achat, ajoute ce nombre de GPU au parc (acquisition qui absorbe l'infra)
   salaryPerSec?: Decimal; // dev : salaire versé en continu (soustrait du brut → rendement net)
-  redundancyPerGpu?: number; // dev : brut érodé par GPU (l'IA fait peu à peu le travail des juniors)
+  redundancyPerGpu?: number; // dev : brut érodé par GPU (l'IA fait peu à peu le travail de l'équipe)
+  jobs?: Job[]; // si défini, n'est visible/achetable que pour ces métiers (sinon : selon kind)
+  team?: boolean; // membre de l'équipe humaine (viré en bloc par « Remplacer l'équipe par l'IA »)
+  settlementPerHead?: number; // prime de départ versée par tête lors du remplacement par l'IA
 }
 
 // L'IA résout les bugs en continu (sans énergie) ; chaque GPU multiplie son débit.
@@ -37,8 +40,9 @@ export interface GeneratorDef {
 export const AI_BASE_INCOME = 70; // €/s de base une fois l'IA activée
 export const GPU_MULT_PER_UNIT = 0.3; // chaque GPU : +30 % du débit IA
 
-// Prime versée par junior lors du remplacement de l'équipe par l'IA (one-shot, irréversible).
+// Primes versées par tête lors du remplacement de l'équipe par l'IA (one-shot, irréversible).
 export const JUNIOR_SETTLEMENT = 1200;
+export const SENIOR_SETTLEMENT = 4000;
 
 export const GENERATORS: GeneratorDef[] = [
   // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
@@ -60,9 +64,9 @@ export const GENERATORS: GeneratorDef[] = [
     unlockAtMoney: D(70),
     kind: "plonge",
   },
-  // Développeur : une équipe de juniors résout les bugs (€/s, sans énergie).
-  // Brut érodé par les GPU (l'IA fait peu à peu leur travail) moins un salaire fixe :
-  // utile au début, puis pure charge une fois l'IA forte → on est poussé à les remplacer.
+  // Équipe humaine (manager+). Brut érodé par les GPU (l'IA fait peu à peu leur travail)
+  // moins un salaire fixe : utile au début, puis pure charge une fois l'IA forte → on est
+  // poussé à remplacer toute l'équipe par l'IA. On n'embauche qu'à partir du métier de manager.
   {
     id: "junior",
     label: "Embaucher un junior",
@@ -71,8 +75,25 @@ export const GENERATORS: GeneratorDef[] = [
     output: D(14), // brut €/s par junior (avant salaire et redondance IA)
     unlockAtMoney: D(40),
     kind: "dev",
+    jobs: ["lead_dev", "cto", "entrepreneur"],
     salaryPerSec: D(6),
     redundancyPerGpu: 1.5,
+    team: true,
+    settlementPerHead: JUNIOR_SETTLEMENT,
+  },
+  {
+    id: "senior",
+    label: "Embaucher un dev senior",
+    baseCost: D(600),
+    growth: 1.18,
+    output: D(45), // brut €/s : bien plus fort qu'un junior dans la fenêtre CTO à faible parc GPU
+    unlockAtMoney: D(1500),
+    kind: "dev",
+    jobs: ["cto", "entrepreneur"],
+    salaryPerSec: D(18),
+    redundancyPerGpu: 5,
+    team: true,
+    settlementPerHead: SENIOR_SETTLEMENT,
   },
   // IA : le GPU multiplie le débit de l'IA (apex de fin d'Acte, fidèle à la thèse :
   // automatiser le travail avec l'IA est le plus puissant).
@@ -121,3 +142,9 @@ export const GENERATORS: GeneratorDef[] = [
 
 export const GENERATORS_BY_ID: Record<string, GeneratorDef> =
   Object.fromEntries(GENERATORS.map((g) => [g.id, g]));
+
+/** Un générateur est-il visible/achetable au métier courant (gate par jobs sinon par kind) ? */
+export function generatorAvailable(def: GeneratorDef, job: Job): boolean {
+  if (def.jobs) return def.jobs.includes(job);
+  return generatorVisible(def.kind, job);
+}

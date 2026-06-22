@@ -1,7 +1,7 @@
 import { D, type Decimal } from "./numbers";
 import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
 import { costOf, energyFactor } from "./economy";
-import { GENERATORS_BY_ID, JUNIOR_SETTLEMENT } from "./content/generators";
+import { GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, nextPromotion } from "./content/career";
 import { nextBook, studiesComplete } from "./content/studies";
@@ -24,20 +24,33 @@ export function clickWork(state: GameState): void {
   state.totalClicks += 1;
 }
 
-/** Action active du métier courant. Le plongeur lave ; la célébrité publie (followers) ; le reste gagne de l'argent. Tout coûte de l'énergie hors plonge. */
+/**
+ * Action active du métier courant.
+ * Plongeur : lave (effort ponctuel, sans énergie). Développeur (IC) : résout un bug à pleine
+ * valeur, mais l'énergie en limite la CADENCE (épuisé → se reposer), elle ne réduit jamais le gain.
+ * Célébrité : publie (followers, modulé par l'énergie : la vanité fatigue). Managers : aucun clic
+ * pour gagner de l'argent (revenu purement passif).
+ */
 export function work(state: GameState): void {
   if (state.job === "plongeur") {
     clickWork(state);
     return;
   }
   const job = JOBS[state.job];
+  if (state.job === "developpeur") {
+    if (state.energy < job.clickEnergyCost) return; // épuisé : il faut se reposer
+    state.money = state.money.add(job.clickValue.mul(state.devClickMult));
+    state.energy -= job.clickEnergyCost;
+    state.totalClicks += 1;
+    return;
+  }
   if (state.job === "celebrite") {
     state.followers = state.followers.add(D(FOLLOWERS_PER_POST).mul(energyFactor(state)));
-  } else {
-    state.money = state.money.add(job.clickValue.mul(state.devClickMult).mul(energyFactor(state)));
+    state.energy = Math.max(0, state.energy - job.clickEnergyCost);
+    state.totalClicks += 1;
+    return;
   }
-  state.energy = Math.max(0, state.energy - job.clickEnergyCost);
-  state.totalClicks += 1;
+  // Managers (lead dev, CTO, fondateur) : pas de clic pour gagner de l'argent.
 }
 
 // --- Audience (célébrité) ---
@@ -69,12 +82,12 @@ export function generatorCost(state: GameState, id: string): Decimal {
 }
 
 export function canBuyGenerator(state: GameState, id: string): boolean {
-  if (id === "junior" && state.flags.equipeRemplacee) return false; // équipe remplacée par l'IA : irréversible
+  if (GENERATORS_BY_ID[id].team && state.flags.equipeRemplacee) return false; // équipe remplacée par l'IA : irréversible
   return state.money.gte(generatorCost(state, id));
 }
 
 export function buyGenerator(state: GameState, id: string): boolean {
-  if (id === "junior" && state.flags.equipeRemplacee) return false;
+  if (GENERATORS_BY_ID[id].team && state.flags.equipeRemplacee) return false;
   const def = GENERATORS_BY_ID[id];
   const cost = generatorCost(state, id);
   if (state.money.lt(cost)) return false;
@@ -85,21 +98,23 @@ export function buyGenerator(state: GameState, id: string): boolean {
   return true;
 }
 
-/** L'IA tourne et il reste des juniors à remplacer (décision unique, irréversible). */
+/** L'IA tourne et il reste des membres d'équipe (juniors/seniors) à remplacer (décision unique, irréversible). */
 export function canFireTeam(state: GameState): boolean {
-  return (
-    !!state.flags.aiResolving &&
-    (state.generators["junior"] ?? 0) > 0 &&
-    !state.flags.equipeRemplacee
-  );
+  if (!state.flags.aiResolving || state.flags.equipeRemplacee) return false;
+  return GENERATORS.some((g) => g.team && (state.generators[g.id] ?? 0) > 0);
 }
 
-/** Remplacer l'équipe par l'IA : verse une prime par junior, vide l'équipe, geste irréversible. */
+/** Remplacer toute l'équipe par l'IA : prime par tête (juniors et seniors), vide l'équipe, irréversible. */
 export function fireTeam(state: GameState): boolean {
   if (!canFireTeam(state)) return false;
-  const n = state.generators["junior"] ?? 0;
-  state.money = state.money.add(D(JUNIOR_SETTLEMENT).mul(n));
-  state.generators["junior"] = 0;
+  for (const g of GENERATORS) {
+    if (!g.team) continue;
+    const n = state.generators[g.id] ?? 0;
+    if (n > 0 && g.settlementPerHead) {
+      state.money = state.money.add(D(g.settlementPerHead).mul(n));
+    }
+    state.generators[g.id] = 0;
+  }
   state.flags.equipeRemplacee = true;
   return true;
 }

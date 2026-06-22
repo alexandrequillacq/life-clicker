@@ -5,7 +5,7 @@ import {
   type GameState,
 } from "./state";
 import { incomePerSec, handDishesPerSec, audienceFollowersPerSec } from "./economy";
-import { GENERATORS, generatorVisible } from "./content/generators";
+import { GENERATORS, generatorAvailable } from "./content/generators";
 import { studiesComplete } from "./content/studies";
 import { computeInitialSens, NEGLECT_SECONDS, SENS_DRIFT_PER_SEC } from "./content/audience";
 
@@ -57,7 +57,7 @@ export function updateFlags(state: GameState): void {
     if (
       !state.flags[flag] &&
       flagOk &&
-      generatorVisible(g.kind, state.job) &&
+      generatorAvailable(g, state.job) &&
       state.money.gte(g.unlockAtMoney)
     ) {
       state.flags[flag] = true;

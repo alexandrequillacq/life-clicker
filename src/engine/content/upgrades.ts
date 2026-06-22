@@ -27,13 +27,12 @@ export const UPGRADES: UpgradeDef[] = [
   { id: "coup_de_main", label: "Prendre le coup de main", cost: D(5), unlockAtMoney: D(4), phase: "plonge", requires: "eponge", unlocksHand: true, setHandRate: 10 },
   { id: "gants_pro", label: "Gants pro", cost: D(10), unlockAtMoney: D(7), phase: "plonge", requires: "coup_de_main", setDishesPerClick: 8, setHandRate: 20 },
 
-  // --- Développeur (multiplient la valeur d'un bug résolu) ---
-  { id: "ide", label: "Meilleur IDE", cost: D(120), unlockAtMoney: D(90), phase: "dev", mulClickValue: 2 },
-  { id: "copilot", label: "Assistant de code IA", cost: D(1500), unlockAtMoney: D(1200), phase: "dev", requires: "ide", mulClickValue: 3 },
+  // --- Développeur (multiplie la valeur d'un bug résolu ; seul le dev IC clique) ---
+  { id: "ide", label: "Meilleur IDE", cost: D(80), unlockAtMoney: D(60), phase: "dev", mulClickValue: 2 },
 
   // --- Pont IA : automatiser le travail (sain), prépare l'armée d'IA de la future boîte ---
   // Le livre qui apprend à se servir de l'IA débloque l'orchestration d'agents.
-  { id: "orchestrer_ia", label: "Lire « How to setup Claude Code »", cost: D(5000), unlockAtMoney: D(4000), phase: "dev", requires: "copilot", unlocksAi: true },
+  { id: "orchestrer_ia", label: "Lire « How to setup Claude Code »", cost: D(5000), unlockAtMoney: D(4000), phase: "dev", requires: "ide", unlocksAi: true },
   { id: "laisser_ia", label: "Laisser l'IA résoudre les bugs", cost: D(9000), unlockAtMoney: D(7000), phase: "dev", requires: "orchestrer_ia", startsAi: true },
 
   // --- Entrepreneur : leviers de la boîte d'IA ---
