@@ -29,4 +29,31 @@ describe("App P0 (DOM)", () => {
 
     unmount(component);
   });
+
+  it("en développeur : décor de fond (logement) + écran réductible", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    game.state.job = "developpeur";
+    game.state.homeLevel = 0;
+    const component = mount(App, { target });
+    flushSync();
+
+    // Le décor (logement) remplit le fond, l'interface est dans un « écran ».
+    const stage = target.querySelector(".stage") as HTMLElement;
+    expect(stage).not.toBeNull();
+    expect(stage.style.backgroundImage).toContain("linear-gradient");
+    expect(target.querySelector("main.screen")).not.toBeNull();
+
+    // On peut réduire l'écran pour admirer le décor, puis le rouvrir.
+    const toggle = target.querySelector(".screen-toggle") as HTMLButtonElement;
+    expect(toggle).not.toBeNull();
+    toggle.click();
+    flushSync();
+    expect(target.querySelector("main.screen")).toBeNull();
+    toggle.click();
+    flushSync();
+    expect(target.querySelector("main.screen")).not.toBeNull();
+
+    unmount(component);
+  });
 });

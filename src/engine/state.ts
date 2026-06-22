@@ -1,6 +1,6 @@
 import { D, type Decimal, ZERO } from "./numbers";
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;
@@ -27,6 +27,7 @@ export interface GameState {
   generators: Record<string, number>; // machines (lave-vaisselle…), id → quantité
   upgrades: Record<string, boolean>; // upgrades one-shot achetés
   studyLevel: number; // index du prochain livre à lire (progrès vers développeur)
+  homeLevel: number; // niveau de logement (décor de fond), du sous-sol à la villa
   job: Job; // métier courant
   devClickMult: number; // multiplicateur de valeur du clic (upgrades dev)
   gpuProductBoost: number; // boost par GPU sur la production des produits IA (data center le monte)
@@ -56,6 +57,7 @@ export function createInitialState(now: number): GameState {
     generators: {},
     upgrades: {},
     studyLevel: 0,
+    homeLevel: 0,
     job: "plongeur",
     devClickMult: 1,
     gpuProductBoost: 0.1,

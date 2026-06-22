@@ -20,11 +20,14 @@
     followerPackCost,
     fireTeam,
     canFireTeam,
+    buyHome,
+    canBuyHome,
   } from "../engine/actions";
   import { GENERATORS, generatorVisible } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
+  import { currentHome, nextHome } from "../engine/content/homes";
   import { fmtMoney, fmtNumber } from "../engine/numbers";
   import { aiIncomePerSec, incomePerSec } from "../engine/economy";
 
@@ -34,6 +37,11 @@
   const promo = $derived(nextPromotion(s.job));
   const clickLabel = $derived(s.job === "plongeur" ? "Laver des assiettes" : job.clickLabel);
   const perMinute = $derived(incomePerSec(s).mul(60));
+  const home = $derived(currentHome(s.homeLevel));
+  const homeNext = $derived(nextHome(s.homeLevel));
+
+  // L'écran (panneau de jeu) peut être réduit pour admirer le décor (le logement).
+  let screenOpen = $state(true);
 </script>
 
 <div class="debug">
@@ -42,7 +50,7 @@
   <span class="ver">{__GIT_HASH__}</span>
 </div>
 
-<main data-act={s.flags.act2 ? "2" : "1"} class:firstcolor={s.flags.firstColor && !s.flags.act2}>
+{#snippet body()}
   {#if s.flags.moneyVisible}
     <p class="counter">Argent : {fmtMoney(s.money)}</p>
   {/if}
@@ -122,6 +130,21 @@
     </div>
   {/if}
 
+  <!-- Logement : le décor de fond, des fruits honnêtes de la réussite (pas une automatisation de la vie) -->
+  {#if s.job !== "plongeur"}
+    <section class="block">
+      <p class="job">Logement : {home.label}</p>
+      {#if homeNext && s.money.gte(homeNext.unlockAtMoney)}
+        <div class="item">
+          <div class="item-head">
+            <button class="buy" disabled={!canBuyHome(s)} onclick={() => buyHome(s)}>{homeNext.cta}</button>
+          </div>
+          <p class="price">Prix : {fmtMoney(homeNext.cost)}</p>
+        </div>
+      {/if}
+    </section>
+  {/if}
+
   <!-- Promotion vers le métier suivant -->
   {#if promo && canPromote(s)}
     <button class="action" onclick={() => promote(s)}>{promo.cta}</button>
@@ -154,7 +177,24 @@
   {#if s.job === "politique"}
     <p class="line muted">Tu entres en politique. (la suite arrive)</p>
   {/if}
-</main>
+{/snippet}
+
+{#if s.job === "plongeur"}
+  <main class="paper">
+    {@render body()}
+  </main>
+{:else}
+  <div class="stage" style:background-image={home.bg}>
+    <button class="screen-toggle" onclick={() => (screenOpen = !screenOpen)}>
+      {screenOpen ? "Réduire l'écran" : "Ouvrir l'écran"}
+    </button>
+    {#if screenOpen}
+      <main class="screen" data-act={s.flags.act2 ? "2" : "1"} class:firstcolor={s.flags.firstColor && !s.flags.act2}>
+        {@render body()}
+      </main>
+    {/if}
+  </div>
+{/if}
 
 <style>
   :global(html, body) {
@@ -163,32 +203,82 @@
   }
 
   main {
-    /* Acte I : texte brut, fond blanc, minimal (esprit Paperclips). */
+    /* Tokens par défaut (Acte I). */
     --bg: #ffffff;
     --fg: #111111;
     --muted: #777777;
     --line: #cccccc;
     --accent: #111111;
 
-    background: var(--bg);
-    color: var(--fg);
-    font-family: "Times New Roman", Times, Georgia, serif;
-    font-size: 16px;
-    line-height: 1.7;
-    min-height: 100vh;
     box-sizing: border-box;
-    max-width: 560px;
-    padding: 2.5rem 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.4rem;
+    font-size: 16px;
+    line-height: 1.7;
+    font-variant-numeric: tabular-nums;
   }
 
-  .counter {
-    margin: 0 0 0.25rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
+  /* Acte I : plongeur. Texte brut, fond blanc, minimal (esprit Paperclips). */
+  .paper {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Times New Roman", Times, Georgia, serif;
+    min-height: 100vh;
+    max-width: 560px;
+    padding: 2.5rem 1.5rem;
+  }
+
+  /* À partir du développeur : le décor de fond est le logement du joueur. */
+  .stage {
+    min-height: 100vh;
+    background-color: #17191c;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 3.5vh 2vw;
+    box-sizing: border-box;
+  }
+
+  /* L'interface du jeu vit dans un « écran » posé sur le décor. */
+  .screen {
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--fg);
+    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+    border-radius: 14px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+    padding: 1.75rem 1.6rem;
+  }
+
+  .screen :global(button) {
+    border-radius: 7px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .screen-toggle {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.75rem;
+    z-index: 5;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 13px;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    border-radius: 7px;
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+  }
+  .screen-toggle:hover {
+    background: rgba(0, 0, 0, 0.65);
   }
 
   /* Première couleur : récompense de fin d'Acte I (on devient développeur). */
@@ -198,25 +288,23 @@
 
   /* Acte II : épuré, coloré, agréable (apogée du confort). */
   main[data-act="2"] {
-    --bg: #f6f8fb;
     --fg: #1b2433;
     --muted: #5b6b82;
     --line: #c8d4e3;
     --accent: #2f6df0;
-    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
   }
-  main[data-act="2"] button {
-    border-radius: 6px;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  main[data-act="2"] button:hover:not(:disabled) {
-    background: #e8eef9;
+  .screen :global(button):hover:not(:disabled) {
+    background: #eef3fb;
     border-color: var(--accent);
+  }
+
+  .counter {
+    margin: 0 0 0.25rem;
+    color: var(--accent);
   }
 
   .line {
     margin: 0;
-    font-variant-numeric: tabular-nums;
   }
 
   .muted {
@@ -264,13 +352,11 @@
 
   .count {
     color: var(--muted);
-    font-variant-numeric: tabular-nums;
   }
 
   .price {
     margin: 0.15rem 0 0;
     color: var(--muted);
-    font-variant-numeric: tabular-nums;
   }
 
   button:hover:not(:disabled) {
@@ -296,6 +382,7 @@
     position: fixed;
     top: 0.5rem;
     right: 0.75rem;
+    z-index: 6;
     display: flex;
     align-items: center;
     gap: 0.4rem;

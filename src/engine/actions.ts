@@ -5,6 +5,7 @@ import { GENERATORS_BY_ID, JUNIOR_SETTLEMENT } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, nextPromotion } from "./content/career";
 import { nextBook, studiesComplete } from "./content/studies";
+import { nextHome } from "./content/homes";
 import {
   FOLLOWERS_PER_POST,
   FOLLOWER_PACK_BASE_COST,
@@ -154,6 +155,26 @@ export function rest(state: GameState): void {
   state.vieVecueTicks += 1;
   state.secsSinceLife = 0;
   if (state.flags.sensRevealed) state.sens = Math.min(100, state.sens + SENS_PER_REST);
+}
+
+// --- Logement (décor de fond) ---
+
+export function homeCost(state: GameState): Decimal | null {
+  return nextHome(state.homeLevel)?.cost ?? null;
+}
+
+export function canBuyHome(state: GameState): boolean {
+  const next = nextHome(state.homeLevel);
+  return next !== null && state.money.gte(next.cost);
+}
+
+/** Acheter le logement suivant : débite le coût et monte d'un niveau de décor. */
+export function buyHome(state: GameState): boolean {
+  const next = nextHome(state.homeLevel);
+  if (!next || state.money.lt(next.cost)) return false;
+  state.money = state.money.sub(next.cost);
+  state.homeLevel += 1;
+  return true;
 }
 
 // --- Études & carrière ---

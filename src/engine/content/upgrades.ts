@@ -43,8 +43,9 @@ export const UPGRADES: UpgradeDef[] = [
   { id: "leve_serie_b", label: "Boucler un tour de série B", cost: D(0), unlockAtMoney: D(2500000), phase: "biz", requires: "leve_serie_a", grantCash: D(4000000) },
   // Data center : seul multiplicateur, justifié (plus d'infra → chaque GPU produit plus).
   { id: "data_center", label: "Construire un data center", cost: D(1500000), unlockAtMoney: D(1200000), phase: "biz", setGpuProductBoost: 0.15 },
-  // Graine du piège : automatiser la vie (confort célébré, jamais commenté).
-  { id: "nounou", label: "Engager une nounou", cost: D(120000), unlockAtMoney: D(100000), phase: "biz", automatesLife: true },
+  // Graine du piège : automatiser sa propre vie (confort célébré, jamais commenté).
+  // « nounou » présupposait un enfant inexistant → on délègue sa vie perso, sans rien présupposer.
+  { id: "nounou", label: "Déléguer sa vie perso à une assistante", cost: D(120000), unlockAtMoney: D(100000), phase: "biz", automatesLife: true },
 ];
 
 export const UPGRADES_BY_ID: Record<string, UpgradeDef> =
