@@ -1,7 +1,16 @@
 import { D, ZERO, type Decimal } from "./numbers";
-import { ENERGY_MAX, type GameState } from "./state";
-import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS_BY_ID } from "./content/generators";
+import { ENERGY_MAX, INCIDENT_MALUS, type GameState } from "./state";
+import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { sponsoringIncomePerSec } from "./content/audience";
+
+/** Effectif humain courant (juniors + seniors) : présence d'une équipe qui peut subir des incidents. */
+export function humanTeamSize(state: GameState): number {
+  let n = 0;
+  for (const g of GENERATORS) {
+    if (g.team) n += state.generators[g.id] ?? 0;
+  }
+  return n;
+}
 
 export function costOf(base: Decimal, growth: number, owned: number, count = 1): Decimal {
   const g = D(growth);
@@ -50,13 +59,19 @@ export function dishesPerMinute(state: GameState): Decimal {
  */
 export function devIncomePerSec(state: GameState): Decimal {
   const gpus = state.generators["gpu"] ?? 0;
+  const incidentActive = state.incident !== null;
   let total = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "dev") continue;
-    const grossPerUnit = def.redundancyPerGpu
-      ? def.output.sub(def.redundancyPerGpu * gpus).max(0)
+    // Érosion par GPU (l'IA reprend le travail), atténuée par la décision « Former l'équipe à l'IA ».
+    let grossPerUnit = def.redundancyPerGpu
+      ? def.output.sub(def.redundancyPerGpu * state.gpuErosionMult * gpus).max(0)
       : def.output;
+    // Multiplicateur de brut d'équipe issu des décisions CTO (cloud, revue de code, dette…).
+    grossPerUnit = grossPerUnit.mul(state.teamOutputMult);
+    // Incident en cours : le brut est divisé par 2 (les salaires restent pleins).
+    if (incidentActive) grossPerUnit = grossPerUnit.mul(INCIDENT_MALUS);
     const netPerUnit = def.salaryPerSec ? grossPerUnit.sub(def.salaryPerSec) : grossPerUnit;
     total = total.add(netPerUnit.mul(state.generators[id]));
   }
@@ -67,7 +82,8 @@ export function devIncomePerSec(state: GameState): Decimal {
 export function aiIncomePerSec(state: GameState): Decimal {
   if (!state.flags.aiResolving) return ZERO;
   const gpus = state.generators["gpu"] ?? 0;
-  return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus);
+  // aiRateMult : décision « Garder l'IA pour l'infra » booste le débit de l'IA.
+  return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus).mul(state.aiRateMult);
 }
 
 /** €/s de la boîte (entrepreneur) : produits (scalés par l'armée de GPU) + acquisitions. */

@@ -1,9 +1,17 @@
 import { D, type Decimal } from "./numbers";
-import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
+import {
+  ENERGY_MAX,
+  REST_ENERGY,
+  INCIDENT_ENERGY_COST,
+  INCIDENT_PERIOD,
+  type GameState,
+} from "./state";
 import { costOf, energyFactor } from "./economy";
 import { GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
-import { JOBS, nextPromotion } from "./content/career";
+import { JOBS, LEAD_HIRING_BONUS, nextPromotion } from "./content/career";
+import { MISSIONS, MISSION_PERIOD } from "./content/missions";
+import { DECISIONS } from "./content/decisions";
 import { nextBook, studiesComplete } from "./content/studies";
 import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
@@ -43,6 +51,19 @@ export function work(state: GameState): void {
     state.money = state.money.add(job.clickValue.mul(state.devClickMult));
     state.energy -= job.clickEnergyCost;
     state.totalClicks += 1;
+    // Chaque bug résolu compte (débloque les missions, alimente la gate lead).
+    state.bugsResolved += 1;
+    // Mission en cours : le clic fait avancer la livraison ; à la cible, prime versée.
+    if (state.mission) {
+      state.mission.progress += 1;
+      const def = MISSIONS[state.mission.tier];
+      if (state.mission.progress >= def.bugs) {
+        state.money = state.money.add(def.prime);
+        state.missionsDone += 1;
+        state.mission = null;
+        state.missionTimer = MISSION_PERIOD;
+      }
+    }
     return;
   }
   if (state.job === "celebrite") {
@@ -79,7 +100,11 @@ export function buyFollowers(state: GameState): boolean {
 export function generatorCost(state: GameState, id: string): Decimal {
   const def = GENERATORS_BY_ID[id];
   const owned = state.generators[id] ?? 0;
-  return costOf(def.baseCost, def.growth, owned);
+  let cost = costOf(def.baseCost, def.growth, owned);
+  // Décisions CTO : « Monter ses propres serveurs » (GPU) et « Standardiser l'outillage » (embauches).
+  if (id === "gpu") cost = cost.mul(state.gpuCostMult);
+  if (def.team) cost = cost.mul(state.hireCostMult);
+  return cost;
 }
 
 export function canBuyGenerator(state: GameState, id: string): boolean {
@@ -117,6 +142,53 @@ export function fireTeam(state: GameState): boolean {
     state.generators[g.id] = 0;
   }
   state.flags.equipeRemplacee = true;
+  return true;
+}
+
+// --- Lead dev & CTO : incidents ---
+
+/** Un incident est en cours et le joueur a l'énergie pour l'éteindre. */
+export function canResolveIncident(state: GameState): boolean {
+  return state.incident !== null && state.energy >= INCIDENT_ENERGY_COST;
+}
+
+/**
+ * Résoudre l'incident : action ACTIVE du joueur (coûte 10 énergie, cohérent avec la thèse).
+ * Coupe l'incident et relance le timer. Refuse si aucun incident ou énergie insuffisante.
+ */
+export function resolveIncident(state: GameState): boolean {
+  if (state.incident === null) return false;
+  if (state.energy < INCIDENT_ENERGY_COST) return false;
+  state.energy -= INCIDENT_ENERGY_COST;
+  state.incident = null;
+  state.incidentTimer = INCIDENT_PERIOD * state.incidentPeriodMult;
+  return true;
+}
+
+// --- CTO : cartes de décision ---
+
+/**
+ * Trancher la carte de décision en attente : applique les effets déclaratifs de l'option choisie
+ * (multiplicateurs cumulés, encaissement ou coût one-shot), puis avance la file.
+ * « Payer la dette technique » refuse et laisse la carte en attente si la caisse ne suit pas.
+ */
+export function decide(state: GameState, choice: "A" | "B"): boolean {
+  if (!state.pendingDecision) return false;
+  const card = DECISIONS[state.decisionIndex];
+  if (!card) return false;
+  const eff = choice === "A" ? card.optionA : card.optionB;
+  if (eff.cost !== undefined && state.money.lt(eff.cost)) return false; // carte laissée en attente
+  if (eff.cost !== undefined) state.money = state.money.sub(eff.cost);
+  if (eff.cash !== undefined) state.money = state.money.add(eff.cash);
+  if (eff.teamOutputMult !== undefined) state.teamOutputMult *= eff.teamOutputMult;
+  if (eff.gpuCostMult !== undefined) state.gpuCostMult *= eff.gpuCostMult;
+  if (eff.hireCostMult !== undefined) state.hireCostMult *= eff.hireCostMult;
+  if (eff.gpuErosionMult !== undefined) state.gpuErosionMult *= eff.gpuErosionMult;
+  if (eff.aiRateMult !== undefined) state.aiRateMult *= eff.aiRateMult;
+  if (eff.incidentPeriodMult !== undefined) state.incidentPeriodMult *= eff.incidentPeriodMult;
+  if (eff.setIncidentAutoResolve !== undefined) state.incidentAutoResolveSecs = eff.setIncidentAutoResolve;
+  state.decisionIndex += 1;
+  state.pendingDecision = false;
   return true;
 }
 
@@ -231,8 +303,26 @@ export function becomeDeveloper(state: GameState): boolean {
 
 function promotionReady(
   state: GameState,
-  promo: { moneyThreshold: Decimal; followersThreshold?: Decimal; empriseThreshold?: Decimal },
+  promo: {
+    moneyThreshold: Decimal;
+    followersThreshold?: Decimal;
+    empriseThreshold?: Decimal;
+    bugsThreshold?: number;
+    missionsThreshold?: number;
+    decisionsThreshold?: number;
+  },
 ): boolean {
+  // dev → lead : mérité par ce qu'on a FAIT dans la phase (bugs résolus ET missions livrées).
+  if (promo.bugsThreshold !== undefined || promo.missionsThreshold !== undefined) {
+    return (
+      state.bugsResolved >= (promo.bugsThreshold ?? 0) &&
+      state.missionsDone >= (promo.missionsThreshold ?? 0)
+    );
+  }
+  // cto → fondateur : capital ET toutes les décisions tranchées (le verbe du CTO est trancher).
+  if (promo.decisionsThreshold !== undefined) {
+    return state.money.gte(promo.moneyThreshold) && state.decisionIndex >= promo.decisionsThreshold;
+  }
   if (promo.empriseThreshold) return state.emprise.gte(promo.empriseThreshold);
   if (promo.followersThreshold) return state.followers.gte(promo.followersThreshold);
   return state.money.gte(promo.moneyThreshold);
@@ -248,6 +338,8 @@ export function promote(state: GameState): boolean {
   const promo = nextPromotion(state.job);
   if (!promo || !promotionReady(state, promo)) return false;
   state.job = promo.to;
+  // Prime d'embauche du lead : évite le hard-lock du lead sans revenu (finance les 1ers juniors).
+  if (promo.to === "lead_dev") state.money = state.money.add(LEAD_HIRING_BONUS);
   if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
   if (promo.to === "politique") state.flags.act3 = true; // bascule visuelle Acte III (froid, dystopique)
   return true;

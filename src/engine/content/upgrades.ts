@@ -28,7 +28,7 @@ export const UPGRADES: UpgradeDef[] = [
   { id: "gants_pro", label: "Gants pro", cost: D(10), unlockAtMoney: D(7), phase: "plonge", requires: "coup_de_main", setDishesPerClick: 8, setHandRate: 20 },
 
   // --- Développeur (multiplie la valeur d'un bug résolu ; seul le dev IC clique) ---
-  { id: "ide", label: "Meilleur IDE", cost: D(80), unlockAtMoney: D(60), phase: "dev", mulClickValue: 2 },
+  { id: "ide", label: "Installer un meilleur IDE", cost: D(80), unlockAtMoney: D(60), phase: "dev", mulClickValue: 2 },
 
   // --- Pont IA : automatiser le travail (sain), prépare l'armée d'IA de la future boîte ---
   // Le livre qui apprend à se servir de l'IA débloque l'orchestration d'agents.

@@ -2,13 +2,68 @@ import {
   ENERGY_DRAIN_PER_DISH,
   ENERGY_MAX,
   ENERGY_REGEN_PER_SEC,
+  INCIDENT_PERIOD,
   type GameState,
 } from "./state";
-import { incomePerSec, handDishesPerSec, audienceFollowersPerSec, emprisePerSec } from "./economy";
+import { incomePerSec, handDishesPerSec, audienceFollowersPerSec, emprisePerSec, humanTeamSize } from "./economy";
 import { GENERATORS, generatorAvailable } from "./content/generators";
 import { studiesComplete } from "./content/studies";
 import { computeInitialSens, NEGLECT_SECONDS, SENS_DRIFT_PER_SEC } from "./content/audience";
 import { EPILOGUE_EMPRISE } from "./content/power";
+import { MISSION_PERIOD, MISSION_WINDOW, MISSION_MIN_BUGS, missionTier } from "./content/missions";
+import { DECISIONS } from "./content/decisions";
+
+/**
+ * Arc dev déterministe (développeur → lead → CTO) : missions freelance, incidents d'équipe,
+ * cartes de décision. Zéro RNG : périodes fixes, fenêtres datées.
+ */
+function tickArcDev(state: GameState, t: number): void {
+  // Développeur : missions freelance à fenêtre (dès 10 bugs résolus).
+  if (state.job === "developpeur") {
+    if (state.mission) {
+      state.mission.timeLeft -= t;
+      if (state.mission.timeLeft <= 0) {
+        state.mission = null; // expirée : disparaît jusqu'à la prochaine
+        state.missionTimer = MISSION_PERIOD;
+      }
+    } else if (state.bugsResolved >= MISSION_MIN_BUGS) {
+      state.missionTimer -= t;
+      if (state.missionTimer <= 0) {
+        state.mission = { tier: missionTier(state.missionsDone), progress: 0, timeLeft: MISSION_WINDOW };
+      }
+    }
+  }
+
+  // Lead dev & CTO : incidents périodiques tant qu'il y a une équipe humaine et que l'IA ne résout pas.
+  const incidentsActive =
+    (state.job === "lead_dev" || state.job === "cto") &&
+    humanTeamSize(state) > 0 &&
+    !state.flags.aiResolving;
+  if (incidentsActive) {
+    if (state.incident) {
+      state.incident.timeLeft -= t;
+      if (state.incident.timeLeft <= 0) {
+        state.incident = null; // s'éteint seul (vraie punition AFK, jamais un état permanent)
+        state.incidentTimer = INCIDENT_PERIOD * state.incidentPeriodMult;
+      }
+    } else {
+      state.incidentTimer -= t;
+      if (state.incidentTimer <= 0) {
+        state.incident = { timeLeft: state.incidentAutoResolveSecs };
+      }
+    }
+  } else {
+    // IA active ou équipe à 0 : incident et timer coupés (battement de thèse, jamais commenté).
+    state.incident = null;
+    state.incidentTimer = INCIDENT_PERIOD * state.incidentPeriodMult;
+  }
+
+  // CTO : une carte de décision s'arme dès que les gains cumulés atteignent son seuil.
+  if (state.job === "cto" && !state.pendingDecision && state.decisionIndex < DECISIONS.length) {
+    const card = DECISIONS[state.decisionIndex];
+    if (state.ctoEarned.gte(card.threshold)) state.pendingDecision = true;
+  }
+}
 
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
@@ -75,7 +130,13 @@ export function tick(state: GameState, dt: number): void {
 
   // Revenu : assiettes × valeur. Le manuel est modulé par l'énergie ; les machines non.
   // Le net peut être négatif (équipe de juniors en perte sous IA forte) ; jamais d'argent négatif.
-  state.money = state.money.add(incomePerSec(state).mul(t)).max(0);
+  const income = incomePerSec(state);
+  state.money = state.money.add(income.mul(t)).max(0);
+  // CTO : gains cumulés depuis l'entrée en poste (revenu positif) → déclenchent les cartes de décision.
+  // (Le CTO ne gagne rien au clic : cette source est donc son seul apport à ctoEarned.)
+  if (state.job === "cto" && income.gt(0)) {
+    state.ctoEarned = state.ctoEarned.add(income.mul(t));
+  }
 
   // Audience : followers passifs des campagnes d'image.
   state.followers = state.followers.add(audienceFollowersPerSec(state).mul(t));
@@ -98,6 +159,8 @@ export function tick(state: GameState, dt: number): void {
     const delta = (ENERGY_REGEN_PER_SEC - drain) * t;
     state.energy = Math.max(0, Math.min(ENERGY_MAX, state.energy + delta));
   }
+
+  tickArcDev(state, t);
 
   updateFlags(state);
 }

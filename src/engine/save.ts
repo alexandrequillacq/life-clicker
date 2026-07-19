@@ -1,5 +1,12 @@
 import { D, type Decimal } from "./numbers";
-import { type GameState, SAVE_VERSION, createInitialState } from "./state";
+import {
+  type GameState,
+  SAVE_VERSION,
+  createInitialState,
+  INCIDENT_PERIOD,
+  INCIDENT_AUTO_RESOLVE,
+} from "./state";
+import { MISSION_PERIOD } from "./content/missions";
 
 const KEY = "life-clicker-save";
 const BACKUP_KEY = "life-clicker-save-backup";
@@ -11,6 +18,7 @@ export function serialize(state: GameState): string {
     valuePerDish: state.valuePerDish.toString(),
     followers: state.followers.toString(),
     emprise: state.emprise.toString(),
+    ctoEarned: state.ctoEarned.toString(),
   });
 }
 
@@ -26,6 +34,23 @@ export function deserialize(json: string): GameState {
     job: raw.job ?? "plongeur",
     devClickMult: raw.devClickMult ?? 1,
     gpuProductBoost: raw.gpuProductBoost ?? 0.1,
+    // Arc dev (missions, incidents, décisions) : défauts pour tout champ ajouté à un schéma de même version.
+    bugsResolved: raw.bugsResolved ?? 0,
+    missionsDone: raw.missionsDone ?? 0,
+    mission: raw.mission ?? null,
+    missionTimer: raw.missionTimer ?? MISSION_PERIOD,
+    incident: raw.incident ?? null,
+    incidentTimer: raw.incidentTimer ?? INCIDENT_PERIOD,
+    incidentPeriodMult: raw.incidentPeriodMult ?? 1,
+    incidentAutoResolveSecs: raw.incidentAutoResolveSecs ?? INCIDENT_AUTO_RESOLVE,
+    decisionIndex: raw.decisionIndex ?? 0,
+    pendingDecision: raw.pendingDecision ?? false,
+    ctoEarned: D(raw.ctoEarned ?? 0) as Decimal,
+    teamOutputMult: raw.teamOutputMult ?? 1,
+    gpuCostMult: raw.gpuCostMult ?? 1,
+    hireCostMult: raw.hireCostMult ?? 1,
+    gpuErosionMult: raw.gpuErosionMult ?? 1,
+    aiRateMult: raw.aiRateMult ?? 1,
     followers: D(raw.followers ?? 0) as Decimal,
     followerPacks: raw.followerPacks ?? 0,
     sens: raw.sens ?? 0,

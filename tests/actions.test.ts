@@ -152,11 +152,13 @@ describe("études & carrière", () => {
     buyUpgrade(s, "laisser_ia");
     expect(s.flags.aiResolving).toBe(true);
   });
-  it("on ne promeut qu'au capital requis", () => {
+  it("on ne promeut en lead qu'après 40 bugs et 2 missions (pas au capital)", () => {
     const s = createInitialState(0);
     s.job = "developpeur";
+    s.money = D(1e6); // le capital seul ne débloque plus
     expect(canPromote(s)).toBe(false);
-    s.money = D(1000);
+    s.bugsResolved = 40;
+    s.missionsDone = 2;
     expect(canPromote(s)).toBe(true);
     expect(promote(s)).toBe(true);
     expect(s.job).toBe("lead_dev");
@@ -168,6 +170,7 @@ describe("entrepreneur (boîte d'IA)", () => {
     const s = createInitialState(0);
     s.job = "cto";
     s.money = D(30000);
+    s.decisionIndex = 5; // les 5 décisions tranchées
     promote(s);
     expect(s.job).toBe("entrepreneur");
     expect(s.flags.act2).toBe(true);
