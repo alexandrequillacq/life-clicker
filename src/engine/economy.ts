@@ -2,6 +2,7 @@ import { D, ZERO, type Decimal } from "./numbers";
 import { ENERGY_MAX, INCIDENT_MALUS, type GameState } from "./state";
 import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { sponsoringIncomePerSec } from "./content/audience";
+import { KEYNOTE_BOOST } from "./content/keynote";
 
 /** Effectif humain courant (juniors + seniors) : présence d'une équipe qui peut subir des incidents. */
 export function humanTeamSize(state: GameState): number {
@@ -91,10 +92,14 @@ export function bizIncomePerSec(state: GameState): Decimal {
   let total = ZERO;
   const gpus = state.generators["gpu"] ?? 0;
   const gpuFactor = 1 + state.gpuProductBoost * gpus;
+  // Keynote : pendant le boost, une keynote VEND des produits (scalesWithGpu = produit_ia) → ×1,5.
+  // Les acquisitions ne sont PAS boostées : une keynote ne fait pas produire davantage une filiale rachetée.
+  const keynoteBoosted = state.keynoteBoostLeft > 0;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "biz") continue;
-    const unit = def.scalesWithGpu ? def.output.mul(gpuFactor) : def.output;
+    let unit = def.scalesWithGpu ? def.output.mul(gpuFactor) : def.output;
+    if (keynoteBoosted && def.scalesWithGpu) unit = unit.mul(1 + KEYNOTE_BOOST);
     total = total.add(unit.mul(state.generators[id]));
   }
   return total;

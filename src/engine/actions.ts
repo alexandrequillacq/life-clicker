@@ -9,7 +9,7 @@ import {
 import { costOf, energyFactor } from "./economy";
 import { GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
-import { JOBS, LEAD_HIRING_BONUS, nextPromotion } from "./content/career";
+import { JOBS, LEAD_HIRING_BONUS, nextPromotion, type PromotionDef } from "./content/career";
 import { MISSIONS, MISSION_PERIOD } from "./content/missions";
 import { DECISIONS } from "./content/decisions";
 import { nextBook, studiesComplete } from "./content/studies";
@@ -17,12 +17,25 @@ import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
 import {
   FOLLOWERS_PER_POST,
+  POST_FOLLOWERS_SHARE,
+  TREND_MULT,
+  trendActive,
+  BADBUZZ_ENERGY_COST,
+  BADBUZZ_PERIOD,
   FOLLOWER_PACK_BASE_COST,
   FOLLOWER_PACK_GROWTH,
   FOLLOWER_PACK_SIZE,
   SENS_PER_AUTOMATION,
   SENS_PER_REST,
 } from "./content/audience";
+import {
+  KEYNOTE_PERIOD,
+  KEYNOTE_BOOST_SECS,
+  KEYNOTE_FOLLOWERS,
+  KEYNOTE_ENERGY_COST,
+  PRESS_FOLLOWERS_RAISE,
+  PRESS_FOLLOWERS_ACQUISITION,
+} from "./content/keynote";
 
 // --- Clic actif (dépend du métier) ---
 
@@ -67,12 +80,60 @@ export function work(state: GameState): void {
     return;
   }
   if (state.job === "celebrite") {
-    state.followers = state.followers.add(D(FOLLOWERS_PER_POST).mul(energyFactor(state)));
+    // Le post porte : base + part de l'audience, amplifié ×8 en tendance, modulé par l'énergie.
+    const base = D(FOLLOWERS_PER_POST).add(state.followers.mul(POST_FOLLOWERS_SHARE));
+    const trend = trendActive(state) ? TREND_MULT : 1;
+    const gain = base.mul(trend).mul(energyFactor(state));
+    state.followers = state.followers.add(gain);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
     state.energy = Math.max(0, state.energy - job.clickEnergyCost);
     state.totalClicks += 1;
     return;
   }
   // Managers (lead dev, CTO, fondateur) : pas de clic pour gagner de l'argent.
+}
+
+// --- Keynotes (fondateur) ---
+
+/**
+ * Une keynote est disponible pour le fondateur ayant bouclé au moins une levée, timer écoulé
+ * et énergie suffisante (action ACTIVE du joueur → coût en énergie légitime).
+ */
+export function canGiveKeynote(state: GameState): boolean {
+  return (
+    state.job === "entrepreneur" &&
+    !!state.upgrades["leve_amorcage"] &&
+    state.keynoteTimer <= 0 &&
+    state.energy >= KEYNOTE_ENERGY_COST
+  );
+}
+
+/** Donner une keynote : +5 000 followers, boost produits armé 15 s, énergie −6, timer relancé à 60 s. */
+export function giveKeynote(state: GameState): boolean {
+  if (!canGiveKeynote(state)) return false;
+  state.followers = state.followers.add(KEYNOTE_FOLLOWERS);
+  state.maxFollowers = state.maxFollowers.max(state.followers);
+  state.keynoteBoostLeft = KEYNOTE_BOOST_SECS;
+  state.energy -= KEYNOTE_ENERGY_COST;
+  state.keynoteTimer = KEYNOTE_PERIOD;
+  return true;
+}
+
+// --- Bad buzz (célébrité) ---
+
+/** Une polémique est en cours et le joueur a l'énergie pour la couper. */
+export function canAnswerBadBuzz(state: GameState): boolean {
+  return state.badBuzz !== null && state.energy >= BADBUZZ_ENERGY_COST;
+}
+
+/** Répondre à la polémique : action ACTIVE (8 énergie) qui coupe le drain et relance le timer. */
+export function answerBadBuzz(state: GameState): boolean {
+  if (state.badBuzz === null) return false;
+  if (state.energy < BADBUZZ_ENERGY_COST) return false;
+  state.energy -= BADBUZZ_ENERGY_COST;
+  state.badBuzz = null;
+  state.badBuzzTimer = BADBUZZ_PERIOD;
+  return true;
 }
 
 // --- Audience (célébrité) ---
@@ -121,6 +182,11 @@ export function buyGenerator(state: GameState, id: string): boolean {
   state.generators[id] = (state.generators[id] ?? 0) + 1;
   // Acquisition : on absorbe l'infra (des GPU s'ajoutent au parc).
   if (def.bonusGpu) state.generators["gpu"] = (state.generators["gpu"] ?? 0) + def.bonusGpu;
+  // Presse : une acquisition fait parler de la boîte (pont fondateur → célébrité).
+  if (id === "acquisition") {
+    state.followers = state.followers.add(PRESS_FOLLOWERS_ACQUISITION);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
+  }
   return true;
 }
 
@@ -219,7 +285,12 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
   if (def.unlocksAi) state.flags.aiUnlocked = true;
   if (def.startsAi) state.flags.aiResolving = true;
-  if (def.grantCash) state.money = state.money.add(def.grantCash);
+  if (def.grantCash) {
+    state.money = state.money.add(def.grantCash);
+    // Presse : chaque levée bouclée fait parler de la boîte (pont fondateur → célébrité).
+    state.followers = state.followers.add(PRESS_FOLLOWERS_RAISE);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
+  }
   if (def.setGpuProductBoost !== undefined) state.gpuProductBoost = def.setGpuProductBoost;
   if (def.automatesLife) {
     state.flags.vieAutomatisee = true;
@@ -301,31 +372,21 @@ export function becomeDeveloper(state: GameState): boolean {
   return true;
 }
 
-function promotionReady(
-  state: GameState,
-  promo: {
-    moneyThreshold: Decimal;
-    followersThreshold?: Decimal;
-    empriseThreshold?: Decimal;
-    bugsThreshold?: number;
-    missionsThreshold?: number;
-    decisionsThreshold?: number;
-  },
-): boolean {
+function promotionReady(state: GameState, promo: PromotionDef): boolean {
+  // Toutes les conditions présentes se combinent en ET (les seuils absents sont neutres).
+  if (state.money.lt(promo.moneyThreshold)) return false;
   // dev → lead : mérité par ce qu'on a FAIT dans la phase (bugs résolus ET missions livrées).
-  if (promo.bugsThreshold !== undefined || promo.missionsThreshold !== undefined) {
-    return (
-      state.bugsResolved >= (promo.bugsThreshold ?? 0) &&
-      state.missionsDone >= (promo.missionsThreshold ?? 0)
-    );
-  }
-  // cto → fondateur : capital ET toutes les décisions tranchées (le verbe du CTO est trancher).
-  if (promo.decisionsThreshold !== undefined) {
-    return state.money.gte(promo.moneyThreshold) && state.decisionIndex >= promo.decisionsThreshold;
-  }
-  if (promo.empriseThreshold) return state.emprise.gte(promo.empriseThreshold);
-  if (promo.followersThreshold) return state.followers.gte(promo.followersThreshold);
-  return state.money.gte(promo.moneyThreshold);
+  if (promo.bugsThreshold !== undefined && state.bugsResolved < promo.bugsThreshold) return false;
+  if (promo.missionsThreshold !== undefined && state.missionsDone < promo.missionsThreshold) return false;
+  // cto → fondateur : toutes les décisions tranchées (le verbe du CTO est trancher).
+  if (promo.decisionsThreshold !== undefined && state.decisionIndex < promo.decisionsThreshold) return false;
+  // fondateur → célébrité : au moins une levée bouclée (pont narratif ET mécanique de la presse).
+  if (promo.requiresUpgrade !== undefined && !state.upgrades[promo.requiresUpgrade]) return false;
+  // célébrité → politique : porte sur le PIC historique, jamais le stock rongé par le bad buzz.
+  if (promo.maxFollowersThreshold && state.maxFollowers.lt(promo.maxFollowersThreshold)) return false;
+  // Acte III : promotions sur l'Emprise.
+  if (promo.empriseThreshold && state.emprise.lt(promo.empriseThreshold)) return false;
+  return true;
 }
 
 export function canPromote(state: GameState): boolean {

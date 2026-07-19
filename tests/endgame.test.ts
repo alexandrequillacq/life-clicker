@@ -38,7 +38,7 @@ describe("Acte III : emprise, pouvoir, épilogue", () => {
   it("passer en politique bascule en Acte III", () => {
     const s = createInitialState(0);
     s.job = "celebrite";
-    s.followers = D(50_000_000);
+    s.maxFollowers = D(50_000_000);
     promote(s);
     expect(s.job).toBe("politique");
     expect(s.flags.act3).toBe(true);

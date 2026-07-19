@@ -1,5 +1,6 @@
 import { D, type Decimal, ZERO } from "./numbers";
 import { MISSION_PERIOD } from "./content/missions";
+import { BADBUZZ_OFFSET } from "./content/audience";
 
 export const SAVE_VERSION = 6;
 
@@ -68,7 +69,15 @@ export interface GameState {
   gpuErosionMult: number; // décisions : multiplicateur de l'érosion du brut par GPU
   aiRateMult: number; // décisions : multiplicateur du débit de l'IA
   followers: Decimal; // audience (célébrité) : vanité, revenu propre dérisoire
+  maxFollowers: Decimal; // pic historique de followers (porte la gate politique ; jamais rongé par le bad buzz)
   followerPacks: number; // nombre de paquets de followers achetés (coût croissant)
+  // Keynotes (fondateur) : action armée qui booste les produits et fait parler la presse.
+  keynoteTimer: number; // secondes avant la prochaine keynote disponible (0 = prête)
+  keynoteBoostLeft: number; // secondes de boost produits restantes
+  // Célébrité : tendances (fenêtre ×8) et bad buzz (polémique qui draine le stock).
+  trendTimer: number; // position dans le cycle de tendance [0, TREND_PERIOD)
+  badBuzz: { timeLeft: number } | null; // polémique en cours (null = aucune)
+  badBuzzTimer: number; // secondes avant la prochaine polémique
   sens: number; // 0..100, révélé en P5 ; reflète la vie vécue vs sacrifiée
   vieVecueTicks: number; // nombre de gestes de vie réels posés (alimente le Sens)
   vieAutomatiseeCount: number; // nombre d'automatisations de la vie achetées (creuse le Sens)
@@ -117,7 +126,13 @@ export function createInitialState(now: number, karma = 0): GameState {
     gpuErosionMult: 1,
     aiRateMult: 1,
     followers: ZERO,
+    maxFollowers: ZERO,
     followerPacks: 0,
+    keynoteTimer: 0,
+    keynoteBoostLeft: 0,
+    trendTimer: 0,
+    badBuzz: null,
+    badBuzzTimer: BADBUZZ_OFFSET,
     sens: 0,
     vieVecueTicks: 0,
     vieAutomatiseeCount: 0,

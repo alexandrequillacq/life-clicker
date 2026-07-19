@@ -1,3 +1,4 @@
+import { D } from "./numbers";
 import {
   ENERGY_DRAIN_PER_DISH,
   ENERGY_MAX,
@@ -8,7 +9,16 @@ import {
 import { incomePerSec, handDishesPerSec, audienceFollowersPerSec, emprisePerSec, humanTeamSize } from "./economy";
 import { GENERATORS, generatorAvailable } from "./content/generators";
 import { studiesComplete } from "./content/studies";
-import { computeInitialSens, NEGLECT_SECONDS, SENS_DRIFT_PER_SEC } from "./content/audience";
+import {
+  computeInitialSens,
+  NEGLECT_SECONDS,
+  SENS_DRIFT_PER_SEC,
+  TREND_PERIOD,
+  BADBUZZ_PERIOD,
+  BADBUZZ_DURATION,
+  BADBUZZ_DRAIN,
+  BADBUZZ_MIN_FOLLOWERS,
+} from "./content/audience";
 import { EPILOGUE_EMPRISE } from "./content/power";
 import { MISSION_PERIOD, MISSION_WINDOW, MISSION_MIN_BUGS, missionTier } from "./content/missions";
 import { DECISIONS } from "./content/decisions";
@@ -62,6 +72,40 @@ function tickArcDev(state: GameState, t: number): void {
   if (state.job === "cto" && !state.pendingDecision && state.decisionIndex < DECISIONS.length) {
     const card = DECISIONS[state.decisionIndex];
     if (state.ctoEarned.gte(card.threshold)) state.pendingDecision = true;
+  }
+}
+
+/**
+ * Arc Acte II déterministe (fondateur + célébrité) : décompte des timers de keynote,
+ * cycle de tendance (fenêtre ×8) et polémiques (bad buzz qui draine le stock). Zéro RNG.
+ */
+function tickActeII(state: GameState, t: number): void {
+  // Keynotes (fondateur) : le timer rend la prochaine keynote disponible ; le boost s'épuise.
+  if (state.keynoteTimer > 0) state.keynoteTimer = Math.max(0, state.keynoteTimer - t);
+  if (state.keynoteBoostLeft > 0) state.keynoteBoostLeft = Math.max(0, state.keynoteBoostLeft - t);
+
+  // Célébrité : tendances et bad buzz (le cycle ne tourne qu'en célébrité).
+  if (state.job === "celebrite") {
+    state.trendTimer = (state.trendTimer + t) % TREND_PERIOD;
+
+    // Polémique active : drain compound des followers courants (jamais sous 0), puis extinction seule.
+    // On draine AVANT d'armer une nouvelle polémique : la fenêtre de la polémique qui vient de
+    // démarrer ne consomme pas déjà du temps de drain dans le même tick.
+    if (state.badBuzz) {
+      const active = Math.min(t, state.badBuzz.timeLeft);
+      state.followers = state.followers.mul(D(1 - BADBUZZ_DRAIN).pow(active)).max(0);
+      state.badBuzz.timeLeft -= t;
+      if (state.badBuzz.timeLeft <= 0) state.badBuzz = null;
+    }
+
+    // Timer de polémique : tourne dès qu'on est au-dessus du seuil (horloge alignée sur les tendances).
+    if (state.followers.gte(BADBUZZ_MIN_FOLLOWERS)) {
+      state.badBuzzTimer -= t;
+      if (state.badBuzzTimer <= 0 && state.badBuzz === null) {
+        state.badBuzz = { timeLeft: BADBUZZ_DURATION };
+        state.badBuzzTimer += BADBUZZ_PERIOD;
+      }
+    }
   }
 }
 
@@ -161,6 +205,11 @@ export function tick(state: GameState, dt: number): void {
   }
 
   tickArcDev(state, t);
+  tickActeII(state, t);
+
+  // Pic historique de followers : mis à jour vers le haut uniquement (jamais rongé par le bad buzz).
+  // Porte la gate politique : le stock peut chuter, le pic tient.
+  state.maxFollowers = state.maxFollowers.max(state.followers);
 
   updateFlags(state);
 }

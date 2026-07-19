@@ -7,6 +7,7 @@ import {
   INCIDENT_AUTO_RESOLVE,
 } from "./state";
 import { MISSION_PERIOD } from "./content/missions";
+import { BADBUZZ_OFFSET } from "./content/audience";
 
 const KEY = "life-clicker-save";
 const BACKUP_KEY = "life-clicker-save-backup";
@@ -17,6 +18,7 @@ export function serialize(state: GameState): string {
     money: state.money.toString(),
     valuePerDish: state.valuePerDish.toString(),
     followers: state.followers.toString(),
+    maxFollowers: state.maxFollowers.toString(),
     emprise: state.emprise.toString(),
     ctoEarned: state.ctoEarned.toString(),
   });
@@ -52,7 +54,13 @@ export function deserialize(json: string): GameState {
     gpuErosionMult: raw.gpuErosionMult ?? 1,
     aiRateMult: raw.aiRateMult ?? 1,
     followers: D(raw.followers ?? 0) as Decimal,
+    maxFollowers: D(raw.maxFollowers ?? raw.followers ?? 0) as Decimal,
     followerPacks: raw.followerPacks ?? 0,
+    keynoteTimer: raw.keynoteTimer ?? 0,
+    keynoteBoostLeft: raw.keynoteBoostLeft ?? 0,
+    trendTimer: raw.trendTimer ?? 0,
+    badBuzz: raw.badBuzz ?? null,
+    badBuzzTimer: raw.badBuzzTimer ?? BADBUZZ_OFFSET,
     sens: raw.sens ?? 0,
     vieVecueTicks: raw.vieVecueTicks ?? 0,
     vieAutomatiseeCount: raw.vieAutomatiseeCount ?? (raw.flags?.vieAutomatisee ? 1 : 0),

@@ -87,20 +87,21 @@ export interface PromotionDef {
   from: Job;
   to: Job;
   cta: string; // libellé du bouton de promotion
-  moneyThreshold: Decimal; // capital requis (peut se combiner avec decisionsThreshold ; ignoré si un seuil dédié prend le dessus)
-  followersThreshold?: Decimal; // si défini, la promotion se débloque sur les followers
+  moneyThreshold: Decimal; // capital requis (combiné en ET avec les autres seuils présents)
+  maxFollowersThreshold?: Decimal; // célébrité → politique : pic historique de followers requis
   empriseThreshold?: Decimal; // si défini, la promotion se débloque sur l'Emprise (Acte III)
   bugsThreshold?: number; // dev → lead : bugs résolus requis (ET missionsThreshold)
   missionsThreshold?: number; // dev → lead : missions livrées requises (ET bugsThreshold)
   decisionsThreshold?: number; // cto → fondateur : décisions tranchées requises (ET moneyThreshold)
+  requiresUpgrade?: string; // fondateur → célébrité : upgrade requis (au moins une levée bouclée)
 }
 
 export const PROMOTIONS: PromotionDef[] = [
   { from: "developpeur", to: "lead_dev", cta: "Accepter le poste de lead dev", moneyThreshold: D(0), bugsThreshold: 40, missionsThreshold: 2 },
   { from: "lead_dev", to: "cto", cta: "Accepter le poste de CTO", moneyThreshold: D(3000) },
   { from: "cto", to: "entrepreneur", cta: "Fonder sa boîte d'IA", moneyThreshold: D(30000), decisionsThreshold: 5 },
-  { from: "entrepreneur", to: "celebrite", cta: "Sortir de l'ombre", moneyThreshold: D(8_000_000) },
-  { from: "celebrite", to: "politique", cta: "Entrer en politique", moneyThreshold: D(0), followersThreshold: D(50_000_000) },
+  { from: "entrepreneur", to: "celebrite", cta: "Sortir de l'ombre", moneyThreshold: D(8_000_000), requiresUpgrade: "leve_amorcage" },
+  { from: "celebrite", to: "politique", cta: "Entrer en politique", moneyThreshold: D(0), maxFollowersThreshold: D(50_000_000) },
   { from: "politique", to: "president", cta: "Prendre la présidence", moneyThreshold: D(0), empriseThreshold: D(5e4) },
   { from: "president", to: "monde", cta: "Régner sur le monde", moneyThreshold: D(0), empriseThreshold: D(1e7) },
   { from: "monde", to: "empereur", cta: "Régner sur le cosmos", moneyThreshold: D(0), empriseThreshold: D(5e9) },
