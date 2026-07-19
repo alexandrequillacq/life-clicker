@@ -471,6 +471,13 @@ export function canPromote(state: GameState): boolean {
 export function promote(state: GameState): boolean {
   const promo = nextPromotion(state.job);
   if (!promo || !promotionReady(state, promo)) return false;
+  // Les événements éphémères appartiennent à la phase qu'on quitte : sans ce nettoyage,
+  // une mission, un incident, une polémique ou un boost keynote resteraient figés (et
+  // affichés) dans le métier suivant, où leur mécanique ne tourne plus.
+  state.mission = null;
+  state.incident = null;
+  state.badBuzz = null;
+  state.keynoteBoostLeft = 0;
   state.job = promo.to;
   // Prime d'embauche du lead : évite le hard-lock du lead sans revenu (finance les 1ers juniors).
   if (promo.to === "lead_dev") state.money = state.money.add(LEAD_HIRING_BONUS);

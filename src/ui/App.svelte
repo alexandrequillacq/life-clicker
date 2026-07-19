@@ -117,7 +117,10 @@
 
   // Empereur : dernier palier cosmique franchi + liste discrète des paliers déjà atteints.
   const cosmicLine = $derived(cosmicMilestone(s.probes));
-  const cosmicReached = $derived(COSMIC_MILESTONES.filter((m) => s.probes.gte(m.threshold)));
+  // Le titre affiche le dernier palier franchi ; la liste ne garde que les paliers antérieurs.
+  const cosmicReached = $derived(
+    COSMIC_MILESTONES.filter((m) => s.probes.gte(m.threshold) && m.line !== cosmicLine),
+  );
 
   // Équipe (lead dev / CTO / fondateur) : l'effectif humain se VOIT en pastilles.
   const TEAM_CAP = 20;

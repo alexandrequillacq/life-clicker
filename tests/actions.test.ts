@@ -163,6 +163,24 @@ describe("études & carrière", () => {
     expect(promote(s)).toBe(true);
     expect(s.job).toBe("lead_dev");
   });
+  it("une promotion nettoie les événements éphémères de la phase quittée", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    s.money = D(1e6);
+    s.bugsResolved = 40;
+    s.missionsDone = 2;
+    // Événements transitoires laissés actifs au moment de la promotion.
+    s.mission = { tier: 0, progress: 3, timeLeft: 12 };
+    s.incident = { timeLeft: 18 };
+    s.badBuzz = { timeLeft: 15 };
+    s.keynoteBoostLeft = 9;
+    expect(promote(s)).toBe(true);
+    // Rien de la phase précédente ne doit rester figé dans la nouvelle phase.
+    expect(s.mission).toBeNull();
+    expect(s.incident).toBeNull();
+    expect(s.badBuzz).toBeNull();
+    expect(s.keynoteBoostLeft).toBe(0);
+  });
 });
 
 describe("entrepreneur (boîte d'IA)", () => {
