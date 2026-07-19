@@ -1,8 +1,19 @@
 import { D, ZERO, type Decimal } from "./numbers";
-import { ENERGY_MAX, INCIDENT_MALUS, type GameState } from "./state";
+import { ENERGY_MAX, INCIDENT_MALUS, type GameState, type Job } from "./state";
 import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { sponsoringIncomePerSec } from "./content/audience";
 import { KEYNOTE_BOOST } from "./content/keynote";
+import { CONTROLS, RESISTANCE_FACTOR_DIV } from "./content/control";
+import { EMPRISE_PER_PROBE } from "./content/cosmos";
+
+// Métiers de fin de partie où plus aucune action du joueur ne consomme d'énergie
+// (le meeting politique est la dernière) : « le pouvoir absolu ne fatigue pas ».
+const NO_ENERGY_JOBS: Job[] = ["president", "monde", "empereur"];
+
+/** L'énergie est-elle encore pertinente ? Vraie jusqu'à la politique incluse, fausse dès la présidence. */
+export function energyRelevant(state: GameState): boolean {
+  return !NO_ENERGY_JOBS.includes(state.job);
+}
 
 /** Effectif humain courant (juniors + seniors) : présence d'une équipe qui peut subir des incidents. */
 export function humanTeamSize(state: GameState): number {
@@ -105,19 +116,38 @@ export function bizIncomePerSec(state: GameState): Decimal {
   return total;
 }
 
+/** €/s produits par les cibles de contrôle possédées (institutions, continents) : persistent après promotion. */
+export function controlIncomePerSec(state: GameState): Decimal {
+  let total = ZERO;
+  for (const c of CONTROLS) {
+    if (state.controls[c.id]) total = total.add(c.moneyPerSec);
+  }
+  return total;
+}
+
 /**
- * Emprise/s (Acte III) : produite par l'appareil de pouvoir, MULTIPLIÉE par l'armée de GPU
- * (la même IA qui a fait la fortune contrôle désormais le monde). Compteur de sortie, pas une monnaie.
+ * Emprise/s (Acte III), compteur de sortie et jamais une monnaie. Somme trois sources :
+ *  1. les générateurs de pouvoir (propagande, influence, moissonneuse) ET les cibles de contrôle
+ *     possédées, le tout MULTIPLIÉ par l'armée de GPU (la même IA qui a fait la fortune contrôle le monde) ;
+ *  2. les sondes von Neumann (empereur) : probes × 1, hors boost GPU (elles se répliquent seules) ;
+ * puis TOUT est multiplié par le facteur de Résistance (1 − resistance/150), plancher 1/3 > 0
+ * (la Résistance ne bloque jamais). Les grants d'actes ne passent pas par ici (rituel, pas moteur).
  */
 export function emprisePerSec(state: GameState): Decimal {
-  let total = ZERO;
+  let apparatus = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "emprise") continue;
-    total = total.add(def.output.mul(state.generators[id]));
+    apparatus = apparatus.add(def.output.mul(state.generators[id]));
+  }
+  for (const c of CONTROLS) {
+    if (state.controls[c.id]) apparatus = apparatus.add(c.emprisePerSec);
   }
   const gpus = state.generators["gpu"] ?? 0;
-  return total.mul(1 + EMPRISE_GPU_BOOST * gpus);
+  const boosted = apparatus.mul(1 + EMPRISE_GPU_BOOST * gpus);
+  const probeEmprise = state.probes.mul(EMPRISE_PER_PROBE);
+  const resistanceFactor = 1 - state.resistance / RESISTANCE_FACTOR_DIV;
+  return boosted.add(probeEmprise).mul(resistanceFactor);
 }
 
 /** Followers/s produits par les campagnes d'image (audience passive). */
@@ -136,7 +166,8 @@ export function passiveIncomePerSec(state: GameState): Decimal {
   let total = devIncomePerSec(state)
     .add(aiIncomePerSec(state))
     .add(bizIncomePerSec(state))
-    .add(sponsoringIncomePerSec(state));
+    .add(sponsoringIncomePerSec(state))
+    .add(controlIncomePerSec(state));
   if (state.job === "plongeur") {
     total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
   }

@@ -20,8 +20,8 @@ describe("Acte III : emprise, pouvoir, épilogue", () => {
   it("les générateurs de pouvoir sont jaugés par rang", () => {
     expect(generatorAvailable(GENERATORS_BY_ID["propagande"], "celebrite")).toBe(false);
     expect(generatorAvailable(GENERATORS_BY_ID["propagande"], "politique")).toBe(true);
-    expect(generatorAvailable(GENERATORS_BY_ID["sondes"], "monde")).toBe(false);
-    expect(generatorAvailable(GENERATORS_BY_ID["sondes"], "empereur")).toBe(true);
+    expect(generatorAvailable(GENERATORS_BY_ID["moissonneuse"], "monde")).toBe(false);
+    expect(generatorAvailable(GENERATORS_BY_ID["moissonneuse"], "empereur")).toBe(true);
   });
 
   it("les promotions de l'Acte III se débloquent sur l'Emprise, pas l'argent", () => {

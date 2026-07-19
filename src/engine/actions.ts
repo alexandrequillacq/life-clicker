@@ -4,6 +4,11 @@ import {
   REST_ENERGY,
   INCIDENT_ENERGY_COST,
   INCIDENT_PERIOD,
+  MEETING_COOLDOWN,
+  MEETING_SHARE,
+  MEETING_MIN_FOLLOWERS,
+  MEETING_RATE,
+  MEETING_ENERGY_COST,
   type GameState,
 } from "./state";
 import { costOf, energyFactor } from "./economy";
@@ -15,6 +20,8 @@ import { DECISIONS } from "./content/decisions";
 import { nextBook, studiesComplete } from "./content/studies";
 import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
+import { CONTROLS_BY_ID } from "./content/control";
+import { PROBE_COST } from "./content/cosmos";
 import {
   FOLLOWERS_PER_POST,
   POST_FOLLOWERS_SHARE,
@@ -153,6 +160,72 @@ export function buyFollowers(state: GameState): boolean {
   state.money = state.money.sub(cost);
   state.followers = state.followers.add(FOLLOWER_PACK_SIZE);
   state.followerPacks += 1;
+  return true;
+}
+
+// --- Meeting politique (conversion followers → Emprise) ---
+
+/**
+ * Un meeting est disponible pour la figure politique : cooldown écoulé, énergie suffisante,
+ * et un stock de followers au-dessus du plancher (l'audience est le carburant qui s'épuise).
+ */
+export function canHoldMeeting(state: GameState): boolean {
+  return (
+    state.job === "politique" &&
+    state.meetingCooldown <= 0 &&
+    state.energy >= MEETING_ENERGY_COST &&
+    state.followers.gte(MEETING_MIN_FOLLOWERS)
+  );
+}
+
+/**
+ * Tenir un meeting : brûle max(10 000 ; 2 % des followers) du STOCK courant (jamais maxFollowers),
+ * les convertit en Emprise (0,002 par follower consommé), coûte 6 énergie, relance le cooldown 15 s.
+ * Les followers deviennent une ressource qui s'épuise en Acte III (thèse, jamais commentée).
+ */
+export function holdMeeting(state: GameState): boolean {
+  if (!canHoldMeeting(state)) return false;
+  const consumed = state.followers.mul(MEETING_SHARE).max(MEETING_MIN_FOLLOWERS).min(state.followers);
+  state.followers = state.followers.sub(consumed).max(0);
+  state.emprise = state.emprise.add(consumed.mul(MEETING_RATE));
+  state.energy -= MEETING_ENERGY_COST;
+  state.meetingCooldown = MEETING_COOLDOWN;
+  return true;
+}
+
+// --- Damiers de contrôle (président : institutions ; monde : continents) ---
+
+/** Coût € one-shot d'une cible de contrôle (fixe, ne croît pas : chaque cible est unique). */
+export function controlCost(id: string): Decimal {
+  return CONTROLS_BY_ID[id].cost;
+}
+
+export function canBuyControl(state: GameState, id: string): boolean {
+  const def = CONTROLS_BY_ID[id];
+  if (!def || state.controls[id]) return false; // one-shot : jamais racheté
+  return state.money.gte(def.cost);
+}
+
+/** Prendre le contrôle d'une cible : débite son coût €, la pose définitivement (elle reste acquise). */
+export function buyControl(state: GameState, id: string): boolean {
+  if (!canBuyControl(state, id)) return false;
+  state.money = state.money.sub(CONTROLS_BY_ID[id].cost);
+  state.controls[id] = true;
+  return true;
+}
+
+// --- Sondes von Neumann (empereur) ---
+
+/** La première sonde est un achat unique de l'empereur (refuse s'il en existe déjà une). */
+export function canLaunchFirstProbe(state: GameState): boolean {
+  return state.job === "empereur" && state.probes.lte(0) && state.money.gte(PROBE_COST);
+}
+
+/** Lancer la première sonde von Neumann : 50 Md€, pose probes = 1 (ensuite la croissance est autonome). */
+export function launchFirstProbe(state: GameState): boolean {
+  if (!canLaunchFirstProbe(state)) return false;
+  state.money = state.money.sub(PROBE_COST);
+  state.probes = D(1);
   return true;
 }
 
@@ -403,6 +476,10 @@ export function promote(state: GameState): boolean {
   if (promo.to === "lead_dev") state.money = state.money.add(LEAD_HIRING_BONUS);
   if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
   if (promo.to === "politique") state.flags.act3 = true; // bascule visuelle Acte III (froid, dystopique)
+  // Maître du monde : la Résistance repart à 0 (nouveau front, pente mondiale plus raide).
+  if (promo.to === "monde") state.resistance = 0;
+  // Empereur : plus personne pour résister, la jauge est figée à 0.
+  if (promo.to === "empereur") state.resistance = 0;
   return true;
 }
 
@@ -418,6 +495,7 @@ export function fireActe(state: GameState): boolean {
   const acte = currentActe(state.job);
   if (!acte || state.acteCooldown > 0) return false;
   state.emprise = state.emprise.add(acte.empriseGrant);
+  state.acteCounts[state.job] = (state.acteCounts[state.job] ?? 0) + 1;
   state.acteCooldown = ACTE_COOLDOWN;
   return true;
 }

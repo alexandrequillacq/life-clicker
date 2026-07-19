@@ -22,6 +22,14 @@ import {
 import { EPILOGUE_EMPRISE } from "./content/power";
 import { MISSION_PERIOD, MISSION_WINDOW, MISSION_MIN_BUGS, missionTier } from "./content/missions";
 import { DECISIONS } from "./content/decisions";
+import {
+  RESISTANCE_RATE_PRESIDENT,
+  RESISTANCE_RATE_MONDE,
+  RESISTANCE_REPRESSION_RATE,
+  controlsOwnedForJob,
+  repressionOwned,
+} from "./content/control";
+import { PROBE_GROWTH } from "./content/cosmos";
 
 /**
  * Arc dev déterministe (développeur → lead → CTO) : missions freelance, incidents d'équipe,
@@ -109,6 +117,39 @@ function tickActeII(state: GameState, t: number): void {
   }
 }
 
+/**
+ * Arc Acte III déterministe (politique → empereur) : cooldown de meeting, croissance des sondes,
+ * et jauge de Résistance. Exécuté AVANT l'accumulation d'Emprise du tick, pour que la croissance
+ * des sondes et l'état de la Résistance de ce tick soient reflétés dans emprisePerSec.
+ * Ordre de tick documenté : les sondes croissent en composé, puis la Résistance se met à jour,
+ * puis l'Emprise s'accumule sur l'intervalle avec ces valeurs de fin de tick.
+ */
+function tickActeIII(state: GameState, t: number): void {
+  if (state.meetingCooldown > 0) state.meetingCooldown = Math.max(0, state.meetingCooldown - t);
+
+  // Sondes von Neumann : croissance composée par tick (probes ×= 1 + 0,03 × dt).
+  if (state.probes.gt(0)) {
+    state.probes = state.probes.mul(1 + PROBE_GROWTH * t);
+  }
+
+  // Résistance : monte quand le contrôle atteint une masse critique, baissée par la répression.
+  if (state.job === "president") {
+    const slope = controlsOwnedForJob(state.controls, "president") >= 2 ? RESISTANCE_RATE_PRESIDENT : 0;
+    const drop = repressionOwned(state.controls) * RESISTANCE_REPRESSION_RATE;
+    state.resistance = clamp01to100(state.resistance + (slope - drop) * t);
+  } else if (state.job === "monde") {
+    const slope = controlsOwnedForJob(state.controls, "monde") >= 1 ? RESISTANCE_RATE_MONDE : 0;
+    const drop = repressionOwned(state.controls) * RESISTANCE_REPRESSION_RATE;
+    state.resistance = clamp01to100(state.resistance + (slope - drop) * t);
+  } else if (state.job === "empereur") {
+    state.resistance = 0; // plus personne pour résister à cette échelle
+  }
+}
+
+function clamp01to100(v: number): number {
+  return Math.max(0, Math.min(100, v));
+}
+
 export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
     state.flags.moneyVisible = true;
@@ -185,7 +226,9 @@ export function tick(state: GameState, dt: number): void {
   // Audience : followers passifs des campagnes d'image.
   state.followers = state.followers.add(audienceFollowersPerSec(state).mul(t));
 
-  // Acte III : l'Emprise s'accumule (appareil de pouvoir × armée de GPU). Délai des actes.
+  // Acte III : sondes, Résistance et cooldown de meeting avant l'accumulation (voir tickActeIII).
+  tickActeIII(state, t);
+  // Acte III : l'Emprise s'accumule (appareil de pouvoir × armée de GPU, drainée par la Résistance).
   state.emprise = state.emprise.add(emprisePerSec(state).mul(t));
   if (state.acteCooldown > 0) state.acteCooldown = Math.max(0, state.acteCooldown - t);
 

@@ -21,6 +21,7 @@ export function serialize(state: GameState): string {
     maxFollowers: state.maxFollowers.toString(),
     emprise: state.emprise.toString(),
     ctoEarned: state.ctoEarned.toString(),
+    probes: state.probes.toString(),
   });
 }
 
@@ -67,6 +68,12 @@ export function deserialize(json: string): GameState {
     secsSinceLife: raw.secsSinceLife ?? 0,
     emprise: D(raw.emprise ?? 0) as Decimal,
     acteCooldown: raw.acteCooldown ?? 0,
+    // Acte III (chunk C) : meetings, damiers de contrôle, Résistance, sondes.
+    acteCounts: raw.acteCounts ?? {},
+    meetingCooldown: raw.meetingCooldown ?? 0,
+    controls: raw.controls ?? {},
+    resistance: raw.resistance ?? 0,
+    probes: D(raw.probes ?? 0) as Decimal,
     karma: raw.karma ?? 0,
   };
 }

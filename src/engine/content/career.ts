@@ -52,10 +52,11 @@ export const JOBS: Record<Job, JobDef> = {
     clickEnergyCost: 6,
   },
   politique: {
-    // « Tenir un meeting » sera réintroduit au chunk C comme mécanique (conversion de followers
-    // en Emprise + cooldown propre), pas comme un clic de JobDef. Mort pour l'instant.
+    // « Tenir un meeting » est la mécanique de conversion followers → Emprise (cooldown propre, coût
+    // en énergie), gérée par holdMeeting() dans actions.ts, PAS par work(). Le libellé revit ici pour
+    // l'UI (chunk E) ; clickValue/clickEnergyCost restent neutres car work() ne le traite pas.
     label: "Figure politique",
-    clickLabel: "",
+    clickLabel: "Tenir un meeting",
     clickValue: D(0),
     clickEnergyCost: 0,
   },

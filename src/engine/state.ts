@@ -16,6 +16,13 @@ export const INCIDENT_MALUS = 0.5; // pendant un incident, le brut d'équipe est
 export const INCIDENT_ENERGY_COST = 10; // énergie dépensée pour « Résoudre l'incident » (action active)
 export const INCIDENT_AUTO_RESOLVE = 40; // sans intervention, l'incident s'éteint seul au bout de ceci
 
+/** Meeting politique (Acte III) : convertit une part des followers en Emprise, avec un cooldown propre. */
+export const MEETING_COOLDOWN = 15; // secondes entre deux meetings
+export const MEETING_SHARE = 0.02; // 2 % des followers courants consommés (plancher MEETING_MIN_FOLLOWERS)
+export const MEETING_MIN_FOLLOWERS = 10_000; // consommation plancher ET seuil minimal pour tenir un meeting
+export const MEETING_RATE = 0.002; // Emprise créée par follower consommé
+export const MEETING_ENERGY_COST = 6; // énergie dépensée par meeting (action active du joueur)
+
 // Le clic reste à pleine valeur (effort ponctuel délibéré) ; seul le lavage
 // CONTINU à la main dépense de l'énergie, proportionnellement aux assiettes
 // lavées. Comme le débit baisse avec l'énergie, la dépense baisse aussi :
@@ -84,6 +91,11 @@ export interface GameState {
   secsSinceLife: number; // secondes écoulées depuis le dernier geste de vie
   emprise: Decimal; // Acte III : emprise sur le monde puis le cosmos (compteur de sortie, jamais une monnaie)
   acteCooldown: number; // secondes restantes avant le prochain acte de pouvoir
+  acteCounts: Record<string, number>; // actes de pouvoir accomplis, par métier (« 3 alliances », « 4 lois »…)
+  meetingCooldown: number; // secondes restantes avant le prochain meeting politique
+  controls: Record<string, boolean>; // damiers de contrôle (institutions président, continents monde) : one-shot
+  resistance: number; // 0..100 : la contestation que le contrôle appelle (draine l'Emprise/s), figée à 0 en empereur
+  probes: Decimal; // empereur : sondes von Neumann auto-répliquantes (croissance composée)
   karma: number; // méta : préservé à travers la réincarnation, récompense la vie vécue
   flags: Record<string, boolean>; // déblocages d'UI (révélation progressive)
   tempo: number;
@@ -139,6 +151,11 @@ export function createInitialState(now: number, karma = 0): GameState {
     secsSinceLife: 0,
     emprise: ZERO,
     acteCooldown: 0,
+    acteCounts: {},
+    meetingCooldown: 0,
+    controls: {},
+    resistance: 0,
+    probes: ZERO,
     karma,
     flags: {},
     tempo: 1,
