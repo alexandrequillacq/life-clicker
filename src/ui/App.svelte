@@ -32,18 +32,27 @@
     canGiveKeynote,
     answerBadBuzz,
     canAnswerBadBuzz,
+    holdMeeting,
+    canHoldMeeting,
+    buyControl,
+    canBuyControl,
+    controlCost,
+    launchFirstProbe,
+    canLaunchFirstProbe,
   } from "../engine/actions";
   import { GENERATORS, generatorAvailable } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
   import { nextBook } from "../engine/content/studies";
   import { currentHome, nextHome } from "../engine/content/homes";
-  import { currentActe, VOID_LINES } from "../engine/content/power";
+  import { currentActe, VOID_LINES, ACTE_COUNTER_LABELS } from "../engine/content/power";
+  import { CONTROLS } from "../engine/content/control";
+  import { cosmicMilestone, COSMIC_MILESTONES, PROBE_COST } from "../engine/content/cosmos";
   import { MISSIONS } from "../engine/content/missions";
   import { DECISIONS, DECISIONS_SECTION_TITLE, type DecisionEffect } from "../engine/content/decisions";
   import { trendActive, TREND_MULT, TREND_WINDOW } from "../engine/content/audience";
   import { D, fmtMoney, fmtNumber } from "../engine/numbers";
-  import { aiIncomePerSec, incomePerSec, emprisePerSec } from "../engine/economy";
+  import { aiIncomePerSec, incomePerSec, emprisePerSec, energyRelevant } from "../engine/economy";
   import type { Job } from "../engine/state";
 
   const s = $derived(game.state);
@@ -82,6 +91,33 @@
   const genGroupTitle = $derived(s.flags.act3 ? "Appareil de pouvoir" : "Équipe et automatisation");
   const act2 = $derived(!!s.flags.act2 && !s.flags.act3);
   let renouncing = $state(false);
+
+  // Acte III : compteur d'actes (« 3 alliances », « 4 lois »…) affiché à côté de l'acte courant.
+  const acteCount = $derived(s.acteCounts[s.job] ?? 0);
+  const acteCounterLabel = $derived(ACTE_COUNTER_LABELS[s.job]);
+
+  // Damiers de contrôle : cibles du métier courant, révélées à mesure (possédées ou seuil atteint).
+  // Une cible non possédée n'apparaît qu'une fois son seuil de révélation franchi (arrivée échelonnée).
+  function damierCases(damierJob: "president" | "monde", active: boolean) {
+    return CONTROLS.filter((c) => {
+      if (c.job !== damierJob) return false;
+      if (!active) return !!s.controls[c.id]; // damier « acquis » (grisé) : seules les cibles prises
+      return s.controls[c.id] || s.money.gte(c.unlockAtMoney);
+    });
+  }
+
+  // La jauge de Résistance vire du bleu acier froid au rouge éteint à mesure qu'elle monte.
+  const RES_COLD = [91, 143, 176]; // #5b8fb0
+  const RES_HOT = [122, 36, 32]; // #7a2420
+  const resColor = $derived.by(() => {
+    const t = Math.min(1, Math.max(0, s.resistance / 100));
+    const c = RES_COLD.map((v, i) => Math.round(v + (RES_HOT[i] - v) * t));
+    return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+  });
+
+  // Empereur : dernier palier cosmique franchi + liste discrète des paliers déjà atteints.
+  const cosmicLine = $derived(cosmicMilestone(s.probes));
+  const cosmicReached = $derived(COSMIC_MILESTONES.filter((m) => s.probes.gte(m.threshold)));
 
   // Équipe (lead dev / CTO / fondateur) : l'effectif humain se VOIT en pastilles.
   const TEAM_CAP = 20;
@@ -225,6 +261,44 @@
   {/each}
 {/snippet}
 
+{#snippet damier(damierJob: "president" | "monde", active: boolean)}
+  <!-- Chaque cible = une case. Possédée : remplie en bleu froid, cochée, non cliquable, avec ses
+       +€/s et +emprise/s. Non possédée : bouton achetable. Les cibles de répression ont un liseré. -->
+  <div class="damier" class:acquired={!active}>
+    {#each damierCases(damierJob, active) as c (c.id)}
+      {#if s.controls[c.id]}
+        <div class="case owned" class:repression={c.repression}>
+          <span class="case-check" aria-hidden="true">✓</span>
+          <span class="case-label">{c.label}</span>
+          <span class="case-yield">+{fmtMoney(c.moneyPerSec)} / s · +{fmtNumber(c.emprisePerSec)} emprise / s</span>
+        </div>
+      {:else}
+        <button
+          class="case buyable"
+          class:repression={c.repression}
+          disabled={!canBuyControl(s, c.id)}
+          onclick={() => buyControl(s, c.id)}
+        >
+          <span class="case-label">{c.label}</span>
+          <span class="case-cost">{fmtMoney(controlCost(c.id))}</span>
+        </button>
+      {/if}
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet resistanceGauge()}
+  <!-- Jauge 0..100 : bleu acier au repos, rouge éteint à mesure que la contestation monte. -->
+  <div class="resistance">
+    <div class="res-head">
+      <span class="res-label">Résistance</span>
+      <span class="res-val">{Math.round(s.resistance)} / 100</span>
+    </div>
+    <div class="res-bar"><div class="res-fill" style:width="{Math.round(s.resistance)}%" style:background={resColor}></div></div>
+    <p class="res-hint">L'emprise produite est freinée.</p>
+  </div>
+{/snippet}
+
 {#snippet epilogue()}
   <div class="epilogue">
     {#if s.flags.ending}
@@ -363,7 +437,7 @@
                 <span class="tv">{s.bugsResolved}{#if s.missionsDone > 0}<span class="tu"> · {s.missionsDone} mission{s.missionsDone > 1 ? "s" : ""}</span>{/if}</span>
               </div>
             {/if}
-            {#if s.flags.energyVisible}
+            {#if s.flags.energyVisible && energyRelevant(s)}
               <div class="tile">
                 <span class="tk">Énergie</span>
                 <div class="bar"><div class="bar-fill" style:width="{Math.round(s.energy)}%"></div></div>
@@ -448,6 +522,57 @@
             {/if}
           {/if}
 
+          {#if s.job === "politique"}
+            <div class="meeting-block">
+              <button class="primary meeting" disabled={!canHoldMeeting(s)} onclick={() => holdMeeting(s)}>
+                {s.meetingCooldown > 0 ? `Tenir un meeting · ${Math.ceil(s.meetingCooldown)} s` : "Tenir un meeting"}
+              </button>
+              <p class="meeting-hint">Convertit une partie de ton audience en emprise.</p>
+            </div>
+          {/if}
+
+          {#if s.job === "president" || s.job === "monde"}
+            <section class="group control-stack">
+              <h3>{s.job === "monde" ? "Carte du pouvoir" : "Damier des institutions"}</h3>
+              {#if s.job === "monde"}
+                <p class="damier-title acquired-title">Institutions · acquis</p>
+                {@render damier("president", false)}
+                <p class="damier-title">Continents</p>
+              {/if}
+              {@render damier(s.job, true)}
+              {@render resistanceGauge()}
+            </section>
+          {/if}
+
+          {#if s.job === "empereur"}
+            <section class="group cosmos">
+              <h3>Sondes von Neumann</h3>
+              {#if s.probes.lte(0)}
+                <div class="row">
+                  <button class="buy" disabled={!canLaunchFirstProbe(s)} onclick={() => launchFirstProbe(s)}>
+                    Lancer la première sonde von Neumann
+                  </button>
+                  <span class="price">{fmtMoney(PROBE_COST)}</span>
+                </div>
+              {:else}
+                <div class="probe-readout">
+                  <span class="probe-count">{fmtNumber(s.probes)}<span class="tu"> sondes</span></span>
+                  <span class="probe-rate">+{fmtNumber(empriseRate)} emprise / s</span>
+                </div>
+                {#if cosmicLine}
+                  <p class="voidline cosmic">{cosmicLine}</p>
+                {/if}
+                {#if cosmicReached.length}
+                  <ul class="cosmic-log">
+                    {#each cosmicReached as m (m.line)}
+                      <li>{m.line}</li>
+                    {/each}
+                  </ul>
+                {/if}
+              {/if}
+            </section>
+          {/if}
+
           {#if s.mission && MISSIONS[s.mission.tier]}
             {@const def = MISSIONS[s.mission.tier]}
             <div class="mission">
@@ -511,6 +636,7 @@
               <h3>Actes de pouvoir</h3>
               <div class="row">
                 <button class="buy" disabled={!canActe(s)} onclick={() => fireActe(s)}>{acte.label}</button>
+                {#if acteCount > 0 && acteCounterLabel}<span class="count acte-count">{acteCount} {acteCounterLabel}</span>{/if}
                 <span class="price">{s.acteCooldown > 0 ? `${Math.ceil(s.acteCooldown)} s` : "prêt"}</span>
               </div>
             </section>
@@ -706,6 +832,187 @@
   .screen[data-act="3"] .ghost:hover:not(:disabled) {
     background: #1c2735;
     border-color: var(--accent);
+  }
+
+  /* ---------- Acte III : meeting politique (conversion sobre, froide) ---------- */
+  .meeting-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .meeting-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ---------- Acte III : compteur d'actes (« 3 alliances ») ---------- */
+  .acte-count {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Acte III : damiers de contrôle (la carte du pouvoir se referme) ---------- */
+  .control-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .damier-title {
+    margin: 6px 0 2px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+  .acquired-title {
+    opacity: 0.7;
+  }
+  .damier {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+  /* Le damier « acquis » (institutions vues depuis le métier monde) : réduit et grisé. */
+  .damier.acquired {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  .damier.acquired .case {
+    padding: 7px 9px;
+  }
+  .damier.acquired .case-yield {
+    display: none;
+  }
+  .case {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    border-radius: 8px;
+    padding: 10px 11px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  /* Case libre : bouton achetable, cadre acier discret. */
+  .case.buyable {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .case.buyable:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: #1c2735;
+  }
+  .case.buyable:disabled {
+    color: var(--muted);
+    background: var(--card);
+    cursor: default;
+  }
+  /* Case prise : remplie en bleu froid, cochée, figée (la case se referme). */
+  .case.owned {
+    background: linear-gradient(160deg, #1d3346, #24506e);
+    border: 1px solid #3f7ba0;
+    color: #d5e4ef;
+    position: relative;
+  }
+  /* Cible de répression : liseré distinct (elle calme la Résistance). */
+  .case.repression {
+    border-color: #7a5a2a;
+  }
+  .case.owned.repression {
+    border-color: #b98a3e;
+    box-shadow: inset 0 0 0 1px rgba(185, 138, 62, 0.35);
+  }
+  .case-check {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 13px;
+    color: #7fd0a8;
+  }
+  .case-label {
+    font-size: 13px;
+    font-weight: 500;
+    padding-right: 16px;
+  }
+  .case-cost,
+  .case-yield {
+    font-size: 11px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .case.owned .case-yield {
+    color: #9db8cc;
+  }
+
+  /* ---------- Acte III : jauge de Résistance (froide → rouge éteint) ---------- */
+  .resistance {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .res-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .res-val {
+    font-variant-numeric: tabular-nums;
+  }
+  .res-bar {
+    height: 9px;
+    border-radius: 6px;
+    background: #1a222d;
+    overflow: hidden;
+  }
+  .res-fill {
+    height: 100%;
+    transition: width 0.3s, background 0.3s;
+  }
+  .res-hint {
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ---------- Empereur : sondes et paliers cosmiques (contemplatif) ---------- */
+  .probe-readout {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 4px 0 6px;
+  }
+  .probe-count {
+    font-size: 22px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+  .probe-rate {
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .voidline.cosmic {
+    margin-top: 2px;
+  }
+  .cosmic-log {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .cosmic-log li {
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0.7;
   }
 
   .winbar {
