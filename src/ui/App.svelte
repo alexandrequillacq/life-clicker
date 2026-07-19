@@ -25,6 +25,13 @@
     fireActe,
     canActe,
     ruleTheVoid,
+    resolveIncident,
+    canResolveIncident,
+    decide,
+    giveKeynote,
+    canGiveKeynote,
+    answerBadBuzz,
+    canAnswerBadBuzz,
   } from "../engine/actions";
   import { GENERATORS, generatorAvailable } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
@@ -32,7 +39,10 @@
   import { nextBook } from "../engine/content/studies";
   import { currentHome, nextHome } from "../engine/content/homes";
   import { currentActe, VOID_LINES } from "../engine/content/power";
-  import { fmtMoney, fmtNumber } from "../engine/numbers";
+  import { MISSIONS } from "../engine/content/missions";
+  import { DECISIONS, DECISIONS_SECTION_TITLE, type DecisionEffect } from "../engine/content/decisions";
+  import { trendActive, TREND_MULT, TREND_WINDOW } from "../engine/content/audience";
+  import { D, fmtMoney, fmtNumber } from "../engine/numbers";
   import { aiIncomePerSec, incomePerSec, emprisePerSec } from "../engine/economy";
   import type { Job } from "../engine/state";
 
@@ -70,7 +80,109 @@
   const voidLine = $derived(VOID_LINES[s.job]);
   const empriseRate = $derived(emprisePerSec(s));
   const genGroupTitle = $derived(s.flags.act3 ? "Appareil de pouvoir" : "Équipe et automatisation");
+  const act2 = $derived(!!s.flags.act2 && !s.flags.act3);
   let renouncing = $state(false);
+
+  // Équipe (lead dev / CTO / fondateur) : l'effectif humain se VOIT en pastilles.
+  const TEAM_CAP = 20;
+  const juniors = $derived(s.generators["junior"] ?? 0);
+  const seniors = $derived(s.generators["senior"] ?? 0);
+  const teamSize = $derived(juniors + seniors);
+  const teamDots = $derived.by(() => {
+    const arr: ("sr" | "jr")[] = [];
+    for (let i = 0; i < seniors; i++) arr.push("sr");
+    for (let i = 0; i < juniors; i++) arr.push("jr");
+    return arr.slice(0, TEAM_CAP);
+  });
+  const teamOverflow = $derived(Math.max(0, teamSize - TEAM_CAP));
+
+  // Cartes de décision (CTO) : une option n'est jouable que si son coût éventuel est payable.
+  function canAfford(eff: DecisionEffect): boolean {
+    return eff.cost === undefined || s.money.gte(eff.cost);
+  }
+  function pct(mult: number): string {
+    const d = Math.round((mult - 1) * 100);
+    return (d >= 0 ? "+" : "") + d + " %";
+  }
+  // Description lisible de l'effet d'une option (pas de tiret séparateur : point médian).
+  function effectText(eff: DecisionEffect): string {
+    const parts: string[] = [];
+    if (eff.cost !== undefined) parts.push(`Coûte ${fmtMoney(D(eff.cost))}`);
+    if (eff.cash !== undefined) parts.push(`+${fmtMoney(D(eff.cash))} tout de suite`);
+    if (eff.teamOutputMult !== undefined) parts.push(`${pct(eff.teamOutputMult)} de rendement d'équipe`);
+    if (eff.gpuCostMult !== undefined) parts.push(`${pct(eff.gpuCostMult)} sur le coût des GPU`);
+    if (eff.hireCostMult !== undefined) parts.push(`${pct(eff.hireCostMult)} sur le coût des embauches`);
+    if (eff.gpuErosionMult !== undefined) parts.push(`${pct(eff.gpuErosionMult)} d'érosion par GPU`);
+    if (eff.aiRateMult !== undefined) parts.push(`${pct(eff.aiRateMult)} de débit IA`);
+    if (eff.incidentPeriodMult !== undefined)
+      parts.push(eff.incidentPeriodMult > 1 ? "Incidents plus rares" : "Incidents plus fréquents");
+    if (eff.setIncidentAutoResolve !== undefined)
+      parts.push(`Auto résolus en ${eff.setIncidentAutoResolve} s`);
+    return parts.join(" · ");
+  }
+
+  // --- Fil de posts (célébrité) : état d'AFFICHAGE local, aucune logique de jeu ici. ---
+  const AVATARS = [
+    "linear-gradient(135deg, #f6a5c0, #c2447e)",
+    "linear-gradient(135deg, #a5b8f6, #5b52d6)",
+    "linear-gradient(135deg, #f6cfa5, #d68a2e)",
+    "linear-gradient(135deg, #a5f6d0, #2eaf8a)",
+  ];
+  let posts = $state<{ id: number; gain: string; trending: boolean; avatar: string }[]>([]);
+  let postSeq = 0;
+  function publishPost(): void {
+    const before = s.followers;
+    const trending = trendActive(s);
+    work(s);
+    const gain = s.followers.sub(before);
+    posts = [
+      { id: postSeq, gain: fmtNumber(gain), trending, avatar: AVATARS[postSeq % AVATARS.length] },
+      ...posts,
+    ].slice(0, 3);
+    postSeq += 1;
+  }
+
+  // --- Sparkline du revenu : buffer d'affichage (1 point/s, 60 points), échantillonné hors moteur. ---
+  let revPoints = $state<{ money: number; rev: number }[]>([]);
+  $effect(() => {
+    const iv = setInterval(() => {
+      const st = game.state;
+      revPoints.push({ money: st.money.toNumber(), rev: incomePerSec(st).mul(60).toNumber() });
+      if (revPoints.length > 60) revPoints.shift();
+    }, 1000);
+    return () => clearInterval(iv);
+  });
+  function computeTrend(pts: { money: number; rev: number }[], key: "money" | "rev"): number {
+    if (pts.length < 2) return 0;
+    const last = pts[pts.length - 1][key];
+    const prev = pts[Math.max(0, pts.length - 11)][key];
+    if (last > prev * 1.0005) return 1;
+    if (last < prev * 0.9995) return -1;
+    return 0;
+  }
+  const moneyTrend = $derived(computeTrend(revPoints, "money"));
+  const revTrend = $derived(computeTrend(revPoints, "rev"));
+  function arrowChar(dir: number): string {
+    return dir > 0 ? "▲" : dir < 0 ? "▼" : "";
+  }
+  const spark = $derived.by(() => {
+    const vals = revPoints.map((p) => p.rev).filter((v) => Number.isFinite(v));
+    if (vals.length < 2) return null;
+    const w = 240;
+    const h = 40;
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const range = max - min || 1;
+    const step = w / (vals.length - 1);
+    let line = "";
+    vals.forEach((v, i) => {
+      const x = i * step;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      line += (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+    });
+    line = line.trim();
+    return { line, area: `${line} L${w} ${h} L0 ${h} Z`, w, h };
+  });
 
   const hasUpgrades = $derived(UPGRADES.some((u) => upgradeAvailable(s, u)));
   const hasGenerators = $derived(
@@ -168,7 +280,7 @@
           </div>
         {/if}
         {#if s.flags.postulerVisible}
-          <button class="action" onclick={() => becomeDeveloper(s)}>Postuler comme développeur</button>
+          <button class="action" onclick={() => becomeDeveloper(s)}>Postuler à un poste de développeur</button>
         {/if}
       </section>
     {/if}
@@ -190,17 +302,65 @@
           {@render epilogue()}
         {:else}
           <div class="dash">
+          <!-- Bannières d'alerte (en haut du dash) : incident, tendance, bad buzz. -->
+          {#if s.incident}
+            <div class="incident-banner">
+              <div class="ib-text">
+                <span class="ib-title">Incident en production</span>
+                <span class="ib-sub">Rendement d'équipe divisé par deux · s'éteint dans {Math.ceil(s.incident.timeLeft)} s</span>
+              </div>
+              <button class="ib-btn" disabled={!canResolveIncident(s)} onclick={() => resolveIncident(s)}>
+                Résoudre l'incident
+              </button>
+            </div>
+          {/if}
+          {#if trendActive(s)}
+            <div class="trend-banner">
+              <span class="tb-title">Tendance</span>
+              <span class="tb-sub">Tes posts portent ×{TREND_MULT} · encore {Math.ceil(TREND_WINDOW - s.trendTimer)} s</span>
+            </div>
+          {/if}
+          {#if s.badBuzz}
+            <div class="badbuzz-banner">
+              <div class="bb-text">
+                <span class="bb-title">Bad buzz</span>
+                <span class="bb-sub">Les followers fuient · {Math.ceil(s.badBuzz.timeLeft)} s</span>
+              </div>
+              <button class="bb-btn" disabled={!canAnswerBadBuzz(s)} onclick={() => answerBadBuzz(s)}>
+                Répondre à la polémique
+              </button>
+            </div>
+          {/if}
+
           <div class="stats">
             {#if s.flags.moneyVisible}
               <div class="tile accent">
                 <span class="tk">Argent</span>
-                <span class="tv">{fmtMoney(s.money)}</span>
+                <span class="tv">{fmtMoney(s.money)}{#if act2 && arrowChar(moneyTrend)}<span class="arrow" class:up={moneyTrend > 0} class:down={moneyTrend < 0}>{arrowChar(moneyTrend)}</span>{/if}</span>
               </div>
             {/if}
             {#if s.flags.moneyVisible && perMinute.gt(0)}
-              <div class="tile">
+              <div class="tile" class:wide={act2 && spark}>
                 <span class="tk">Revenu</span>
-                <span class="tv">{fmtMoney(perMinute)}<span class="tu"> / min</span></span>
+                <span class="tv">{fmtMoney(perMinute)}<span class="tu"> / min</span>{#if act2 && arrowChar(revTrend)}<span class="arrow" class:up={revTrend > 0} class:down={revTrend < 0}>{arrowChar(revTrend)}</span>{/if}</span>
+                {#if act2 && spark}
+                  <svg class="spark" viewBox="0 0 {spark.w} {spark.h}" preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="sparkgrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="var(--accent)" stop-opacity="0.35" />
+                        <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d={spark.area} fill="url(#sparkgrad)" />
+                    <path d={spark.line} fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+                  </svg>
+                {/if}
+              </div>
+            {/if}
+            {#if s.job === "developpeur"}
+              <div class="tile">
+                <span class="tk">Bugs résolus</span>
+                <span class="tv">{s.bugsResolved}{#if s.missionsDone > 0}<span class="tu"> · {s.missionsDone} mission{s.missionsDone > 1 ? "s" : ""}</span>{/if}</span>
               </div>
             {/if}
             {#if s.flags.energyVisible}
@@ -211,8 +371,11 @@
             {/if}
             {#if s.job === "celebrite" || s.followers.gt(0)}
               <div class="tile">
-                <span class="tk">Followers</span>
+                <span class="tk">{s.job === "celebrite" ? "Followers" : "On parle de toi"}</span>
                 <span class="tv">{fmtNumber(s.followers)}</span>
+                {#if s.job === "celebrite" && s.maxFollowers.gt(0)}
+                  <span class="tu">pic {fmtNumber(s.maxFollowers)}</span>
+                {/if}
               </div>
             {/if}
             {#if s.emprise.gt(0) || s.flags.act3}
@@ -242,10 +405,87 @@
             </div>
           {/if}
 
+          {#if s.pendingDecision && DECISIONS[s.decisionIndex]}
+            {@const card = DECISIONS[s.decisionIndex]}
+            <section class="decision">
+              <h3 class="decision-title">{DECISIONS_SECTION_TITLE}</h3>
+              <p class="decision-q">{card.title}</p>
+              <div class="decision-options">
+                <button class="decision-opt" disabled={!canAfford(card.optionA)} onclick={() => decide(s, "A")}>
+                  <span class="do-label">{card.optionA.label}</span>
+                  <span class="do-effect">{effectText(card.optionA)}</span>
+                </button>
+                <button class="decision-opt" disabled={!canAfford(card.optionB)} onclick={() => decide(s, "B")}>
+                  <span class="do-label">{card.optionB.label}</span>
+                  <span class="do-effect">{effectText(card.optionB)}</span>
+                </button>
+              </div>
+            </section>
+          {/if}
+
           {#if showWork}
-            <button class="primary" disabled={workExhausted} onclick={() => work(s)}>
-              {workExhausted ? "Épuisé, repose-toi" : clickLabel}
-            </button>
+            {#if s.job === "celebrite"}
+              <div class="composer">
+                <button class="primary compose-btn" onclick={publishPost}>Publier un post</button>
+                {#if posts.length}
+                  <div class="feed">
+                    {#each posts as p (p.id)}
+                      <div class="post">
+                        <span class="avatar" style:background={p.avatar}></span>
+                        <div class="post-body">
+                          <span class="post-gain">+{p.gain} followers</span>
+                          {#if p.trending}<span class="post-trend">en tendance</span>{/if}
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {:else}
+              <button class="primary" disabled={workExhausted} onclick={() => work(s)}>
+                {workExhausted ? "Épuisé, repose-toi" : clickLabel}
+              </button>
+            {/if}
+          {/if}
+
+          {#if s.mission && MISSIONS[s.mission.tier]}
+            {@const def = MISSIONS[s.mission.tier]}
+            <div class="mission">
+              <div class="mission-head">
+                <span class="mission-label">{def.label}</span>
+                <span class="mission-prime">+{fmtMoney(D(def.prime))}</span>
+              </div>
+              <div class="bar mission-bar">
+                <div class="bar-fill" style:width="{Math.min(100, Math.round((s.mission.progress / def.bugs) * 100))}%"></div>
+              </div>
+              <div class="mission-meta">
+                <span>{s.mission.progress} / {def.bugs} bugs</span>
+                <span>{Math.ceil(s.mission.timeLeft)} s</span>
+              </div>
+            </div>
+          {/if}
+
+          {#if s.job === "entrepreneur" && s.upgrades["leve_amorcage"]}
+            <div class="keynote-block">
+              <button class="primary keynote" class:glow={s.keynoteBoostLeft > 0} disabled={!canGiveKeynote(s)} onclick={() => giveKeynote(s)}>
+                {s.keynoteTimer > 0 ? `Donner une keynote · ${Math.ceil(s.keynoteTimer)} s` : "Donner une keynote"}
+              </button>
+              {#if s.keynoteBoostLeft > 0}
+                <p class="keynote-boost">La démo fait le tour des réseaux · encore {Math.ceil(s.keynoteBoostLeft)} s</p>
+              {/if}
+            </div>
+          {/if}
+
+          {#if teamSize > 0 && !s.flags.equipeRemplacee}
+            <section class="group team">
+              <h3>Équipe</h3>
+              <div class="team-dots">
+                {#each teamDots as d, i (i)}
+                  <span class="dotm {d}"></span>
+                {/each}
+                {#if teamOverflow > 0}<span class="dot-more">+{teamOverflow}</span>{/if}
+              </div>
+            </section>
           {/if}
 
           {#if hasUpgrades}
@@ -759,6 +999,420 @@
   }
   .screen-toggle:hover {
     background: rgba(0, 0, 0, 0.65);
+  }
+
+  /* ---------- Développeur : carte de mission + tuile bugs ---------- */
+  .mission {
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 11px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  }
+  .mission-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .mission-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .mission-prime {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .mission-bar {
+    margin-top: 0;
+  }
+  .mission-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ---------- Bannière d'incident (lead dev / CTO) : casse le calme ---------- */
+  .incident-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fbe9e7;
+    border: 1.5px solid #e0524a;
+    box-shadow: 0 0 0 0 rgba(224, 82, 74, 0.5);
+    animation: incident-pulse 2s ease-in-out infinite;
+  }
+  @keyframes incident-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(224, 82, 74, 0);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(224, 82, 74, 0.18);
+    }
+  }
+  .ib-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ib-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #b23029;
+  }
+  .ib-sub {
+    font-size: 12px;
+    color: #9a5651;
+  }
+  .ib-btn {
+    flex: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    background: #d84a41;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 13px;
+    cursor: pointer;
+  }
+  .ib-btn:hover:not(:disabled) {
+    background: #c33d35;
+  }
+  .ib-btn:disabled {
+    background: #edb9b5;
+    cursor: default;
+  }
+
+  /* ---------- Cartes de décision (CTO) : première mise en scène riche ---------- */
+  .decision {
+    border: 1.5px solid var(--accent);
+    border-radius: 14px;
+    padding: 13px 15px 15px;
+    background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+    box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 20%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .decision-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+  .decision-q {
+    margin: 2px 0 10px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .decision-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .decision-opt {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    font-family: inherit;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.05s;
+  }
+  .decision-opt:hover:not(:disabled) {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .decision-opt:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .do-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .do-effect {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  @media (max-width: 460px) {
+    .decision-options {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ---------- Panneau Équipe : l'effectif en pastilles ---------- */
+  .team-dots {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0 6px;
+  }
+  .dotm {
+    display: inline-block;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .dotm.jr {
+    width: 11px;
+    height: 11px;
+    opacity: 0.55;
+  }
+  .dotm.sr {
+    width: 15px;
+    height: 15px;
+    opacity: 1;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .dot-more {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+
+  /* ---------- KPI : flèches de tendance + sparkline (Acte II) ---------- */
+  .arrow {
+    font-size: 11px;
+    margin-left: 6px;
+    vertical-align: middle;
+    color: var(--muted);
+  }
+  .arrow.up {
+    color: #2e9d68;
+  }
+  .arrow.down {
+    color: #d0664a;
+  }
+  .tile.wide {
+    grid-column: 1 / -1;
+  }
+  .spark {
+    width: 100%;
+    height: 40px;
+    margin-top: 6px;
+    display: block;
+  }
+
+  /* ---------- Keynote (fondateur) : halo pendant le boost ---------- */
+  .keynote-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .keynote.glow {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent),
+      0 8px 26px color-mix(in srgb, var(--accent) 40%, transparent);
+    animation: keynote-glow 1.8s ease-in-out infinite;
+  }
+  @keyframes keynote-glow {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.12);
+    }
+  }
+  .keynote-boost {
+    margin: 0;
+    font-size: 12px;
+    color: var(--accent);
+    text-align: center;
+  }
+
+  /* ---------- Bannière de tendance (célébrité) : chaleureuse, pulsante ---------- */
+  .trend-banner {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    color: #ffffff;
+    background: linear-gradient(120deg, #ff8f6b, #e0559b 55%, #a24fd6);
+    box-shadow: 0 8px 24px rgba(224, 85, 155, 0.35);
+    animation: trend-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes trend-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 8px 24px rgba(224, 85, 155, 0.3);
+    }
+    50% {
+      transform: scale(1.012);
+      box-shadow: 0 10px 30px rgba(224, 85, 155, 0.5);
+    }
+  }
+  .tb-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .tb-sub {
+    font-size: 12px;
+    opacity: 0.92;
+  }
+
+  /* ---------- Bandeau bad buzz (célébrité) : rouge sombre, contraste ---------- */
+  .badbuzz-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #f6dedb;
+    background: linear-gradient(120deg, #4a1512, #6d1a15);
+    border: 1px solid #8a2a22;
+  }
+  .bb-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .bb-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffb4ab;
+  }
+  .bb-sub {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+  .bb-btn {
+    flex: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a1512;
+    background: #f0c9c4;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 13px;
+    cursor: pointer;
+  }
+  .bb-btn:hover:not(:disabled) {
+    background: #ffffff;
+  }
+  .bb-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  /* ---------- Composeur + fil de posts (célébrité) ---------- */
+  .composer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .compose-btn {
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  .feed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .post {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+  }
+  .avatar {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+  }
+  .post-body {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .post-gain {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .post-trend {
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(120deg, #ff8f6b, #e0559b);
+    border-radius: 999px;
+    padding: 2px 8px;
+  }
+
+  /* ---------- Acte II (fondateur) : le panneau fleurit, chaud et riche ---------- */
+  .screen[data-act="2"] {
+    --panel: #fffdf8;
+    --fg: #241d12;
+    --muted: #8a7a5f;
+    --line: #efe4cf;
+    --card: #fbf3e4;
+    --accent: #c0842f;
+    border-radius: 20px;
+    box-shadow: 0 24px 72px rgba(70, 48, 12, 0.42);
+  }
+  .screen[data-act="2"] .winbar {
+    background: #fffdf8;
+    border-radius: 20px 20px 0 0;
+  }
+  .screen[data-act="2"] .tile {
+    box-shadow: inset 0 0 0 1px rgba(192, 132, 47, 0.06);
+  }
+  .screen[data-act="2"] .tile.accent {
+    background: linear-gradient(135deg, #fbe7c3, #f6d7a6);
+  }
+  .screen[data-act="2"] .primary {
+    background: linear-gradient(135deg, #cd942f, #b06f1e);
+    box-shadow: 0 6px 18px rgba(176, 111, 30, 0.32);
+  }
+  .screen[data-act="2"] .bar {
+    background: #ecdcbf;
+  }
+
+  /* ---------- Célébrité : sommet de chaleur visuelle (rose / violet) ---------- */
+  .screen[data-phase="celebrite"] {
+    --panel: #fffafd;
+    --fg: #2a1522;
+    --muted: #9a7288;
+    --line: #f2dfe9;
+    --card: #fdf1f7;
+    --accent: #d24d8f;
+  }
+  .screen[data-phase="celebrite"] .winbar {
+    background: #fffafd;
+  }
+  .screen[data-phase="celebrite"] .tile.accent {
+    background: linear-gradient(135deg, #f9d5e6, #e9b6dd);
+  }
+  .screen[data-phase="celebrite"] .primary {
+    background: linear-gradient(135deg, #e0559b, #a24fd6);
+    box-shadow: 0 6px 18px rgba(200, 80, 155, 0.32);
   }
 
   /* ---------- Outils de test (discrets, haut droite) ---------- */
