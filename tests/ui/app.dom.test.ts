@@ -40,29 +40,30 @@ describe("App P0 (DOM)", () => {
     unmount(component);
   });
 
-  it("en développeur : décor de fond (logement) + écran réductible", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+  it("en développeur : le cadre de vie pilote l'interface (data-home + lieu nommé)", () => {
+    game.state = createInitialState(Date.now());
     game.state.job = "developpeur";
     game.state.homeLevel = 0;
-    const component = mount(App, { target });
-    flushSync();
+    game.state.money = D(5000); // de quoi acheter le logement suivant (coût 2 000 €)
+    const { target, component } = mountApp();
 
-    // Le décor (logement) remplit le fond, l'interface est dans un « écran ».
+    // L'interface vit dans un « écran », toujours ouvert (plus de toggle).
     const stage = target.querySelector(".stage") as HTMLElement;
     expect(stage).not.toBeNull();
-    expect(stage.style.backgroundImage).toContain("linear-gradient");
     expect(target.querySelector("main.screen")).not.toBeNull();
+    expect(target.querySelector(".screen-toggle")).toBeNull();
 
-    // On peut réduire l'écran pour admirer le décor, puis le rouvrir.
-    const toggle = target.querySelector(".screen-toggle") as HTMLButtonElement;
-    expect(toggle).not.toBeNull();
-    toggle.click();
+    // data-home suit le niveau de logement, et le lieu s'affiche dans la barre de fenêtre.
+    expect(stage.getAttribute("data-home")).toBe("0");
+    const winloc = target.querySelector(".winloc") as HTMLElement;
+    expect(winloc).not.toBeNull();
+    expect(winloc.textContent).toContain("Sous-sol");
+
+    // Acheter le logement suivant fait monter data-home et change le lieu affiché.
+    game.state.homeLevel = 1;
     flushSync();
-    expect(target.querySelector("main.screen")).toBeNull();
-    toggle.click();
-    flushSync();
-    expect(target.querySelector("main.screen")).not.toBeNull();
+    expect(stage.getAttribute("data-home")).toBe("1");
+    expect((target.querySelector(".winloc") as HTMLElement).textContent).toContain("Premier logement");
 
     unmount(component);
   });

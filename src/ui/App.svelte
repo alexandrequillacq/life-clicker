@@ -64,6 +64,20 @@
   const home = $derived(currentHome(s.homeLevel));
   const homeNext = $derived(nextHome(s.homeLevel));
 
+  // Ambiance du décor en DOUBLE COUCHE : à chaque changement de logement, une nouvelle couche
+  // se superpose et se fond par-dessus l'ancienne (crossfade CSS ~1 s). On ne garde que les deux
+  // dernières (la plus récente couvre entièrement la précédente une fois le fondu terminé).
+  let ambientLayers = $state<{ id: number; home: number }[]>([{ id: 0, home: game.state.homeLevel }]);
+  let ambientSeq = 0;
+  $effect(() => {
+    const h = s.homeLevel;
+    const top = ambientLayers[ambientLayers.length - 1];
+    if (!top || top.home !== h) {
+      ambientSeq += 1;
+      ambientLayers = [...ambientLayers, { id: ambientSeq, home: h }].slice(-2);
+    }
+  });
+
   // Le clic actif (gagner de l'argent / des followers) disparaît dès qu'on devient manager.
   const showWork = $derived(
     (s.job === "plongeur" && !s.manualRetired) || s.job === "developpeur" || s.job === "celebrite",
@@ -232,9 +246,6 @@
         !(g.team && s.flags.equipeRemplacee),
     ),
   );
-
-  // L'écran (panneau de jeu) peut être réduit pour admirer le décor (le logement).
-  let screenOpen = $state(true);
 </script>
 
 {#snippet upgradesList()}
@@ -363,16 +374,28 @@
     {/if}
   </main>
 {:else}
-  <!-- À partir du développeur : décor = logement du joueur, l'interface est un « écran » design. -->
-  <div class="stage" class:act3={s.flags.act3} style:background-image={home.bg}>
-    <button class="screen-toggle" onclick={() => (screenOpen = !screenOpen)}>
-      {screenOpen ? "Réduire l'écran" : "Ouvrir l'écran"}
-    </button>
-    {#if screenOpen}
-      <main class="screen" data-act={s.flags.act3 ? "3" : s.flags.act2 ? "2" : "1"} data-phase={s.job}>
+  <!-- À partir du développeur : le cadre de vie EMBELLIT l'interface. Le logement (data-home)
+       pose l'ambiance du décor et la matière du panneau ; le métier/acte posent la couleur. -->
+  <div class="stage" class:act3={s.flags.act3} data-home={s.homeLevel}>
+    <!-- Ambiance dessinée du décor : deux couches empilées, crossfade au changement de logement. -->
+    <div class="ambient-wrap" aria-hidden="true">
+      {#each ambientLayers as layer (layer.id)}
+        <div class="ambient" data-home={layer.home}>
+          <div class="shimmer"></div>
+        </div>
+      {/each}
+    </div>
+    <!-- Voile d'Acte III : la couleur meurt, la matière survit (le confort acheté reste, froid). -->
+    <div class="act3-veil" aria-hidden="true"></div>
+    <main class="screen" data-act={s.flags.act3 ? "3" : s.flags.act2 ? "2" : "1"} data-phase={s.job}>
+      <!-- Bref éclaircissement du panneau à l'achat (surtout visible sur mobile). -->
+      {#key s.homeLevel}
+        <div class="panel-flash" aria-hidden="true"></div>
+      {/key}
         <header class="winbar">
           <span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>
           <span class="wintitle">{appTitle}</span>
+          <span class="winloc" title={home.label}>{home.label}</span>
         </header>
 
         {#if s.flags.epilogue}
@@ -674,7 +697,6 @@
           </div>
         {/if}
       </main>
-    {/if}
   </div>
 {/if}
 
@@ -763,25 +785,198 @@
     cursor: default;
   }
 
-  /* ---------- À partir du dev : décor (logement) plein écran ---------- */
+  /* ---------- À partir du dev : le cadre de vie EMBELLIT l'interface ----------
+     Règle de possession des tokens : le logement (data-home) pose la MATIÈRE, la
+     GÉOMÉTRIE et l'AMBIANCE (--radius, --panel-alpha, --panel-blur, --shadow, --edge,
+     couches d'ambiance) ; le métier et l'acte posent la COULEUR (--panel, --accent…).
+     Le panneau se compose mécaniquement par color-mix, aucune combinaison écrite à la main. */
   .stage {
+    position: relative;
     min-height: 100vh;
-    background-color: #17191c;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-color: #101216;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    padding: 4vh 2vw 3vh;
+    padding: 10vh 2vw 4vh;
     box-sizing: border-box;
+    overflow: hidden;
+    /* Défauts de matière (surchargés par data-home) : un moniteur bas de gamme. */
+    --radius: 12px;
+    --panel-alpha: 100%;
+    --panel-blur: 0px;
+    --shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    --edge: 0 0 0 0 transparent;
+    --dash-pad: 16px;
+  }
+
+  /* Ambiance dessinée du décor : deux couches empilées, crossfade d'opacité à l'achat. */
+  .ambient-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .ambient {
+    position: absolute;
+    inset: 0;
+    animation: ambient-in 0.9s ease forwards;
+  }
+  @keyframes ambient-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient {
+      animation: none;
+    }
+  }
+  .shimmer {
+    position: absolute;
+    inset: -20% -20% auto -20%;
+    height: 60%;
+    opacity: 0;
+    background: radial-gradient(60% 100% at 50% 50%, rgba(255, 255, 255, 0.35), transparent 70%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  /* Voile d'Acte III : la couleur meurt (froid), la matière du logement survit. */
+  .act3-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(9, 13, 22, 0);
+    transition: background 0.9s ease;
+  }
+  .stage.act3 .act3-veil {
+    background: rgba(9, 13, 22, 0.5);
+  }
+  .stage.act3 .ambient {
+    filter: saturate(0.4) brightness(0.58);
+  }
+
+  /* ---- Ambiances + matière par niveau de cadre de vie ---- */
+  /* 0 · Sous-sol : quasi noir, vignette serrée, halo d'ampoule froide en haut. */
+  .ambient[data-home="0"] {
+    background:
+      radial-gradient(120% 80% at 50% -12%, rgba(150, 170, 190, 0.16), transparent 45%),
+      radial-gradient(140% 120% at 50% 45%, transparent 38%, rgba(0, 0, 0, 0.6) 100%),
+      linear-gradient(180deg, #24272c, #121316);
+  }
+  .stage[data-home="0"] {
+    --radius: 12px;
+    --panel-alpha: 98%;
+    --panel-blur: 0px;
+    --shadow: 0 5px 14px rgba(0, 0, 0, 0.55);
+    --edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+  /* 1 · Premier logement : gris-bleu d'aube, une diagonale de lumière de fenêtre. */
+  .ambient[data-home="1"] {
+    background:
+      linear-gradient(120deg, transparent 30%, rgba(214, 228, 244, 0.22) 48%, transparent 62%),
+      radial-gradient(120% 90% at 70% -5%, rgba(184, 204, 224, 0.2), transparent 55%),
+      linear-gradient(180deg, #4a5666, #2b333e);
+  }
+  .stage[data-home="1"] {
+    --radius: 14px;
+    --panel-alpha: 100%;
+    --panel-blur: 0px;
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  /* 2 · Appartement lumineux : plein jour pâle (ciel voilé), nappe de soleil. */
+  .ambient[data-home="2"] {
+    background:
+      radial-gradient(120% 100% at 30% -10%, rgba(255, 249, 235, 0.55), transparent 55%),
+      linear-gradient(180deg, #cfd8e2, #a9b6c5);
+  }
+  .stage[data-home="2"] {
+    --radius: 16px;
+    --panel-alpha: 100%;
+    --panel-blur: 0px;
+    --shadow: 0 18px 50px rgba(30, 40, 60, 0.28);
+    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    --dash-pad: 18px;
+  }
+  /* 3 · Loft (VERRE) : brique et bois au crépuscule, halos de lampes chaudes. */
+  .ambient[data-home="3"] {
+    background:
+      radial-gradient(45% 40% at 22% 30%, rgba(255, 190, 120, 0.35), transparent 60%),
+      radial-gradient(50% 45% at 80% 65%, rgba(255, 160, 90, 0.28), transparent 60%),
+      linear-gradient(160deg, #6b4b3a, #38271f);
+  }
+  .stage[data-home="3"] {
+    --radius: 18px;
+    --panel-alpha: 82%;
+    --panel-blur: 22px;
+    --shadow: 0 26px 70px rgba(0, 0, 0, 0.5);
+    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --dash-pad: 18px;
+  }
+  /* 4 · Maison avec jardin (verre) : vert-doré de matin, taches de lumière feuillue. */
+  .ambient[data-home="4"] {
+    background:
+      radial-gradient(40% 35% at 25% 25%, rgba(220, 255, 180, 0.3), transparent 60%),
+      radial-gradient(45% 40% at 75% 60%, rgba(255, 240, 170, 0.28), transparent 60%),
+      linear-gradient(160deg, #5f7a3f, #34492a);
+  }
+  .stage[data-home="4"] {
+    --radius: 18px;
+    --panel-alpha: 80%;
+    --panel-blur: 24px;
+    --shadow: 0 28px 74px rgba(20, 30, 15, 0.42);
+    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    --dash-pad: 18px;
+  }
+  /* 5 · Villa avec piscine (verre) : azur et sable au couchant, miroitement lent, liseré doré. */
+  .ambient[data-home="5"] {
+    background:
+      radial-gradient(50% 45% at 30% 20%, rgba(255, 226, 180, 0.32), transparent 60%),
+      radial-gradient(60% 55% at 75% 82%, rgba(120, 210, 240, 0.4), transparent 65%),
+      linear-gradient(160deg, #5fb8d8, #2f6f9e);
+  }
+  .ambient[data-home="5"] .shimmer {
+    opacity: 0.5;
+    animation: shimmer 60s linear infinite;
+  }
+  .stage.act3 .ambient[data-home="5"] .shimmer {
+    opacity: 0.25;
+  }
+  @keyframes shimmer {
+    0% {
+      transform: translate(-25%, 40%) rotate(-8deg);
+    }
+    50% {
+      transform: translate(25%, 55%) rotate(-8deg);
+    }
+    100% {
+      transform: translate(-25%, 40%) rotate(-8deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient[data-home="5"] .shimmer {
+      animation: none;
+    }
+  }
+  .stage[data-home="5"] {
+    --radius: 20px;
+    --panel-alpha: 78%;
+    --panel-blur: 26px;
+    --shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    --edge: inset 0 0 0 1px rgba(212, 175, 55, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    --dash-pad: 18px;
+  }
+  /* Acte III : le filet doré de la villa devient un filet acier discret (matière survivante). */
+  .stage.act3[data-home="5"] {
+    --edge: inset 0 0 0 1px rgba(150, 170, 190, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
   /* ---------- L'écran : une vraie interface (fenêtre + tableau de bord) ---------- */
-  .stage.act3 {
-    box-shadow: inset 0 0 0 100vmax rgba(9, 13, 22, 0.62);
-  }
-
   .screen {
     --panel: #ffffff;
     --fg: #1b2330;
@@ -789,18 +984,49 @@
     --line: #e4e8ef;
     --card: #f4f6fa;
     --accent: #2f6df0;
+    --track: #dfe4ec;
+    /* Surfaces composables (jamais d'aplat blanc en dur : sur du verre il flotterait). */
+    --surface: color-mix(in srgb, var(--panel) 88%, transparent);
+    --surface-hover: color-mix(in srgb, var(--accent) 5%, var(--panel));
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 680px;
-    max-height: 84vh;
+    max-height: 78vh;
     overflow-y: auto;
-    background: var(--panel);
+    background: color-mix(in srgb, var(--panel) var(--panel-alpha), transparent);
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.2);
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.2);
     color: var(--fg);
     font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
     font-size: 15px;
-    border-radius: 16px;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+    border-radius: var(--radius);
+    box-shadow: var(--edge), var(--shadow);
     box-sizing: border-box;
     font-variant-numeric: tabular-nums;
+  }
+  /* Bref éclaircissement du panneau à l'achat (l'embellissement se vit comme un événement). */
+  .panel-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    border-radius: var(--radius);
+    pointer-events: none;
+    background: #ffffff;
+    opacity: 0;
+  }
+  @media (max-width: 640px) {
+    .panel-flash {
+      animation: panel-flash 1s ease-out;
+    }
+  }
+  @keyframes panel-flash {
+    0% {
+      opacity: 0.35;
+    }
+    100% {
+      opacity: 0;
+    }
   }
   /* Accent qui se réchauffe à mesure qu'on monte (dev → CTO → direction). */
   .screen[data-phase="lead_dev"] {
@@ -813,7 +1039,7 @@
   .screen[data-act="2"] {
     --accent: #b07d2a;
   }
-  /* Acte III : le confort se fige en quelque chose de froid et dystopique. */
+  /* Acte III : le confort se fige en quelque chose de froid et dystopique (la couleur meurt). */
   .screen[data-act="3"] {
     --panel: #10141b;
     --fg: #c7d0db;
@@ -821,19 +1047,11 @@
     --line: #28313f;
     --card: #19212c;
     --accent: #5b8fb0;
-  }
-  .screen[data-act="3"] .winbar,
-  .screen[data-act="3"] .buy,
-  .screen[data-act="3"] .ghost,
-  .screen[data-act="3"] .primary.ghost-danger {
-    background: var(--panel);
-  }
-  .screen[data-act="3"] .bar {
-    background: #28313f;
+    --track: #28313f;
+    --surface-hover: #1c2735;
   }
   .screen[data-act="3"] .buy:hover:not(:disabled),
   .screen[data-act="3"] .ghost:hover:not(:disabled) {
-    background: #1c2735;
     border-color: var(--accent);
   }
 
@@ -906,7 +1124,7 @@
   }
   .case.buyable:hover:not(:disabled) {
     border-color: var(--accent);
-    background: #1c2735;
+    background: var(--surface-hover);
   }
   .case.buyable:disabled {
     color: var(--muted);
@@ -1026,8 +1244,23 @@
     border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
-    background: #ffffff;
-    border-radius: 16px 16px 0 0;
+    z-index: 2;
+    /* Le winbar a sa propre matière (sinon couture opaque au scroll sur du verre). */
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter: blur(var(--panel-blur)) saturate(1.2);
+    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.2);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  /* Le lieu de vie courant, étiqueté en permanence à droite de la barre de fenêtre. */
+  .winloc {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .dot {
     width: 11px;
@@ -1052,7 +1285,7 @@
   }
 
   .dash {
-    padding: 16px 18px 20px;
+    padding: var(--dash-pad, 16px) 18px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -1090,7 +1323,7 @@
   .bar {
     height: 9px;
     border-radius: 6px;
-    background: #dfe4ec;
+    background: var(--track);
     overflow: hidden;
     margin-top: 6px;
   }
@@ -1186,12 +1419,12 @@
     cursor: default;
   }
   .primary.ghost-danger {
-    background: #ffffff;
+    background: var(--surface);
     color: #b23b34;
     border: 1.5px solid #e7b5b1;
   }
   .primary.ghost-danger:hover {
-    background: #fdf1f0;
+    background: color-mix(in srgb, #b23b34 8%, var(--panel));
     filter: none;
   }
 
@@ -1223,7 +1456,7 @@
     font-family: inherit;
     font-size: 14px;
     color: var(--fg);
-    background: #ffffff;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 9px 11px;
@@ -1231,7 +1464,7 @@
   }
   .buy:hover:not(:disabled) {
     border-color: var(--accent);
-    background: #f7f9fd;
+    background: var(--surface-hover);
   }
   .buy:disabled {
     color: var(--muted);
@@ -1258,7 +1491,7 @@
     font-family: inherit;
     font-size: 13px;
     color: var(--fg);
-    background: #ffffff;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 9px 12px;
@@ -1290,25 +1523,6 @@
 
   .muted {
     color: var(--muted);
-  }
-
-  .screen-toggle {
-    position: fixed;
-    top: 0.5rem;
-    left: 0.75rem;
-    z-index: 5;
-    font-family: -apple-system, system-ui, sans-serif;
-    font-size: 13px;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.45);
-    border: none;
-    border-radius: 8px;
-    padding: 0.35rem 0.7rem;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-  }
-  .screen-toggle:hover {
-    background: rgba(0, 0, 0, 0.65);
   }
 
   /* ---------- Développeur : carte de mission + tuile bugs ---------- */
@@ -1676,7 +1890,7 @@
     padding: 2px 8px;
   }
 
-  /* ---------- Acte II (fondateur) : le panneau fleurit, chaud et riche ---------- */
+  /* ---------- Acte II (fondateur) : le panneau fleurit, chaud et riche (couleur seule) ---------- */
   .screen[data-act="2"] {
     --panel: #fffdf8;
     --fg: #241d12;
@@ -1684,12 +1898,7 @@
     --line: #efe4cf;
     --card: #fbf3e4;
     --accent: #c0842f;
-    border-radius: 20px;
-    box-shadow: 0 24px 72px rgba(70, 48, 12, 0.42);
-  }
-  .screen[data-act="2"] .winbar {
-    background: #fffdf8;
-    border-radius: 20px 20px 0 0;
+    --track: #ecdcbf;
   }
   .screen[data-act="2"] .tile {
     box-shadow: inset 0 0 0 1px rgba(192, 132, 47, 0.06);
@@ -1701,11 +1910,8 @@
     background: linear-gradient(135deg, #cd942f, #b06f1e);
     box-shadow: 0 6px 18px rgba(176, 111, 30, 0.32);
   }
-  .screen[data-act="2"] .bar {
-    background: #ecdcbf;
-  }
 
-  /* ---------- Célébrité : sommet de chaleur visuelle (rose / violet) ---------- */
+  /* ---------- Célébrité : sommet de chaleur visuelle (rose / violet), couleur seule ---------- */
   .screen[data-phase="celebrite"] {
     --panel: #fffafd;
     --fg: #2a1522;
@@ -1713,9 +1919,6 @@
     --line: #f2dfe9;
     --card: #fdf1f7;
     --accent: #d24d8f;
-  }
-  .screen[data-phase="celebrite"] .winbar {
-    background: #fffafd;
   }
   .screen[data-phase="celebrite"] .tile.accent {
     background: linear-gradient(135deg, #f9d5e6, #e9b6dd);
