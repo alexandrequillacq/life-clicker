@@ -32,12 +32,12 @@ describe("audience (célébrité)", () => {
     expect(followerPackCost(s).toNumber()).toBeGreaterThan(c0);
     expect(s.followers.toNumber()).toBeGreaterThan(0);
   });
-  it("la promotion en politique se débloque sur les followers, pas l'argent", () => {
+  it("la promotion en politique se débloque sur le pic de followers, pas l'argent", () => {
     const s = createInitialState(0);
     s.job = "celebrite";
     s.money = D(1e15); // beaucoup d'argent ne suffit pas
     expect(canPromote(s)).toBe(false);
-    s.followers = D(50_000_000);
+    s.maxFollowers = D(50_000_000); // le pic historique porte la gate
     expect(canPromote(s)).toBe(true);
     promote(s);
     expect(s.job).toBe("politique");

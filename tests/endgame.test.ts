@@ -20,8 +20,8 @@ describe("Acte III : emprise, pouvoir, épilogue", () => {
   it("les générateurs de pouvoir sont jaugés par rang", () => {
     expect(generatorAvailable(GENERATORS_BY_ID["propagande"], "celebrite")).toBe(false);
     expect(generatorAvailable(GENERATORS_BY_ID["propagande"], "politique")).toBe(true);
-    expect(generatorAvailable(GENERATORS_BY_ID["sondes"], "monde")).toBe(false);
-    expect(generatorAvailable(GENERATORS_BY_ID["sondes"], "empereur")).toBe(true);
+    expect(generatorAvailable(GENERATORS_BY_ID["moissonneuse"], "monde")).toBe(false);
+    expect(generatorAvailable(GENERATORS_BY_ID["moissonneuse"], "empereur")).toBe(true);
   });
 
   it("les promotions de l'Acte III se débloquent sur l'Emprise, pas l'argent", () => {
@@ -38,7 +38,7 @@ describe("Acte III : emprise, pouvoir, épilogue", () => {
   it("passer en politique bascule en Acte III", () => {
     const s = createInitialState(0);
     s.job = "celebrite";
-    s.followers = D(50_000_000);
+    s.maxFollowers = D(50_000_000);
     promote(s);
     expect(s.job).toBe("politique");
     expect(s.flags.act3).toBe(true);

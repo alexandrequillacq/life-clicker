@@ -1,20 +1,48 @@
 import { D, type Decimal } from "./numbers";
-import { ENERGY_MAX, REST_ENERGY, type GameState } from "./state";
+import {
+  ENERGY_MAX,
+  REST_ENERGY,
+  INCIDENT_ENERGY_COST,
+  INCIDENT_PERIOD,
+  MEETING_COOLDOWN,
+  MEETING_SHARE,
+  MEETING_MIN_FOLLOWERS,
+  MEETING_RATE,
+  MEETING_ENERGY_COST,
+  type GameState,
+} from "./state";
 import { costOf, energyFactor } from "./economy";
 import { GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
-import { JOBS, nextPromotion } from "./content/career";
+import { JOBS, LEAD_HIRING_BONUS, nextPromotion, type PromotionDef } from "./content/career";
+import { MISSIONS, MISSION_PERIOD } from "./content/missions";
+import { DECISIONS } from "./content/decisions";
 import { nextBook, studiesComplete } from "./content/studies";
 import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
+import { CONTROLS_BY_ID } from "./content/control";
+import { PROBE_COST } from "./content/cosmos";
 import {
   FOLLOWERS_PER_POST,
+  POST_FOLLOWERS_SHARE,
+  TREND_MULT,
+  trendActive,
+  BADBUZZ_ENERGY_COST,
+  BADBUZZ_PERIOD,
   FOLLOWER_PACK_BASE_COST,
   FOLLOWER_PACK_GROWTH,
   FOLLOWER_PACK_SIZE,
   SENS_PER_AUTOMATION,
   SENS_PER_REST,
 } from "./content/audience";
+import {
+  KEYNOTE_PERIOD,
+  KEYNOTE_BOOST_SECS,
+  KEYNOTE_FOLLOWERS,
+  KEYNOTE_ENERGY_COST,
+  PRESS_FOLLOWERS_RAISE,
+  PRESS_FOLLOWERS_ACQUISITION,
+} from "./content/keynote";
 
 // --- Clic actif (dépend du métier) ---
 
@@ -43,15 +71,76 @@ export function work(state: GameState): void {
     state.money = state.money.add(job.clickValue.mul(state.devClickMult));
     state.energy -= job.clickEnergyCost;
     state.totalClicks += 1;
+    // Chaque bug résolu compte (débloque les missions, alimente la gate lead).
+    state.bugsResolved += 1;
+    // Mission en cours : le clic fait avancer la livraison ; à la cible, prime versée.
+    if (state.mission) {
+      state.mission.progress += 1;
+      const def = MISSIONS[state.mission.tier];
+      if (state.mission.progress >= def.bugs) {
+        state.money = state.money.add(def.prime);
+        state.missionsDone += 1;
+        state.mission = null;
+        state.missionTimer = MISSION_PERIOD;
+      }
+    }
     return;
   }
   if (state.job === "celebrite") {
-    state.followers = state.followers.add(D(FOLLOWERS_PER_POST).mul(energyFactor(state)));
+    // Le post porte : base + part de l'audience, amplifié ×8 en tendance, modulé par l'énergie.
+    const base = D(FOLLOWERS_PER_POST).add(state.followers.mul(POST_FOLLOWERS_SHARE));
+    const trend = trendActive(state) ? TREND_MULT : 1;
+    const gain = base.mul(trend).mul(energyFactor(state));
+    state.followers = state.followers.add(gain);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
     state.energy = Math.max(0, state.energy - job.clickEnergyCost);
     state.totalClicks += 1;
     return;
   }
   // Managers (lead dev, CTO, fondateur) : pas de clic pour gagner de l'argent.
+}
+
+// --- Keynotes (fondateur) ---
+
+/**
+ * Une keynote est disponible pour le fondateur ayant bouclé au moins une levée, timer écoulé
+ * et énergie suffisante (action ACTIVE du joueur → coût en énergie légitime).
+ */
+export function canGiveKeynote(state: GameState): boolean {
+  return (
+    state.job === "entrepreneur" &&
+    !!state.upgrades["leve_amorcage"] &&
+    state.keynoteTimer <= 0 &&
+    state.energy >= KEYNOTE_ENERGY_COST
+  );
+}
+
+/** Donner une keynote : +5 000 followers, boost produits armé 15 s, énergie −6, timer relancé à 60 s. */
+export function giveKeynote(state: GameState): boolean {
+  if (!canGiveKeynote(state)) return false;
+  state.followers = state.followers.add(KEYNOTE_FOLLOWERS);
+  state.maxFollowers = state.maxFollowers.max(state.followers);
+  state.keynoteBoostLeft = KEYNOTE_BOOST_SECS;
+  state.energy -= KEYNOTE_ENERGY_COST;
+  state.keynoteTimer = KEYNOTE_PERIOD;
+  return true;
+}
+
+// --- Bad buzz (célébrité) ---
+
+/** Une polémique est en cours et le joueur a l'énergie pour la couper. */
+export function canAnswerBadBuzz(state: GameState): boolean {
+  return state.badBuzz !== null && state.energy >= BADBUZZ_ENERGY_COST;
+}
+
+/** Répondre à la polémique : action ACTIVE (8 énergie) qui coupe le drain et relance le timer. */
+export function answerBadBuzz(state: GameState): boolean {
+  if (state.badBuzz === null) return false;
+  if (state.energy < BADBUZZ_ENERGY_COST) return false;
+  state.energy -= BADBUZZ_ENERGY_COST;
+  state.badBuzz = null;
+  state.badBuzzTimer = BADBUZZ_PERIOD;
+  return true;
 }
 
 // --- Audience (célébrité) ---
@@ -74,12 +163,82 @@ export function buyFollowers(state: GameState): boolean {
   return true;
 }
 
+// --- Meeting politique (conversion followers → Emprise) ---
+
+/**
+ * Un meeting est disponible pour la figure politique : cooldown écoulé, énergie suffisante,
+ * et un stock de followers au-dessus du plancher (l'audience est le carburant qui s'épuise).
+ */
+export function canHoldMeeting(state: GameState): boolean {
+  return (
+    state.job === "politique" &&
+    state.meetingCooldown <= 0 &&
+    state.energy >= MEETING_ENERGY_COST &&
+    state.followers.gte(MEETING_MIN_FOLLOWERS)
+  );
+}
+
+/**
+ * Tenir un meeting : brûle max(10 000 ; 2 % des followers) du STOCK courant (jamais maxFollowers),
+ * les convertit en Emprise (0,002 par follower consommé), coûte 6 énergie, relance le cooldown 15 s.
+ * Les followers deviennent une ressource qui s'épuise en Acte III (thèse, jamais commentée).
+ */
+export function holdMeeting(state: GameState): boolean {
+  if (!canHoldMeeting(state)) return false;
+  const consumed = state.followers.mul(MEETING_SHARE).max(MEETING_MIN_FOLLOWERS).min(state.followers);
+  state.followers = state.followers.sub(consumed).max(0);
+  state.emprise = state.emprise.add(consumed.mul(MEETING_RATE));
+  state.energy -= MEETING_ENERGY_COST;
+  state.meetingCooldown = MEETING_COOLDOWN;
+  return true;
+}
+
+// --- Damiers de contrôle (président : institutions ; monde : continents) ---
+
+/** Coût € one-shot d'une cible de contrôle (fixe, ne croît pas : chaque cible est unique). */
+export function controlCost(id: string): Decimal {
+  return CONTROLS_BY_ID[id].cost;
+}
+
+export function canBuyControl(state: GameState, id: string): boolean {
+  const def = CONTROLS_BY_ID[id];
+  if (!def || state.controls[id]) return false; // one-shot : jamais racheté
+  return state.money.gte(def.cost);
+}
+
+/** Prendre le contrôle d'une cible : débite son coût €, la pose définitivement (elle reste acquise). */
+export function buyControl(state: GameState, id: string): boolean {
+  if (!canBuyControl(state, id)) return false;
+  state.money = state.money.sub(CONTROLS_BY_ID[id].cost);
+  state.controls[id] = true;
+  return true;
+}
+
+// --- Sondes von Neumann (empereur) ---
+
+/** La première sonde est un achat unique de l'empereur (refuse s'il en existe déjà une). */
+export function canLaunchFirstProbe(state: GameState): boolean {
+  return state.job === "empereur" && state.probes.lte(0) && state.money.gte(PROBE_COST);
+}
+
+/** Lancer la première sonde von Neumann : 50 Md€, pose probes = 1 (ensuite la croissance est autonome). */
+export function launchFirstProbe(state: GameState): boolean {
+  if (!canLaunchFirstProbe(state)) return false;
+  state.money = state.money.sub(PROBE_COST);
+  state.probes = D(1);
+  return true;
+}
+
 // --- Machines / générateurs ---
 
 export function generatorCost(state: GameState, id: string): Decimal {
   const def = GENERATORS_BY_ID[id];
   const owned = state.generators[id] ?? 0;
-  return costOf(def.baseCost, def.growth, owned);
+  let cost = costOf(def.baseCost, def.growth, owned);
+  // Décisions CTO : « Monter ses propres serveurs » (GPU) et « Standardiser l'outillage » (embauches).
+  if (id === "gpu") cost = cost.mul(state.gpuCostMult);
+  if (def.team) cost = cost.mul(state.hireCostMult);
+  return cost;
 }
 
 export function canBuyGenerator(state: GameState, id: string): boolean {
@@ -96,6 +255,11 @@ export function buyGenerator(state: GameState, id: string): boolean {
   state.generators[id] = (state.generators[id] ?? 0) + 1;
   // Acquisition : on absorbe l'infra (des GPU s'ajoutent au parc).
   if (def.bonusGpu) state.generators["gpu"] = (state.generators["gpu"] ?? 0) + def.bonusGpu;
+  // Presse : une acquisition fait parler de la boîte (pont fondateur → célébrité).
+  if (id === "acquisition") {
+    state.followers = state.followers.add(PRESS_FOLLOWERS_ACQUISITION);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
+  }
   return true;
 }
 
@@ -117,6 +281,53 @@ export function fireTeam(state: GameState): boolean {
     state.generators[g.id] = 0;
   }
   state.flags.equipeRemplacee = true;
+  return true;
+}
+
+// --- Lead dev & CTO : incidents ---
+
+/** Un incident est en cours et le joueur a l'énergie pour l'éteindre. */
+export function canResolveIncident(state: GameState): boolean {
+  return state.incident !== null && state.energy >= INCIDENT_ENERGY_COST;
+}
+
+/**
+ * Résoudre l'incident : action ACTIVE du joueur (coûte 10 énergie, cohérent avec la thèse).
+ * Coupe l'incident et relance le timer. Refuse si aucun incident ou énergie insuffisante.
+ */
+export function resolveIncident(state: GameState): boolean {
+  if (state.incident === null) return false;
+  if (state.energy < INCIDENT_ENERGY_COST) return false;
+  state.energy -= INCIDENT_ENERGY_COST;
+  state.incident = null;
+  state.incidentTimer = INCIDENT_PERIOD * state.incidentPeriodMult;
+  return true;
+}
+
+// --- CTO : cartes de décision ---
+
+/**
+ * Trancher la carte de décision en attente : applique les effets déclaratifs de l'option choisie
+ * (multiplicateurs cumulés, encaissement ou coût one-shot), puis avance la file.
+ * « Payer la dette technique » refuse et laisse la carte en attente si la caisse ne suit pas.
+ */
+export function decide(state: GameState, choice: "A" | "B"): boolean {
+  if (!state.pendingDecision) return false;
+  const card = DECISIONS[state.decisionIndex];
+  if (!card) return false;
+  const eff = choice === "A" ? card.optionA : card.optionB;
+  if (eff.cost !== undefined && state.money.lt(eff.cost)) return false; // carte laissée en attente
+  if (eff.cost !== undefined) state.money = state.money.sub(eff.cost);
+  if (eff.cash !== undefined) state.money = state.money.add(eff.cash);
+  if (eff.teamOutputMult !== undefined) state.teamOutputMult *= eff.teamOutputMult;
+  if (eff.gpuCostMult !== undefined) state.gpuCostMult *= eff.gpuCostMult;
+  if (eff.hireCostMult !== undefined) state.hireCostMult *= eff.hireCostMult;
+  if (eff.gpuErosionMult !== undefined) state.gpuErosionMult *= eff.gpuErosionMult;
+  if (eff.aiRateMult !== undefined) state.aiRateMult *= eff.aiRateMult;
+  if (eff.incidentPeriodMult !== undefined) state.incidentPeriodMult *= eff.incidentPeriodMult;
+  if (eff.setIncidentAutoResolve !== undefined) state.incidentAutoResolveSecs = eff.setIncidentAutoResolve;
+  state.decisionIndex += 1;
+  state.pendingDecision = false;
   return true;
 }
 
@@ -147,7 +358,12 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
   if (def.unlocksAi) state.flags.aiUnlocked = true;
   if (def.startsAi) state.flags.aiResolving = true;
-  if (def.grantCash) state.money = state.money.add(def.grantCash);
+  if (def.grantCash) {
+    state.money = state.money.add(def.grantCash);
+    // Presse : chaque levée bouclée fait parler de la boîte (pont fondateur → célébrité).
+    state.followers = state.followers.add(PRESS_FOLLOWERS_RAISE);
+    state.maxFollowers = state.maxFollowers.max(state.followers);
+  }
   if (def.setGpuProductBoost !== undefined) state.gpuProductBoost = def.setGpuProductBoost;
   if (def.automatesLife) {
     state.flags.vieAutomatisee = true;
@@ -229,13 +445,21 @@ export function becomeDeveloper(state: GameState): boolean {
   return true;
 }
 
-function promotionReady(
-  state: GameState,
-  promo: { moneyThreshold: Decimal; followersThreshold?: Decimal; empriseThreshold?: Decimal },
-): boolean {
-  if (promo.empriseThreshold) return state.emprise.gte(promo.empriseThreshold);
-  if (promo.followersThreshold) return state.followers.gte(promo.followersThreshold);
-  return state.money.gte(promo.moneyThreshold);
+function promotionReady(state: GameState, promo: PromotionDef): boolean {
+  // Toutes les conditions présentes se combinent en ET (les seuils absents sont neutres).
+  if (state.money.lt(promo.moneyThreshold)) return false;
+  // dev → lead : mérité par ce qu'on a FAIT dans la phase (bugs résolus ET missions livrées).
+  if (promo.bugsThreshold !== undefined && state.bugsResolved < promo.bugsThreshold) return false;
+  if (promo.missionsThreshold !== undefined && state.missionsDone < promo.missionsThreshold) return false;
+  // cto → fondateur : toutes les décisions tranchées (le verbe du CTO est trancher).
+  if (promo.decisionsThreshold !== undefined && state.decisionIndex < promo.decisionsThreshold) return false;
+  // fondateur → célébrité : au moins une levée bouclée (pont narratif ET mécanique de la presse).
+  if (promo.requiresUpgrade !== undefined && !state.upgrades[promo.requiresUpgrade]) return false;
+  // célébrité → politique : porte sur le PIC historique, jamais le stock rongé par le bad buzz.
+  if (promo.maxFollowersThreshold && state.maxFollowers.lt(promo.maxFollowersThreshold)) return false;
+  // Acte III : promotions sur l'Emprise.
+  if (promo.empriseThreshold && state.emprise.lt(promo.empriseThreshold)) return false;
+  return true;
 }
 
 export function canPromote(state: GameState): boolean {
@@ -247,9 +471,22 @@ export function canPromote(state: GameState): boolean {
 export function promote(state: GameState): boolean {
   const promo = nextPromotion(state.job);
   if (!promo || !promotionReady(state, promo)) return false;
+  // Les événements éphémères appartiennent à la phase qu'on quitte : sans ce nettoyage,
+  // une mission, un incident, une polémique ou un boost keynote resteraient figés (et
+  // affichés) dans le métier suivant, où leur mécanique ne tourne plus.
+  state.mission = null;
+  state.incident = null;
+  state.badBuzz = null;
+  state.keynoteBoostLeft = 0;
   state.job = promo.to;
+  // Prime d'embauche du lead : évite le hard-lock du lead sans revenu (finance les 1ers juniors).
+  if (promo.to === "lead_dev") state.money = state.money.add(LEAD_HIRING_BONUS);
   if (promo.to === "entrepreneur") state.flags.act2 = true; // bascule visuelle Acte II
   if (promo.to === "politique") state.flags.act3 = true; // bascule visuelle Acte III (froid, dystopique)
+  // Maître du monde : la Résistance repart à 0 (nouveau front, pente mondiale plus raide).
+  if (promo.to === "monde") state.resistance = 0;
+  // Empereur : plus personne pour résister, la jauge est figée à 0.
+  if (promo.to === "empereur") state.resistance = 0;
   return true;
 }
 
@@ -265,6 +502,7 @@ export function fireActe(state: GameState): boolean {
   const acte = currentActe(state.job);
   if (!acte || state.acteCooldown > 0) return false;
   state.emprise = state.emprise.add(acte.empriseGrant);
+  state.acteCounts[state.job] = (state.acteCounts[state.job] ?? 0) + 1;
   state.acteCooldown = ACTE_COOLDOWN;
   return true;
 }

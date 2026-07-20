@@ -1,7 +1,28 @@
 import { D, ZERO, type Decimal } from "./numbers";
-import { ENERGY_MAX, type GameState } from "./state";
-import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS_BY_ID } from "./content/generators";
+import { ENERGY_MAX, INCIDENT_MALUS, type GameState, type Job } from "./state";
+import { AI_BASE_INCOME, GPU_MULT_PER_UNIT, EMPRISE_GPU_BOOST, GENERATORS, GENERATORS_BY_ID } from "./content/generators";
 import { sponsoringIncomePerSec } from "./content/audience";
+import { KEYNOTE_BOOST } from "./content/keynote";
+import { CONTROLS, RESISTANCE_FACTOR_DIV } from "./content/control";
+import { EMPRISE_PER_PROBE } from "./content/cosmos";
+
+// Métiers de fin de partie où plus aucune action du joueur ne consomme d'énergie
+// (le meeting politique est la dernière) : « le pouvoir absolu ne fatigue pas ».
+const NO_ENERGY_JOBS: Job[] = ["president", "monde", "empereur"];
+
+/** L'énergie est-elle encore pertinente ? Vraie jusqu'à la politique incluse, fausse dès la présidence. */
+export function energyRelevant(state: GameState): boolean {
+  return !NO_ENERGY_JOBS.includes(state.job);
+}
+
+/** Effectif humain courant (juniors + seniors) : présence d'une équipe qui peut subir des incidents. */
+export function humanTeamSize(state: GameState): number {
+  let n = 0;
+  for (const g of GENERATORS) {
+    if (g.team) n += state.generators[g.id] ?? 0;
+  }
+  return n;
+}
 
 export function costOf(base: Decimal, growth: number, owned: number, count = 1): Decimal {
   const g = D(growth);
@@ -50,13 +71,19 @@ export function dishesPerMinute(state: GameState): Decimal {
  */
 export function devIncomePerSec(state: GameState): Decimal {
   const gpus = state.generators["gpu"] ?? 0;
+  const incidentActive = state.incident !== null;
   let total = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "dev") continue;
-    const grossPerUnit = def.redundancyPerGpu
-      ? def.output.sub(def.redundancyPerGpu * gpus).max(0)
+    // Érosion par GPU (l'IA reprend le travail), atténuée par la décision « Former l'équipe à l'IA ».
+    let grossPerUnit = def.redundancyPerGpu
+      ? def.output.sub(def.redundancyPerGpu * state.gpuErosionMult * gpus).max(0)
       : def.output;
+    // Multiplicateur de brut d'équipe issu des décisions CTO (cloud, revue de code, dette…).
+    grossPerUnit = grossPerUnit.mul(state.teamOutputMult);
+    // Incident en cours : le brut est divisé par 2 (les salaires restent pleins).
+    if (incidentActive) grossPerUnit = grossPerUnit.mul(INCIDENT_MALUS);
     const netPerUnit = def.salaryPerSec ? grossPerUnit.sub(def.salaryPerSec) : grossPerUnit;
     total = total.add(netPerUnit.mul(state.generators[id]));
   }
@@ -67,7 +94,8 @@ export function devIncomePerSec(state: GameState): Decimal {
 export function aiIncomePerSec(state: GameState): Decimal {
   if (!state.flags.aiResolving) return ZERO;
   const gpus = state.generators["gpu"] ?? 0;
-  return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus);
+  // aiRateMult : décision « Garder l'IA pour l'infra » booste le débit de l'IA.
+  return D(AI_BASE_INCOME).mul(1 + GPU_MULT_PER_UNIT * gpus).mul(state.aiRateMult);
 }
 
 /** €/s de la boîte (entrepreneur) : produits (scalés par l'armée de GPU) + acquisitions. */
@@ -75,28 +103,51 @@ export function bizIncomePerSec(state: GameState): Decimal {
   let total = ZERO;
   const gpus = state.generators["gpu"] ?? 0;
   const gpuFactor = 1 + state.gpuProductBoost * gpus;
+  // Keynote : pendant le boost, une keynote VEND des produits (scalesWithGpu = produit_ia) → ×1,5.
+  // Les acquisitions ne sont PAS boostées : une keynote ne fait pas produire davantage une filiale rachetée.
+  const keynoteBoosted = state.keynoteBoostLeft > 0;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "biz") continue;
-    const unit = def.scalesWithGpu ? def.output.mul(gpuFactor) : def.output;
+    let unit = def.scalesWithGpu ? def.output.mul(gpuFactor) : def.output;
+    if (keynoteBoosted && def.scalesWithGpu) unit = unit.mul(1 + KEYNOTE_BOOST);
     total = total.add(unit.mul(state.generators[id]));
   }
   return total;
 }
 
+/** €/s produits par les cibles de contrôle possédées (institutions, continents) : persistent après promotion. */
+export function controlIncomePerSec(state: GameState): Decimal {
+  let total = ZERO;
+  for (const c of CONTROLS) {
+    if (state.controls[c.id]) total = total.add(c.moneyPerSec);
+  }
+  return total;
+}
+
 /**
- * Emprise/s (Acte III) : produite par l'appareil de pouvoir, MULTIPLIÉE par l'armée de GPU
- * (la même IA qui a fait la fortune contrôle désormais le monde). Compteur de sortie, pas une monnaie.
+ * Emprise/s (Acte III), compteur de sortie et jamais une monnaie. Somme trois sources :
+ *  1. les générateurs de pouvoir (propagande, influence, moissonneuse) ET les cibles de contrôle
+ *     possédées, le tout MULTIPLIÉ par l'armée de GPU (la même IA qui a fait la fortune contrôle le monde) ;
+ *  2. les sondes von Neumann (empereur) : probes × 1, hors boost GPU (elles se répliquent seules) ;
+ * puis TOUT est multiplié par le facteur de Résistance (1 − resistance/150), plancher 1/3 > 0
+ * (la Résistance ne bloque jamais). Les grants d'actes ne passent pas par ici (rituel, pas moteur).
  */
 export function emprisePerSec(state: GameState): Decimal {
-  let total = ZERO;
+  let apparatus = ZERO;
   for (const id in state.generators) {
     const def = GENERATORS_BY_ID[id];
     if (!def || def.kind !== "emprise") continue;
-    total = total.add(def.output.mul(state.generators[id]));
+    apparatus = apparatus.add(def.output.mul(state.generators[id]));
+  }
+  for (const c of CONTROLS) {
+    if (state.controls[c.id]) apparatus = apparatus.add(c.emprisePerSec);
   }
   const gpus = state.generators["gpu"] ?? 0;
-  return total.mul(1 + EMPRISE_GPU_BOOST * gpus);
+  const boosted = apparatus.mul(1 + EMPRISE_GPU_BOOST * gpus);
+  const probeEmprise = state.probes.mul(EMPRISE_PER_PROBE);
+  const resistanceFactor = 1 - state.resistance / RESISTANCE_FACTOR_DIV;
+  return boosted.add(probeEmprise).mul(resistanceFactor);
 }
 
 /** Followers/s produits par les campagnes d'image (audience passive). */
@@ -115,7 +166,8 @@ export function passiveIncomePerSec(state: GameState): Decimal {
   let total = devIncomePerSec(state)
     .add(aiIncomePerSec(state))
     .add(bizIncomePerSec(state))
-    .add(sponsoringIncomePerSec(state));
+    .add(sponsoringIncomePerSec(state))
+    .add(controlIncomePerSec(state));
   if (state.job === "plongeur") {
     total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
   }

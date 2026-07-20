@@ -1,5 +1,13 @@
 import { D, type Decimal } from "./numbers";
-import { type GameState, SAVE_VERSION, createInitialState } from "./state";
+import {
+  type GameState,
+  SAVE_VERSION,
+  createInitialState,
+  INCIDENT_PERIOD,
+  INCIDENT_AUTO_RESOLVE,
+} from "./state";
+import { MISSION_PERIOD } from "./content/missions";
+import { BADBUZZ_OFFSET } from "./content/audience";
 
 const KEY = "life-clicker-save";
 const BACKUP_KEY = "life-clicker-save-backup";
@@ -10,7 +18,10 @@ export function serialize(state: GameState): string {
     money: state.money.toString(),
     valuePerDish: state.valuePerDish.toString(),
     followers: state.followers.toString(),
+    maxFollowers: state.maxFollowers.toString(),
     emprise: state.emprise.toString(),
+    ctoEarned: state.ctoEarned.toString(),
+    probes: state.probes.toString(),
   });
 }
 
@@ -26,14 +37,43 @@ export function deserialize(json: string): GameState {
     job: raw.job ?? "plongeur",
     devClickMult: raw.devClickMult ?? 1,
     gpuProductBoost: raw.gpuProductBoost ?? 0.1,
+    // Arc dev (missions, incidents, décisions) : défauts pour tout champ ajouté à un schéma de même version.
+    bugsResolved: raw.bugsResolved ?? 0,
+    missionsDone: raw.missionsDone ?? 0,
+    mission: raw.mission ?? null,
+    missionTimer: raw.missionTimer ?? MISSION_PERIOD,
+    incident: raw.incident ?? null,
+    incidentTimer: raw.incidentTimer ?? INCIDENT_PERIOD,
+    incidentPeriodMult: raw.incidentPeriodMult ?? 1,
+    incidentAutoResolveSecs: raw.incidentAutoResolveSecs ?? INCIDENT_AUTO_RESOLVE,
+    decisionIndex: raw.decisionIndex ?? 0,
+    pendingDecision: raw.pendingDecision ?? false,
+    ctoEarned: D(raw.ctoEarned ?? 0) as Decimal,
+    teamOutputMult: raw.teamOutputMult ?? 1,
+    gpuCostMult: raw.gpuCostMult ?? 1,
+    hireCostMult: raw.hireCostMult ?? 1,
+    gpuErosionMult: raw.gpuErosionMult ?? 1,
+    aiRateMult: raw.aiRateMult ?? 1,
     followers: D(raw.followers ?? 0) as Decimal,
+    maxFollowers: D(raw.maxFollowers ?? raw.followers ?? 0) as Decimal,
     followerPacks: raw.followerPacks ?? 0,
+    keynoteTimer: raw.keynoteTimer ?? 0,
+    keynoteBoostLeft: raw.keynoteBoostLeft ?? 0,
+    trendTimer: raw.trendTimer ?? 0,
+    badBuzz: raw.badBuzz ?? null,
+    badBuzzTimer: raw.badBuzzTimer ?? BADBUZZ_OFFSET,
     sens: raw.sens ?? 0,
     vieVecueTicks: raw.vieVecueTicks ?? 0,
     vieAutomatiseeCount: raw.vieAutomatiseeCount ?? (raw.flags?.vieAutomatisee ? 1 : 0),
     secsSinceLife: raw.secsSinceLife ?? 0,
     emprise: D(raw.emprise ?? 0) as Decimal,
     acteCooldown: raw.acteCooldown ?? 0,
+    // Acte III (chunk C) : meetings, damiers de contrôle, Résistance, sondes.
+    acteCounts: raw.acteCounts ?? {},
+    meetingCooldown: raw.meetingCooldown ?? 0,
+    controls: raw.controls ?? {},
+    resistance: raw.resistance ?? 0,
+    probes: D(raw.probes ?? 0) as Decimal,
     karma: raw.karma ?? 0,
   };
 }

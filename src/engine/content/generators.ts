@@ -52,7 +52,7 @@ export const GENERATORS: GeneratorDef[] = [
   // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
   {
     id: "lave_vaisselle",
-    label: "Lave-vaisselle",
+    label: "Acheter un lave-vaisselle",
     baseCost: D(8),
     growth: 1.15,
     output: D(4), // assiettes/s
@@ -61,7 +61,7 @@ export const GENERATORS: GeneratorDef[] = [
   },
   {
     id: "lave_vaisselle_pro",
-    label: "Lave-vaisselle pro",
+    label: "Acheter un lave-vaisselle pro",
     baseCost: D(90),
     growth: 1.15,
     output: D(20), // assiettes/s : la machine industrielle qui fait accélérer la plonge
@@ -114,7 +114,7 @@ export const GENERATORS: GeneratorDef[] = [
   // Boîte d'IA (entrepreneur) : les produits tournent sur l'armée de GPU.
   {
     id: "produit_ia",
-    label: "Mettre un produit IA en marché",
+    label: "Lancer un produit IA",
     baseCost: D(60000),
     growth: 1.18,
     output: D(1200), // €/s × (1 + gpuProductBoost × nbGPU)
@@ -145,7 +145,7 @@ export const GENERATORS: GeneratorDef[] = [
   // Acte III : appareil de pouvoir. Acheté en €, produit de l'Emprise/s, scalé par l'armée de GPU.
   {
     id: "propagande",
-    label: "Ferme à propagande",
+    label: "Installer une ferme à propagande",
     baseCost: D(2e6),
     growth: 1.18,
     output: D(5),
@@ -155,7 +155,7 @@ export const GENERATORS: GeneratorDef[] = [
   },
   {
     id: "influence",
-    label: "Réseau d'influence",
+    label: "Tisser un réseau d'influence",
     baseCost: D(1.5e7),
     growth: 1.2,
     output: D(40),
@@ -163,59 +163,13 @@ export const GENERATORS: GeneratorDef[] = [
     kind: "emprise",
     jobs: ["politique", "president", "monde", "empereur"],
   },
-  {
-    id: "surveillance_ia",
-    label: "Surveillance de masse par IA",
-    baseCost: D(1e8),
-    growth: 1.2,
-    output: D(400),
-    unlockAtMoney: D(8e7),
-    kind: "emprise",
-    jobs: ["president", "monde", "empereur"],
-  },
-  {
-    id: "capture_medias",
-    label: "Capture des médias",
-    baseCost: D(7e8),
-    growth: 1.22,
-    output: D(3000),
-    unlockAtMoney: D(5e8),
-    kind: "emprise",
-    jobs: ["president", "monde", "empereur"],
-  },
-  {
-    id: "drones",
-    label: "Essaim de drones autonomes",
-    baseCost: D(4e9),
-    growth: 1.22,
-    output: D(30000),
-    unlockAtMoney: D(3e9),
-    kind: "emprise",
-    jobs: ["monde", "empereur"],
-  },
-  {
-    id: "surveillance_totale",
-    label: "Surveillance totale",
-    baseCost: D(3e10),
-    growth: 1.24,
-    output: D(250000),
-    unlockAtMoney: D(2e10),
-    kind: "emprise",
-    jobs: ["monde", "empereur"],
-  },
-  {
-    id: "sondes",
-    label: "Sondes von Neumann",
-    baseCost: D(2e11),
-    growth: 1.24,
-    output: D(4e6),
-    unlockAtMoney: D(1.5e11),
-    kind: "emprise",
-    jobs: ["empereur"],
-  },
+  // Les anciens générateurs d'Emprise président/monde/empereur (surveillance de masse, capture des
+  // médias, drones, surveillance totale, sondes) sont remplacés par les damiers de contrôle
+  // (content/control.ts) et les sondes auto-répliquantes (content/cosmos.ts). Ne restent ici que
+  // propagande et influence (générateurs répétables de la phase politique) et la moissonneuse.
   {
     id: "moissonneuse",
-    label: "Moissonneuse stellaire",
+    label: "Construire une moissonneuse stellaire",
     baseCost: D(1.5e12),
     growth: 1.26,
     output: D(5e8),

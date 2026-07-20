@@ -152,14 +152,34 @@ describe("études & carrière", () => {
     buyUpgrade(s, "laisser_ia");
     expect(s.flags.aiResolving).toBe(true);
   });
-  it("on ne promeut qu'au capital requis", () => {
+  it("on ne promeut en lead qu'après 40 bugs et 2 missions (pas au capital)", () => {
     const s = createInitialState(0);
     s.job = "developpeur";
+    s.money = D(1e6); // le capital seul ne débloque plus
     expect(canPromote(s)).toBe(false);
-    s.money = D(1000);
+    s.bugsResolved = 40;
+    s.missionsDone = 2;
     expect(canPromote(s)).toBe(true);
     expect(promote(s)).toBe(true);
     expect(s.job).toBe("lead_dev");
+  });
+  it("une promotion nettoie les événements éphémères de la phase quittée", () => {
+    const s = createInitialState(0);
+    s.job = "developpeur";
+    s.money = D(1e6);
+    s.bugsResolved = 40;
+    s.missionsDone = 2;
+    // Événements transitoires laissés actifs au moment de la promotion.
+    s.mission = { tier: 0, progress: 3, timeLeft: 12 };
+    s.incident = { timeLeft: 18 };
+    s.badBuzz = { timeLeft: 15 };
+    s.keynoteBoostLeft = 9;
+    expect(promote(s)).toBe(true);
+    // Rien de la phase précédente ne doit rester figé dans la nouvelle phase.
+    expect(s.mission).toBeNull();
+    expect(s.incident).toBeNull();
+    expect(s.badBuzz).toBeNull();
+    expect(s.keynoteBoostLeft).toBe(0);
   });
 });
 
@@ -168,6 +188,7 @@ describe("entrepreneur (boîte d'IA)", () => {
     const s = createInitialState(0);
     s.job = "cto";
     s.money = D(30000);
+    s.decisionIndex = 5; // les 5 décisions tranchées
     promote(s);
     expect(s.job).toBe("entrepreneur");
     expect(s.flags.act2).toBe(true);

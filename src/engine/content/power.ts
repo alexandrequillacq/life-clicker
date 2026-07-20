@@ -11,10 +11,18 @@ export interface ActeDef {
 }
 
 export const ACTES: Partial<Record<Job, ActeDef>> = {
-  politique: { label: "Remporter l'élection", empriseGrant: D(2e4) },
-  president: { label: "Faire passer une loi d'exception", empriseGrant: D(4e6) },
-  monde: { label: "Annexer une région", empriseGrant: D(2e9) },
-  empereur: { label: "Lancer la colonisation", empriseGrant: D(4e14) },
+  politique: { label: "Sceller une alliance", empriseGrant: D(1e4) },
+  president: { label: "Faire passer une loi d'exception", empriseGrant: D(2e5) },
+  monde: { label: "Annexer une région", empriseGrant: D(1e8) },
+  empereur: { label: "Coloniser un système stellaire", empriseGrant: D(1e12) },
+};
+
+// Libellé du compteur d'actes affiché à côté du damier (« 3 alliances », « 4 lois »…).
+export const ACTE_COUNTER_LABELS: Partial<Record<Job, string>> = {
+  politique: "alliances",
+  president: "lois",
+  monde: "régions",
+  empereur: "systèmes",
 };
 
 export function currentActe(job: Job): ActeDef | null {

@@ -35,7 +35,25 @@ describe("logement (décor de fond)", () => {
     expect(canBuyHome(s)).toBe(false);
   });
 
-  it("chaque logement a un décor de fond non vide", () => {
-    for (const h of HOMES) expect(h.bg.length).toBeGreaterThan(0);
+  it("chaque logement a un label et (hors départ) un CTA non vides", () => {
+    HOMES.forEach((h, i) => {
+      expect(h.label.length).toBeGreaterThan(0);
+      if (i > 0) expect(h.cta.length).toBeGreaterThan(0);
+    });
+    // Le niveau de départ (sous-sol) n'a pas de CTA d'acquisition.
+    expect(HOMES[0].cta).toBe("");
+  });
+
+  it("les coûts d'accès sont strictement croissants", () => {
+    for (let i = 1; i < HOMES.length; i++) {
+      expect(HOMES[i].cost.gt(HOMES[i - 1].cost)).toBe(true);
+    }
+  });
+
+  it("porte les libellés du cadre de vie (appartement lumineux, loft)", () => {
+    expect(HOMES[2].label).toBe("Appartement lumineux");
+    expect(HOMES[2].cta).toBe("Louer un appartement lumineux");
+    expect(HOMES[3].label).toBe("Loft");
+    expect(HOMES[3].cta).toBe("S'installer dans un loft");
   });
 });
