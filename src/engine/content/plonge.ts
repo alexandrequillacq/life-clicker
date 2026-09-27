@@ -5,11 +5,11 @@
 // Zéro RNG : tout est daté. Spec : docs/superpowers/specs/2026-09-27-refonte-progression-cynisme-design.md
 
 // --- Calendrier et affluence ---
-export const DAY_SECS = 25; // un jour de jeu
-export const PEAK_SECS = 8; // le coup de feu de midi : les premières secondes du jour
+export const DAY_SECS = 15; // un jour de jeu (le temps file : un restaurant plein, des journées qui s'enchaînent)
+export const PEAK_SECS = 5; // le coup de feu de midi : les premières secondes du jour
 export const PEAK_SHARE = 0.5; // part des assiettes du jour qui arrive pendant le coup de feu
 export const PLATES_PER_COVER = 3; // entrée, plat, dessert
-export const START_COVERS = 40; // couverts par jour au départ
+export const START_COVERS = 200; // couverts par jour au départ : le restaurant salit plus que tu ne peux laver
 export const START_PILE = 12; // une pile t'attend déjà à ton arrivée (le premier bouton n'est jamais grisé)
 export const PILE_BASE_CAP = 60; // au-delà de (base + couverts) assiettes en attente, le chef lave lui-même
 export const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -20,12 +20,15 @@ export const VALUE_PER_DISH = 0.05; // 5 centimes l'assiette
 // Seul le clic lave à la main : une tâche manuelle ne s'automatise pas, c'est le lave-vaisselle qui prend le relais.
 
 // --- Révélation : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
-export const PILE_VISIBLE_AT = 105; // le compteur d'assiettes apparaît quand la pile se vide (ou déborde) pour la première fois après ce temps
-export const FIRST_ASK_AT = 615; // première demande au chef possible (et vieux lave-vaisselle réparé)
-export const ASK_GAP_DAYS = 2; // au moins 2 jours entre deux demandes
-export const FIRST_CALL_WEEK = 2; // Maman appelle à partir du 3e dimanche
-export const SUNDAY_OFFER_DAY = 35; // « Proposer d'ouvrir le dimanche » : le 6e lundi, après un appel de Maman
-export const LIVRET_AT = 1110; // le livret A se propose après ce temps
+export const PILE_VISIBLE_AT = 80; // le compteur d'assiettes apparaît quand la pile se vide (ou déborde) pour la première fois après ce temps
+export const CHEF_REVEAL_DELAY = 35; // « Le chef » paraît 35 s après la réparation du vieux lave-vaisselle
+export const ASK_GAP_DAYS = 1; // au plus une demande par jour
+export const FIRST_CALL_WEEK = 3; // Maman appelle à partir du 4e dimanche
+export const SUNDAY_OFFER_DELAY = 35; // « Proposer d'ouvrir le dimanche » : 35 s après le panier, une fois que Maman a appelé
+export const NOVELTY_GAP = 35; // au moins 35 s entre deux nouveautés que le jeu révèle de lui-même
+export const LIVRET_WITHOUT_SUNDAY = 240; // sans travailler le dimanche, le livret se propose quand même, 240 s après le panier (jamais bloquant)
+export const PRO_OFFER_DELAY = 180; // le lave-vaisselle pro se propose 180 s après le détartrage
+export const LIVRET_DELAY = 60; // le livret A se propose 60 s après le premier appel de Maman en plein service
 export const LIVRET_RATE = 0.05; // intérêts versés chaque lundi, en part de l'argent
 
 // --- Le compromis : le cycle court ---
@@ -35,11 +38,15 @@ export const GREASY_EVERY = 5; // en cycle court, une fournée sur cinq ressort 
 export const RELAUNCH_SECS = 8; // relancer un cycle : la machine relave pendant 8 s
 
 // --- La vie ---
-export const ENERGY_REGEN = 2; // énergie/s récupérée en continu (le repos)
+export const ENERGY_REGEN = 0.3; // énergie/s récupérée en continu (le repos, lent : on la regagne surtout en vivant)
+export const MEAL_ENERGY = 10; // « Se faire à manger »
+export const MEALS_PER_DAY = 2; // deux repas par jour
+export const MEAL_REVEAL_DELAY = 35; // le geste paraît 35 s après avoir posé les gants
 export const CALL_RING_SECS = 30; // l'appel de Maman sonne 30 s
-export const CALL_TALK_SECS = 20; // décrocher occupe les mains 20 s
+export const CALL_TALK_SECS = 20; // au téléphone, tout s'arrête 20 s ; en raccrochant, l'énergie est pleine
 export const WINDOW_IDLE_SECS = 20; // « Regarder par la fenêtre » : après 20 s sans rien faire
-export const ASK_EMPTY_SECS = 12; // pile vide au moins 12 s dans la journée : le chef veut bien grandir
+export const EMPTY_LABEL_SECS = 1.5; // pile vide depuis ce temps : le bouton l'annonce (évite qu'il clignote en cliquant vite)
+export const ASK_EMPTY_SECS = 6; // moins d'une brassée d'assiettes sales 6 s dans la journée : tu suis, le chef veut bien grandir
 export const PLONGE_OFFLINE_CAP = 600; // hors-ligne plafonné à 10 min au plongeur
 
 // --- Équipement : objets uniques, chacun avec la statistique qu'il change ---
@@ -50,6 +57,8 @@ export interface EquipmentDef {
   requires?: string; // équipement prérequis (révélation en chaîne)
   revealAt?: number; // n'apparaît pas avant ce temps de calendrier
   revealDelay?: number; // n'apparaît que ce nombre de secondes après l'achat du prérequis
+  reveal?: string; // n'apparaît qu'une fois cette nouveauté révélée (file des nouveautés)
+  novelty?: boolean; // l'achat change l'écran : les révélations suivantes attendent
   dishesPerClick?: number; // fixe les assiettes lavées par clic
   oldRate?: number; // répare la vieille machine (assiettes/s)
   oldMult?: number; // multiplie la vieille machine seule (joint, panier, détartrage)
@@ -60,16 +69,16 @@ export interface EquipmentDef {
 }
 
 export const EQUIPMENT: EquipmentDef[] = [
-  { id: "gants", cta: "Mettre des gants de plonge", cost: 8, revealAt: 45, dishesPerClick: 2 },
-  { id: "eponge", cta: "Acheter une vraie éponge", cost: 12, requires: "gants", dishesPerClick: 4 },
-  { id: "montre", cta: "S'acheter une montre", cost: 30, requires: "eponge", revealDelay: 90, watch: true },
-  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 35, requires: "montre", revealDelay: 75, oldRate: 4, chef: "reparer" },
-  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 40, requires: "reparer", revealDelay: 45, dishesPerClick: 6 },
-  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 45, requires: "gants_pro", oldMult: 1.5 },
-  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 70, requires: "joint", oldMult: 1.5 },
-  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 90, requires: "panier", dishesPerClick: 8 },
-  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 110, requires: "douchette", oldMult: 1.5 },
-  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 240, requires: "detartrer", proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
+  { id: "gants", cta: "Mettre des gants de plonge", cost: 3, revealAt: 45, dishesPerClick: 2 },
+  { id: "eponge", cta: "Acheter une vraie éponge", cost: 6, requires: "gants", dishesPerClick: 3 },
+  { id: "montre", cta: "S'acheter une montre", cost: 65, requires: "eponge", revealDelay: 75, watch: true, novelty: true },
+  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 45, requires: "montre", revealDelay: 45, oldRate: 6, chef: "reparer", novelty: true },
+  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 80, requires: "reparer", revealDelay: 45, dishesPerClick: 4 },
+  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 50, requires: "gants_pro", revealDelay: 30, oldMult: 1.5, novelty: true },
+  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 160, requires: "joint", oldMult: 1.5 },
+  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 200, requires: "panier", revealDelay: 30, dishesPerClick: 5 },
+  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 260, requires: "douchette", oldMult: 1.5, novelty: true },
+  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 720, requires: "detartrer", reveal: "offre_pro", proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement", novelty: true },
 ];
 
 export const EQUIPMENT_BY_ID: Record<string, EquipmentDef> = Object.fromEntries(EQUIPMENT.map((e) => [e.id, e]));
@@ -85,14 +94,14 @@ export interface AskDef {
 }
 
 export const ASKS: AskDef[] = [
-  { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 15, chef: "si_tu_suis" },
-  { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 20 },
-  { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 25 },
+  { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 20, chef: "si_tu_suis" },
+  { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 25 },
+  { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 30 },
   { id: "groupes", cta: "Proposer d'accepter les groupes", covers: 35 },
-  { id: "brunch", cta: "Proposer un brunch le samedi", covers: 45 },
-  { id: "livraison", cta: "Proposer de s'inscrire sur une appli de livraison", covers: 65 },
-  { id: "seminaires", cta: "Proposer de louer la salle pour des séminaires", covers: 85 },
-  { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 120, chef: "meilleure_chose" },
+  { id: "brunch", cta: "Proposer un brunch le samedi", covers: 40 },
+  { id: "livraison", cta: "Proposer de s'inscrire sur une appli de livraison", covers: 50 },
+  { id: "seminaires", cta: "Proposer de louer la salle pour des séminaires", covers: 60 },
+  { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 70, chef: "meilleure_chose" },
 ];
 
 /** Hors de la file : une proposition unique, datée (le 6e lundi, une fois que Maman a appelé). */
@@ -115,11 +124,11 @@ export interface StudyItemDef {
 }
 
 export const LIBRARY: StudyItemDef[] = [
-  { id: "html", cta: "Acheter un manuel de HTML d'occasion", cost: 30, name: "Manuel de HTML d'occasion", step: "Lire 20 pages", energy: 10, steps: 6, unit: "pages", perStep: 20, done: "Tu sais ce qu'est une balise. Ta première page web dit « Bonjour »." },
-  { id: "cours", cta: "S'inscrire au cours du soir de la mairie", cost: 45, name: "Cours du soir de la mairie", step: "Aller au cours du soir", energy: 20, steps: 8, unit: "séances", perStep: 1, done: "Le prof dit que tu as un bon niveau." },
-  { id: "js", cta: "Acheter un manuel de JavaScript", cost: 60, name: "Manuel de JavaScript", step: "Lire 20 pages", energy: 10, steps: 6, unit: "pages", perStep: 20, done: "Ton bouton change de couleur quand on clique dessus." },
-  { id: "ordi", cta: "Acheter un ordinateur portable reconditionné", cost: 150, name: "Ordinateur portable reconditionné", step: "Faire un exercice", energy: 15, steps: 5, unit: "exercices", perStep: 1, done: "Il chauffe, mais il tient." },
-  { id: "examen", cta: "S'inscrire à l'examen du cours du soir", cost: 40, name: "Examen du cours du soir", step: "Réviser l'examen", lastStep: "Passer l'examen", energy: 15, steps: 4, unit: "étapes", perStep: 1, requiresDone: "cours", done: "Reçu. 16 sur 20." },
+  { id: "html", cta: "Acheter un manuel de HTML d'occasion", cost: 30, name: "Manuel de HTML d'occasion", step: "Lire 10 pages", energy: 5, steps: 12, unit: "pages", perStep: 10, done: "Tu sais ce qu'est une balise. Ta première page web dit « Bonjour »." },
+  { id: "cours", cta: "S'inscrire au cours du soir de la mairie", cost: 45, name: "Cours du soir de la mairie", step: "Aller au cours du soir", energy: 10, steps: 8, unit: "séances", perStep: 1, done: "Le prof dit que tu as un bon niveau." },
+  { id: "js", cta: "Acheter un manuel de JavaScript", cost: 60, name: "Manuel de JavaScript", step: "Lire 10 pages", energy: 5, steps: 12, unit: "pages", perStep: 10, done: "Ton bouton change de couleur quand on clique dessus." },
+  { id: "ordi", cta: "Acheter un ordinateur portable reconditionné", cost: 150, name: "Ordinateur portable reconditionné", step: "Faire un exercice", energy: 8, steps: 8, unit: "exercices", perStep: 1, done: "Il chauffe, mais il tient." },
+  { id: "examen", cta: "S'inscrire à l'examen du cours du soir", cost: 40, name: "Examen du cours du soir", step: "Réviser l'examen", lastStep: "Passer l'examen", energy: 8, steps: 4, unit: "étapes", perStep: 1, requiresDone: "cours", done: "Reçu. 16 sur 20." },
 ];
 
 export const LIBRARY_BY_ID: Record<string, StudyItemDef> = Object.fromEntries(LIBRARY.map((l) => [l.id, l]));
@@ -154,6 +163,7 @@ export const WINDOW_LINES_HOME = [
 export const CALL_SOUVENIR = "Maman t'a raconté son jardin.";
 export const CALL_MISSED = "Maman a laissé un message vocal.";
 export const LIVRET_CTA = "Ouvrir un livret A";
+export const MEAL_CTA = "Se faire à manger";
 export const STUDY_TEASER = "Quand les machines tourneront seules, tu auras le temps d'étudier.";
 export const AGE_PLONGEUR = 22;
 

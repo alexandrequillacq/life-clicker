@@ -9,11 +9,17 @@ import {
   DAY_NAMES,
   SUNDAY,
   PILE_VISIBLE_AT,
-  FIRST_ASK_AT,
+  CHEF_REVEAL_DELAY,
   ASK_GAP_DAYS,
   FIRST_CALL_WEEK,
-  SUNDAY_OFFER_DAY,
-  LIVRET_AT,
+  SUNDAY_OFFER_DELAY,
+  LIVRET_DELAY,
+  NOVELTY_GAP,
+  LIVRET_WITHOUT_SUNDAY,
+  PRO_OFFER_DELAY,
+  MEAL_ENERGY,
+  MEALS_PER_DAY,
+  MEAL_REVEAL_DELAY,
   LIVRET_RATE,
   CYCLE_COURT_MULT,
   LOAD_SECS,
@@ -24,6 +30,7 @@ import {
   CALL_TALK_SECS,
   WINDOW_IDLE_SECS,
   ASK_EMPTY_SECS,
+  EMPTY_LABEL_SECS,
   EQUIPMENT_BY_ID,
   ASKS,
   SUNDAY_OFFER,
@@ -138,7 +145,9 @@ export function autoIncomeLine(s: GameState): string {
 }
 function incomeEffects(s: GameState, now: number, after: number, plural = s.plonge.proRate > 0): string[] {
   const who = plural ? "Les lave-vaisselle te rapportent" : "Il te rapporte";
-  const out = [`${who} : ${fmtEuros(autoIncomeFor(s, now))} → ${fmtEuros(autoIncomeFor(s, after))} / min`];
+  const a = autoIncomeFor(s, now);
+  const b = autoIncomeFor(s, after);
+  const out = b - a >= 0.005 ? [`${who} : ${fmtEuros(a)} → ${fmtEuros(b)} / min`] : [];
   if (after >= openDayArrivalRate(s)) out.push("Pas plus : le restaurant ne salit pas plus d'assiettes.");
   return out;
 }
@@ -166,7 +175,54 @@ export function washClick(s: GameState): boolean {
   return true;
 }
 
-// --- Ce qui est révélé ---
+/** La pile est vide depuis un moment : le bouton le dit (un creux d'une fraction de seconde ne compte pas). */
+export function noDirtyPlates(s: GameState): boolean {
+  return s.plonge.pile < 1 && s.plonge.emptyFor >= EMPTY_LABEL_SECS;
+}
+
+// --- Ce qui est révélé : une information à la fois ---
+
+export function isRevealed(s: GameState, key: string): boolean {
+  return s.plonge.revealed[key] !== undefined;
+}
+/** L'écran vient de changer par une action du joueur : les révélations suivantes attendent. */
+function novelty(s: GameState): void {
+  s.plonge.lastNovelty = s.plonge.day;
+}
+function noveltyFree(s: GameState): boolean {
+  return s.plonge.day >= s.plonge.lastNovelty + NOVELTY_GAP;
+}
+/** Révèle `key` si c'est prêt et qu'aucune autre nouveauté n'est trop récente. */
+function tryReveal(s: GameState, key: string, ready: boolean): boolean {
+  if (isRevealed(s, key)) return true;
+  if (!ready || !noveltyFree(s)) return false;
+  s.plonge.revealed[key] = s.plonge.day;
+  novelty(s);
+  return true;
+}
+function since(s: GameState, id: string): number {
+  const at = s.plonge.boughtAt[id];
+  return at === undefined ? -Infinity : s.plonge.day - at;
+}
+function callOngoing(s: GameState): boolean {
+  return s.plonge.callRing > 0 || s.plonge.callTalk > 0;
+}
+/** La file des nouveautés que le jeu révèle de lui-même, dans l'ordre, une à la fois. */
+function revealQueue(s: GameState): void {
+  const p = s.plonge;
+  if (tryReveal(s, "pile", p.day >= PILE_VISIBLE_AT && (p.pile < 1 || p.overflow > 0))) p.pileVisible = true;
+  tryReveal(s, "chef", p.oldRate > 0 && since(s, "reparer") >= CHEF_REVEAL_DELAY);
+  tryReveal(s, "dimanche", since(s, "panier") >= SUNDAY_OFFER_DELAY && isRevealed(s, "maman") && !callOngoing(s));
+  tryReveal(
+    s,
+    "livret",
+    !callOngoing(s) &&
+      (since(s, "service_call") >= LIVRET_DELAY || since(s, "panier") >= LIVRET_WITHOUT_SUNDAY),
+  );
+  tryReveal(s, "offre_pro", since(s, "detartrer") >= PRO_OFFER_DELAY);
+  tryReveal(s, "repas", s.manualRetired && since(s, "gants_poses") >= MEAL_REVEAL_DELAY);
+}
+
 
 /** La montre donne le jour et le coup de feu. */
 export function dayVisible(s: GameState): boolean {
@@ -188,13 +244,14 @@ export function equipmentVisible(s: GameState, def: EquipmentDef): boolean {
   const p = s.plonge;
   if (s.job !== "plongeur" || p.equipment[def.id]) return false;
   if (def.revealAt !== undefined && p.day < def.revealAt) return false;
+  if (def.reveal && !isRevealed(s, def.reveal)) return false;
   if (!def.requires) return true;
   if (!p.equipment[def.requires]) return false;
   return def.revealDelay === undefined || p.day >= (p.boughtAt[def.requires] ?? 0) + def.revealDelay;
 }
 export function canBuyEquipment(s: GameState, id: string): boolean {
   const def = EQUIPMENT_BY_ID[id];
-  return !!def && equipmentVisible(s, def) && s.money.gte(def.cost);
+  return !!def && equipmentVisible(s, def) && s.money.gte(def.cost) && !onThePhone(s);
 }
 export function buyEquipment(s: GameState, id: string): boolean {
   if (!canBuyEquipment(s, id)) return false;
@@ -205,8 +262,12 @@ export function buyEquipment(s: GameState, id: string): boolean {
   if (def.dishesPerClick !== undefined) s.dishesPerClick = def.dishesPerClick;
   if (def.oldRate !== undefined) s.plonge.oldRate = def.oldRate;
   if (def.oldMult !== undefined) s.plonge.oldMult *= def.oldMult;
-  if (def.proRate !== undefined) s.plonge.proRate = def.proRate;
+  if (def.proRate !== undefined) {
+    s.plonge.proRate = def.proRate;
+    s.plonge.greasy = false; // le lave-vaisselle pro ne sort pas d'assiettes grasses
+  }
   if (def.chef) s.plonge.chef = def.chef;
+  if (def.novelty) novelty(s);
   markAction(s);
   return true;
 }
@@ -232,6 +293,7 @@ export function equipmentEffects(s: GameState, def: EquipmentDef): string[] {
     const after = now + def.proRate * cc;
     out.push(`Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`);
     out.push(...incomeEffects(s, now, after, true));
+    if (s.plonge.cycleCourt) out.push("Plus d'assiettes grasses : il lave bien, même en cycle court.");
   }
   if (def.note) out.push(def.note);
   return out;
@@ -252,14 +314,14 @@ export function cycleCourtEffects(s: GameState): string[] {
   ];
 }
 export function setCycleCourt(s: GameState): boolean {
-  if (!cycleCourtAvailable(s)) return false;
+  if (!cycleCourtAvailable(s) || onThePhone(s)) return false;
   s.plonge.cycleCourt = true;
   markAction(s);
   return true;
 }
 /** Relancer un cycle : on relave, la machine ne sort rien pendant RELAUNCH_SECS. */
 export function relaunchCycle(s: GameState): boolean {
-  if (!s.plonge.greasy) return false;
+  if (!s.plonge.greasy || onThePhone(s)) return false;
   s.plonge.greasy = false;
   s.plonge.relaunchLeft = RELAUNCH_SECS;
   markAction(s);
@@ -267,7 +329,7 @@ export function relaunchCycle(s: GameState): boolean {
 }
 /** Les ranger quand même : rien de perdu pour toi. Le client paiera au service suivant. */
 export function shelveGreasy(s: GameState): boolean {
-  if (!s.plonge.greasy) return false;
+  if (!s.plonge.greasy || onThePhone(s)) return false;
   s.plonge.greasy = false;
   s.plonge.shelved += 1;
   s.plonge.complaint = true;
@@ -280,20 +342,35 @@ export function shelveGreasy(s: GameState): boolean {
 export function currentAsk(s: GameState): AskDef | null {
   return ASKS[s.plonge.asksDone] ?? null;
 }
+/** « Le chef » paraît un moment après la réparation du vieux lave-vaisselle. */
+export function chefVisible(s: GameState): boolean {
+  return s.job === "plongeur" && isRevealed(s, "chef");
+}
+function askedToday(s: GameState): boolean {
+  return dayIndex(s) - s.plonge.lastAskDay < ASK_GAP_DAYS;
+}
 /**
- * Le chef veut bien grandir si ta pile est restée vide 12 s aujourd'hui (tu suis), une fois le vieux
- * lave-vaisselle réparé, pas avant FIRST_ASK_AT, et au plus une demande tous les ASK_GAP_DAYS jours.
+ * Le chef veut bien grandir si tu suis : moins d'une brassée d'assiettes sales (ce que lave un clic)
+ * pendant ASK_EMPTY_SECS dans la journée. Au plus une demande par jour.
  */
 export function canAskChef(s: GameState): boolean {
   const p = s.plonge;
   return (
-    s.job === "plongeur" &&
+    chefVisible(s) &&
     currentAsk(s) !== null &&
-    p.oldRate > 0 &&
-    p.day >= FIRST_ASK_AT &&
     p.emptyToday >= ASK_EMPTY_SECS &&
-    dayIndex(s) - p.lastAskDay >= ASK_GAP_DAYS
+    !askedToday(s) &&
+    !onThePhone(s)
   );
+}
+/** Ce que le chef attend pour dire oui, et où tu en es aujourd'hui (le bouton grisé donne la cible). */
+export function askStatus(s: GameState): string[] {
+  if (askedToday(s)) return ["Tu as déjà proposé aujourd'hui. Le chef répondra demain."];
+  const n = Math.max(1, s.dishesPerClick);
+  return [
+    `Le chef dit oui si tu suis : moins de ${n} assiette${n > 1 ? "s" : ""} sale${n > 1 ? "s" : ""} pendant ${ASK_EMPTY_SECS} s dans la journée`,
+    `Aujourd'hui : ${Math.min(ASK_EMPTY_SECS, Math.floor(s.plonge.emptyToday))} s sur ${ASK_EMPTY_SECS}`,
+  ];
 }
 export function askEffects(s: GameState, def: AskDef): string[] {
   const out: string[] = [];
@@ -312,25 +389,29 @@ function applyAsk(s: GameState, def: AskDef): void {
 export function askChef(s: GameState): boolean {
   if (!canAskChef(s)) return false;
   applyAsk(s, currentAsk(s)!);
+  if (s.plonge.asksDone === 0) novelty(s); // les couverts s'affichent
   s.plonge.asksDone += 1;
   s.plonge.lastAskDay = dayIndex(s);
   return true;
 }
-/** Ouvrir le dimanche : une proposition unique, le 6e lundi, une fois que Maman a appelé. */
+/** Ouvrir le dimanche : une proposition unique, un moment après le panier, une fois que Maman a appelé. */
 export function canOfferSunday(s: GameState): boolean {
   const p = s.plonge;
-  return s.job === "plongeur" && !p.sundayOpen && dayIndex(s) >= SUNDAY_OFFER_DAY && p.callWeek >= 0;
+  return s.job === "plongeur" && !p.sundayOpen && isRevealed(s, "dimanche");
 }
 export function offerSunday(s: GameState): boolean {
-  if (!canOfferSunday(s)) return false;
+  if (!canOfferSunday(s) || onThePhone(s)) return false;
   applyAsk(s, SUNDAY_OFFER);
+  novelty(s);
   return true;
 }
 
 // --- Le livret A : l'argent qui travaille pour toi ---
 
+/** Le livret A se propose un moment après le détartrage, une fois que Maman a appelé en plein service. */
 export function canOpenLivret(s: GameState): boolean {
-  return s.job === "plongeur" && !s.plonge.livret && s.plonge.day >= LIVRET_AT;
+  const p = s.plonge;
+  return s.job === "plongeur" && !p.livret && isRevealed(s, "livret");
 }
 export function livretEffects(s: GameState): string[] {
   return [
@@ -339,7 +420,7 @@ export function livretEffects(s: GameState): string[] {
   ];
 }
 export function openLivret(s: GameState): boolean {
-  if (!canOpenLivret(s)) return false;
+  if (!canOpenLivret(s) || onThePhone(s)) return false;
   s.plonge.livret = true;
   s.plonge.chef = "banque";
   markAction(s);
@@ -368,7 +449,8 @@ function callLoss(s: GameState): number {
   return Math.max(0, lost) * s.valuePerDish.toNumber();
 }
 export function callEffects(s: GameState): string[] {
-  const out = [`${CALL_TALK_SECS} s au téléphone`];
+  const out = [`${CALL_TALK_SECS} s au téléphone : tout s'arrête`];
+  if (s.flags.energyVisible) out.push(`Énergie : ${Math.round(s.energy)} → ${ENERGY_MAX}`);
   const loss = callLoss(s);
   if (loss >= 0.01) out.push(`Pendant ce temps, le chef lave à ta place. Tu perds environ ${fmtEuros(loss)}.`);
   return out;
@@ -385,7 +467,11 @@ export function onThePhone(s: GameState): boolean {
 }
 export function canLookOutWindow(s: GameState): boolean {
   return (
-    s.job === "plongeur" && lifeVisible(s) && s.plonge.idle >= WINDOW_IDLE_SECS && s.plonge.windowDay !== dayIndex(s)
+    s.job === "plongeur" &&
+    lifeVisible(s) &&
+    !onThePhone(s) &&
+    s.plonge.idle >= WINDOW_IDLE_SECS &&
+    s.plonge.windowDay !== dayIndex(s)
   );
 }
 export function lookOutWindow(s: GameState): boolean {
@@ -413,6 +499,8 @@ export function poseGantsEffects(s: GameState): string[] {
 export function retireHands(s: GameState): void {
   s.manualRetired = true;
   s.flags.energyVisible = true;
+  s.plonge.boughtAt["gants_poses"] = s.plonge.day;
+  novelty(s);
   s.plonge.chef = "gants_poses";
   markAction(s);
 }
@@ -437,7 +525,7 @@ export function studyBuyVisible(s: GameState, id: string): boolean {
 }
 export function canBuyStudy(s: GameState, id: string): boolean {
   const def = LIBRARY_BY_ID[id];
-  return !!def && studyBuyVisible(s, id) && s.money.gte(def.cost);
+  return !!def && studyBuyVisible(s, id) && s.money.gte(def.cost) && !onThePhone(s);
 }
 export function buyStudy(s: GameState, id: string): boolean {
   if (!canBuyStudy(s, id)) return false;
@@ -483,7 +571,27 @@ export function examPassed(s: GameState): boolean {
   return studyDone(s, LIBRARY[LIBRARY.length - 1].id);
 }
 export function canAnswerAnnonce(s: GameState): boolean {
-  return s.job === "plongeur" && examPassed(s);
+  return s.job === "plongeur" && examPassed(s) && !onThePhone(s);
+}
+
+// --- Les gestes de vie qui redonnent de l'énergie ---
+
+export function mealVisible(s: GameState): boolean {
+  return libraryVisible(s) && isRevealed(s, "repas");
+}
+export function canEat(s: GameState): boolean {
+  return mealVisible(s) && s.plonge.mealsToday < MEALS_PER_DAY && s.energy < ENERGY_MAX && !onThePhone(s);
+}
+export function mealEffects(s: GameState): string[] {
+  if (s.plonge.mealsToday >= MEALS_PER_DAY) return ["Tu as déjà mangé. Demain."];
+  return [`Énergie : ${Math.round(s.energy)} → ${Math.min(ENERGY_MAX, Math.round(s.energy + MEAL_ENERGY))}`, `${MEALS_PER_DAY} repas par jour`];
+}
+/** Se faire à manger : une corvée de vie, qui recharge sans poser de souvenir. */
+export function eat(s: GameState): boolean {
+  if (!canEat(s)) return false;
+  s.energy = Math.min(ENERGY_MAX, s.energy + MEAL_ENERGY);
+  s.plonge.mealsToday += 1;
+  return true;
 }
 /** Répondre à l'annonce de Mme Duval : on quitte la plonge, on devient développeur. */
 export function answerAnnonce(s: GameState): boolean {
@@ -511,6 +619,8 @@ export function tickPlonge(s: GameState, t: number): void {
   const today = dayIndex(s);
   if (today !== prevDay) {
     p.emptyToday = 0;
+    p.overflowToday = 0;
+    p.mealsToday = 0;
     // La plainte arrive au service qui suit la fournée rangée grasse.
     if (p.complaint) {
       p.complaint = false;
@@ -518,9 +628,18 @@ export function tickPlonge(s: GameState, t: number): void {
     }
     // Maman appelle le dimanche à midi, une fois par semaine, à partir du 3e dimanche.
     const week = Math.floor(today / 7);
-    if (today % 7 === SUNDAY && week >= FIRST_CALL_WEEK && p.callWeek !== week) {
+    const sunday = today % 7 === SUNDAY;
+    const firstCall = sunday && !isRevealed(s, "maman") && week >= FIRST_CALL_WEEK && tryReveal(s, "maman", true);
+    // Le premier appel en plein service est une nouveauté : il attend son tour (Maman rappellera dimanche prochain).
+    const service = p.sundayOpen && !s.manualRetired;
+    const callOk = sunday && (isRevealed(s, "maman") || firstCall) && p.callWeek !== week;
+    if (callOk && (!service || p.serviceCall || tryReveal(s, "service", true))) {
       p.callWeek = week;
       p.callRing = CALL_RING_SECS;
+      if (p.sundayOpen && !s.manualRetired && !p.serviceCall) {
+        p.serviceCall = true;
+        p.boughtAt["service_call"] = p.day;
+      }
     }
     // Le livret A verse ses intérêts chaque lundi.
     if (today % 7 === 0 && p.livret) {
@@ -547,6 +666,7 @@ export function tickPlonge(s: GameState, t: number): void {
     p.callTalk -= t;
     if (p.callTalk <= 0) {
       p.callTalk = 0;
+      s.energy = ENERGY_MAX; // parler à Maman recharge complètement
       remember(s, "lien", CALL_SOUVENIR, false);
     }
   }
@@ -562,7 +682,8 @@ export function tickPlonge(s: GameState, t: number): void {
       if (p.loadClock >= LOAD_SECS) {
         p.loadClock -= LOAD_SECS;
         p.loads += 1;
-        if (p.loads % GREASY_EVERY === 0) p.greasy = true;
+        // La première fournée grasse attend son tour dans la file des nouveautés.
+        if (p.loads % GREASY_EVERY === 0 && p.proRate === 0 && tryReveal(s, "grasses", true)) p.greasy = true;
       }
     }
   }
@@ -580,20 +701,25 @@ export function tickPlonge(s: GameState, t: number): void {
   }
   if (lost > 0) {
     p.overflow += lost;
+    p.overflowToday += lost;
     if (p.pileVisible && p.overflowDay !== today) {
       p.overflowDay = today;
+      if (p.chef !== "debordement") p.chefBefore = p.chef;
       p.chef = "debordement";
     }
   }
+  // La réplique du débordement s'efface quand la pile redescend.
+  if (p.chef === "debordement" && p.pile < pileCap(s) * 0.7) p.chef = p.chefBefore;
 
   // Le compteur d'assiettes se révèle quand la pile se vide (ou déborde) pour la première fois.
-  if (!p.pileVisible && p.day >= PILE_VISIBLE_AT && (p.pile < 1 || p.overflow > 0)) p.pileVisible = true;
+  revealQueue(s);
 
   // Énergie : le repos continu (elle ne se dépense qu'en études).
   s.energy = Math.min(ENERGY_MAX, s.energy + ENERGY_REGEN * t);
 
   // Tu suis le restaurant : la pile est vide un jour ouvert.
-  if (openToday(s) && p.pile < 1) p.emptyToday += t;
+  if (openToday(s) && p.pile < Math.max(1, s.dishesPerClick)) p.emptyToday += t;
+  p.emptyFor = p.pile < 1 ? p.emptyFor + t : 0;
 
   // Inactivité (la fenêtre) : le téléphone ne compte pas comme du temps libre.
   if (p.callTalk <= 0) p.idle += t;

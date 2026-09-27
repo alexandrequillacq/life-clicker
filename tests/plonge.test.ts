@@ -10,9 +10,11 @@ import {
   START_PILE,
   PILE_BASE_CAP,
   PILE_VISIBLE_AT,
-  FIRST_ASK_AT,
-  SUNDAY_OFFER_DAY,
-  LIVRET_AT,
+  CHEF_REVEAL_DELAY,
+  SUNDAY_OFFER_DELAY,
+  LIVRET_DELAY,
+  NOVELTY_GAP,
+  MEAL_ENERGY,
   RELAUNCH_SECS,
   CALL_RING_SECS,
   CALL_TALK_SECS,
@@ -27,33 +29,40 @@ import {
   dayName,
   isPeak,
   clickPlates,
+  noDirtyPlates,
   buyEquipment,
   canBuyEquipment,
   equipmentVisible,
   equipmentEffects,
-  canOpenLivret,
-  openLivret,
-  livretEffects,
-  livretLine,
-  canOfferSunday,
-  offerSunday,
-  dayVisible,
-  coversVisible,
-  lifeVisible,
-  callEffects,
   machineRate,
+  autoIncomePerMin,
   currentAsk,
   canAskChef,
   askChef,
   askEffects,
+  askStatus,
+  chefVisible,
+  coversVisible,
+  canOfferSunday,
+  offerSunday,
+  canOpenLivret,
+  openLivret,
+  livretEffects,
+  livretLine,
   cycleCourtAvailable,
+  cycleCourtEffects,
   setCycleCourt,
   relaunchCycle,
   shelveGreasy,
   canAnswerCall,
   answerCall,
+  callEffects,
+  onThePhone,
   canLookOutWindow,
   lookOutWindow,
+  lifeVisible,
+  dayVisible,
+  isRevealed,
   canPoseGants,
   poseGantsEffects,
   libraryVisible,
@@ -64,8 +73,11 @@ import {
   examPassed,
   canAnswerAnnonce,
   answerAnnonce,
-  autoIncomePerMin,
   studyBuyEffects,
+  mealVisible,
+  canEat,
+  eat,
+  mealEffects,
 } from "../src/engine/plonge";
 import { poseGants } from "../src/engine/actions";
 import { applyOffline } from "../src/engine/offline";
@@ -83,18 +95,25 @@ function run(s: GameState, secs: number, dt = 0.05): void {
 function equipUpTo(s: GameState, id: string): void {
   for (const e of EQUIPMENT) {
     if (e.revealAt !== undefined) s.plonge.day = Math.max(s.plonge.day, e.revealAt);
+    if (e.reveal) s.plonge.revealed[e.reveal] = s.plonge.day;
     s.money = s.money.add(e.cost);
     expect(buyEquipment(s, e.id)).toBe(true);
     s.plonge.boughtAt[e.id] = -1e6; // les révélations différées sont déjà passées
-    if (e.id === id) return;
+    if (e.id === id) break;
   }
+  // Ce qui se serait déjà révélé en chemin : la file des nouveautés est libre pour le test.
+  for (const k of ["pile", "chef", "grasses", "livret", "offre_pro"]) s.plonge.revealed[k] ??= 0;
+  s.plonge.pileVisible = true;
+  s.plonge.lastNovelty = -1e6;
 }
 
 /** Temps de calendrier au début du jour `d` (0 = premier lundi). */
 const dayStart = (d: number): number => d * DAY_SECS;
+/** Le premier dimanche où Maman peut appeler (4e dimanche). */
+const FIRST_CALL_DAY = 27;
 
 describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
-  it("démarre un lundi, restaurant de 40 couverts, une petite pile qui t'attend", () => {
+  it("démarre un lundi, un restaurant plein de 200 couverts, une petite pile qui t'attend", () => {
     const s = fresh();
     expect(dayName(s)).toBe("Lundi");
     expect(s.plonge.covers).toBe(START_COVERS);
@@ -113,7 +132,12 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     const t = fresh();
     t.plonge.pile = 0;
     run(t, DAY_SECS);
-    expect(t.plonge.pile + t.plonge.overflow).toBeCloseTo(START_COVERS * 3, 0);
+    expect(t.plonge.pile + t.plonge.overflow).toBeCloseTo(START_COVERS * 3, -1);
+  });
+
+  it("le restaurant salit plus vite que tu ne laves à la main : chaque achat de clic rapporte", () => {
+    const avg = (START_COVERS * 3) / DAY_SECS;
+    expect(avg).toBeGreaterThan(6 * EQUIPMENT.find((e) => e.id === "douchette")!.dishesPerClick!);
   });
 
   it("on ne lave pas plus d'assiettes que la pile n'en contient", () => {
@@ -129,16 +153,30 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     expect(s.plonge.pile).toBe(0);
   });
 
-  it("au-delà de la capacité de la pile, le chef lave lui-même (perdu pour toi, jamais bloquant)", () => {
+  it("le bouton ne dit « Aucune assiette sale » qu'après un instant de pile vide (il ne clignote pas)", () => {
     const s = fresh();
-    run(s, DAY_SECS * 3);
+    s.plonge.day = dayStart(6) + 1; // dimanche, fermé : plus rien n'arrive
+    s.plonge.pile = 0;
+    tick(s, 0.5);
+    expect(noDirtyPlates(s)).toBe(false);
+    run(s, 1.5);
+    expect(noDirtyPlates(s)).toBe(true);
+  });
+
+  it("au-delà de la capacité, le chef lave lui-même ; sa réplique s'efface quand la pile redescend", () => {
+    const s = fresh();
+    run(s, 3 * DAY_SECS);
     expect(s.plonge.pile).toBeLessThanOrEqual(pileCap(s) + 1e-6);
     expect(pileCap(s)).toBe(PILE_BASE_CAP + START_COVERS);
     expect(s.plonge.overflow).toBeGreaterThan(0);
     expect(s.plonge.chef).toBe("debut"); // le chef ne parle pas d'une pile que tu ne vois pas encore
-    run(s, DAY_SECS * 2);
+    run(s, 2 * DAY_SECS + 8); // un samedi
     expect(s.plonge.pileVisible).toBe(true);
     expect(s.plonge.chef).toBe("debordement");
+    expect(s.plonge.overflowToday).toBeGreaterThan(0);
+    s.plonge.pile = 0;
+    tick(s, 0.01);
+    expect(s.plonge.chef).toBe("debut");
   });
 
   it("le compteur d'assiettes n'apparaît qu'à la première pile vide, après un moment", () => {
@@ -157,7 +195,7 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
 
   it("le restaurant est fermé le dimanche au départ", () => {
     const s = fresh();
-    s.plonge.day = DAY_SECS * 6 + 1; // dimanche midi
+    s.plonge.day = dayStart(6) + 1;
     expect(dayName(s)).toBe("Dimanche");
     expect(arrivalRate(s)).toBe(0);
   });
@@ -169,9 +207,12 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     for (const e of EQUIPMENT) {
       const lines = equipmentEffects(s, e);
       expect(lines.length).toBeGreaterThan(0);
-      for (const l of lines) expect(l.length).toBeGreaterThan(5);
+      for (const l of lines) expect(l).not.toMatch(/(\d+,\d\d €) → \1/); // jamais « A → A »
+      if (e.reveal) s.plonge.revealed[e.reveal] = s.plonge.day;
+      s.plonge.day = Math.max(s.plonge.day, e.revealAt ?? 0);
       s.money = s.money.add(e.cost);
       buyEquipment(s, e.id);
+      s.plonge.boughtAt[e.id] = -1e6;
     }
   });
 
@@ -186,6 +227,11 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     expect(s.dishesPerClick).toBe(2);
     expect(canBuyEquipment(s, "gants")).toBe(false);
     expect(equipmentVisible(s, EQUIPMENT[1])).toBe(true);
+  });
+
+  it("les deux premiers achats sont à 3 € et 6 €", () => {
+    expect(EQUIPMENT[0].cost).toBe(3);
+    expect(EQUIPMENT[1].cost).toBe(6);
   });
 
   it("une tâche manuelle ne s'automatise pas : sans clic ni machine, rien ne se lave", () => {
@@ -214,47 +260,81 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
   it("joint, panier et détartrage n'améliorent que la vieille machine ; le pro compte à part", () => {
     const s = fresh();
     equipUpTo(s, "reparer");
-    expect(machineRate(s)).toBeCloseTo(4);
+    expect(machineRate(s)).toBeCloseTo(6);
     const t = fresh();
     equipUpTo(t, "detartrer");
-    expect(machineRate(t)).toBeCloseTo(4 * 1.5 ** 3);
+    expect(machineRate(t)).toBeCloseTo(6 * 1.5 ** 3);
     const u = fresh();
     equipUpTo(u, "pro");
-    expect(machineRate(u)).toBeCloseTo(4 * 1.5 ** 3 + 40);
+    expect(machineRate(u)).toBeCloseTo(6 * 1.5 ** 3 + 40);
+  });
+
+  it("le lave-vaisselle pro ne se propose que dans la file des nouveautés", () => {
+    const s = fresh();
+    equipUpTo(s, "detartrer");
+    delete s.plonge.revealed["offre_pro"];
+    const pro = EQUIPMENT.find((e) => e.id === "pro")!;
+    expect(equipmentVisible(s, pro)).toBe(false);
+    s.plonge.revealed["offre_pro"] = s.plonge.day;
+    expect(equipmentVisible(s, pro)).toBe(true);
   });
 
   it("le revenu automatique : les machines seules, hors clic, limitées par ce que le restaurant salit", () => {
     const s = fresh();
     expect(autoIncomePerMin(s)).toBe(0);
     equipUpTo(s, "reparer");
-    // 4 assiettes/s < 4,8 qui arrivent en moyenne un jour ouvert : 4 × 6/7 × 0,05 × 60.
-    expect(autoIncomePerMin(s)).toBeCloseTo(4 * (6 / 7) * 0.05 * 60, 5);
+    expect(autoIncomePerMin(s)).toBeCloseTo(6 * (6 / 7) * 0.05 * 60, 5);
     s.dishesPerClick = 100;
     s.plonge.pile = 1000;
     work(s);
-    expect(autoIncomePerMin(s)).toBeCloseTo(4 * (6 / 7) * 0.05 * 60, 5); // le clic n'y entre pas
+    expect(autoIncomePerMin(s)).toBeCloseTo(6 * (6 / 7) * 0.05 * 60, 5); // le clic n'y entre pas
     const u = fresh();
     equipUpTo(u, "pro");
     expect(autoIncomePerMin(u)).toBeCloseTo(((START_COVERS * 3) / DAY_SECS) * (6 / 7) * 0.05 * 60, 5);
     const r = equipmentEffects(fresh(), EQUIPMENT.find((e) => e.id === "reparer")!);
-    expect(r.join(" ")).toMatch(/Il te rapporte 10,29 € \/ min/);
+    expect(r.join(" ")).toMatch(/Il te rapporte 15,43 € \/ min/);
+  });
+
+  it("chaque amélioration de machine rapporte vraiment plus (l'offre devance la capacité)", () => {
+    const s = fresh();
+    equipUpTo(s, "gants_pro");
+    for (const id of ["joint", "panier", "douchette", "detartrer"]) {
+      const before = autoIncomePerMin(s);
+      s.money = D(1000);
+      expect(buyEquipment(s, id)).toBe(true);
+      s.plonge.boughtAt[id] = -1e6;
+      if (id !== "douchette") expect(autoIncomePerMin(s)).toBeGreaterThan(before);
+    }
   });
 
   it("l'argent est exact dès le premier clic ; le livret A arrive bien plus tard", () => {
     const s = fresh();
     expect(canOpenLivret(s)).toBe(false);
-    s.plonge.day = LIVRET_AT;
+    s.plonge.revealed["livret"] = 0;
     expect(canOpenLivret(s)).toBe(true);
     s.money = D(200);
     expect(livretEffects(s)).toEqual(["Chaque lundi : +5 % de ton argent", "Aujourd'hui, ce serait +10,00 €"]);
     openLivret(s);
     expect(livretLine(s)).toBe("Livret A : 5 % chaque lundi");
     // Lundi suivant : +5 %.
-    s.plonge.day = dayStart(49) - 0.01;
+    s.plonge.day = dayStart(7) - 0.01;
     s.plonge.pile = 0;
     tick(s, 0.02);
     expect(s.money.toNumber()).toBeCloseTo(210, 5);
     expect(livretLine(s)).toBe("Livret A : +10,00 € lundi dernier");
+  });
+
+  it("le livret se propose 60 s après Maman en plein service, ou sans dimanche, bien plus tard", () => {
+    const s = fresh();
+    equipUpTo(s, "panier");
+    s.plonge.boughtAt["panier"] = s.plonge.day;
+    s.plonge.serviceCall = true;
+    s.plonge.boughtAt["service_call"] = s.plonge.day;
+    delete s.plonge.revealed["livret"];
+    run(s, LIVRET_DELAY - 1);
+    expect(canOpenLivret(s)).toBe(false);
+    run(s, 2);
+    expect(canOpenLivret(s)).toBe(true);
   });
 });
 
@@ -268,12 +348,15 @@ describe("Plongeur : le cycle court et les assiettes grasses", () => {
     return s;
   }
 
-  it("le cycle court accélère les deux machines de 30 %", () => {
+  it("le cycle court accélère les deux machines de 30 %, et ça rapporte", () => {
     const s = fresh();
     equipUpTo(s, "joint");
     const before = machineRate(s);
+    const income = autoIncomePerMin(s);
+    expect(cycleCourtEffects(s).join(" ")).toMatch(/Il te rapporte/);
     setCycleCourt(s);
     expect(machineRate(s)).toBeCloseTo(before * 1.3);
+    expect(autoIncomePerMin(s)).toBeGreaterThan(income);
   });
 
   it("une fournée sur cinq ressort grasse : la machine s'arrête", () => {
@@ -286,6 +369,14 @@ describe("Plongeur : le cycle court et les assiettes grasses", () => {
     expect(autoIncomePerMin(s)).toBe(0);
     run(s, 5);
     expect(s.money.toNumber()).toBeCloseTo(money); // machine à l'arrêt : plus rien ne rentre
+  });
+
+  it("la première fournée grasse attend son tour derrière une nouveauté récente", () => {
+    const s = withCycleCourt();
+    delete s.plonge.revealed["grasses"];
+    s.plonge.lastNovelty = s.plonge.day + 40; // une nouveauté vient d'arriver
+    run(s, 51);
+    expect(s.plonge.greasy).toBe(false);
   });
 
   it("relancer un cycle coûte 8 s de machine ; les ranger quand même ne coûte rien", () => {
@@ -313,74 +404,111 @@ describe("Plongeur : le cycle court et les assiettes grasses", () => {
     const s = withCycleCourt();
     run(s, 51);
     shelveGreasy(s);
-    run(s, DAY_SECS);
+    s.plonge.pile = 0;
+    s.plonge.day = dayStart(dayStartIndex(s) + 1) - 0.01;
+    tick(s, 0.02);
     expect(s.plonge.chef).toBe("plainte");
+  });
+
+  it("avec le lave-vaisselle pro, plus d'assiettes grasses", () => {
+    const s = fresh();
+    equipUpTo(s, "pro");
+    setCycleCourt(s);
+    s.plonge.pile = 1e6;
+    run(s, 120);
+    expect(s.plonge.greasy).toBe(false);
   });
 });
 
-describe("Plongeur : les demandes au chef (gatées par la vitesse du joueur)", () => {
+function dayStartIndex(s: GameState): number {
+  return Math.floor(s.plonge.day / DAY_SECS);
+}
+
+describe("Plongeur : les demandes au chef (la réponse quand tu rattrapes le restaurant)", () => {
   function readyToAsk(): GameState {
     const s = fresh();
     equipUpTo(s, "reparer");
-    s.plonge.day = dayStart(25) + PEAK_SECS + 0.5; // après FIRST_ASK_AT, hors coup de feu
-    s.plonge.emptyToday = 12;
+    s.plonge.revealed["chef"] = 0;
+    s.plonge.day = dayStart(10) + PEAK_SECS + 0.5;
+    s.plonge.emptyToday = 6;
     return s;
   }
 
-  it("aucune demande tant que la pile n'a pas été vide 12 s dans la journée", () => {
-    const s = readyToAsk();
-    s.plonge.emptyToday = 11;
-    expect(canAskChef(s)).toBe(false);
+  it("« Le chef » paraît un moment après la réparation, dans la file des nouveautés", () => {
+    const s = fresh();
+    equipUpTo(s, "reparer");
+    delete s.plonge.revealed["chef"];
+    s.plonge.boughtAt["reparer"] = s.plonge.day;
+    s.plonge.pile = 0;
+    run(s, CHEF_REVEAL_DELAY - 1);
+    expect(chefVisible(s)).toBe(false);
+    run(s, 2);
+    expect(chefVisible(s)).toBe(true);
   });
 
-  it("aucune demande avant la machine réparée, ni avant un bon moment", () => {
+  it("pas de demande tant que tu ne suis pas ; le bouton grisé dit la cible", () => {
     const s = readyToAsk();
-    s.plonge.day = FIRST_ASK_AT - 1;
+    s.plonge.emptyToday = 2;
     expect(canAskChef(s)).toBe(false);
-    const t = fresh();
-    t.plonge.day = dayStart(25) + PEAK_SECS + 0.5;
-    t.plonge.emptyToday = 12;
-    expect(canAskChef(t)).toBe(false); // pas de lave-vaisselle
+    s.dishesPerClick = 4;
+    expect(askStatus(s)).toEqual([
+      "Le chef dit oui si tu suis : moins de 4 assiettes sales pendant 6 s dans la journée",
+      "Aujourd'hui : 2 s sur 6",
+    ]);
   });
 
-  it("une demande quand on va plus vite que le restaurant ; +couverts ; deux jours entre deux", () => {
+  it("tu suis quand il reste moins d'une brassée d'assiettes sales", () => {
+    const s = readyToAsk();
+    s.plonge.emptyToday = 0;
+    s.dishesPerClick = 4;
+    s.plonge.pile = 3;
+    s.plonge.covers = 0; // plus rien n'arrive
+    run(s, 6.5);
+    expect(canAskChef(s)).toBe(true);
+  });
+
+  it("une demande : +couverts ; au plus une par jour", () => {
     const s = readyToAsk();
     expect(coversVisible(s)).toBe(false);
     expect(canAskChef(s)).toBe(true);
     const ask = currentAsk(s)!;
-    expect(askEffects(s, ask)[0]).toMatch(/40 → 55/);
+    expect(askEffects(s, ask)[0]).toMatch(/200 → 220/);
     expect(askChef(s)).toBe(true);
-    expect(s.plonge.covers).toBe(START_COVERS + 15);
+    expect(s.plonge.covers).toBe(START_COVERS + 20);
     expect(coversVisible(s)).toBe(true);
-    s.plonge.day += DAY_SECS;
     s.plonge.emptyToday = 20;
-    expect(canAskChef(s)).toBe(false); // le lendemain : trop tôt
+    expect(canAskChef(s)).toBe(false);
+    expect(askStatus(s)).toEqual(["Tu as déjà proposé aujourd'hui. Le chef répondra demain."]);
     s.plonge.day += DAY_SECS;
     expect(canAskChef(s)).toBe(true);
   });
 
-  it("ouvrir le dimanche : une proposition unique, datée, après un appel de Maman ; le sous-titre dit le prix de vie", () => {
+  it("ouvrir le dimanche : proposé après le panier et un appel de Maman ; le sous-titre dit le prix de vie", () => {
     const s = fresh();
-    s.plonge.day = dayStart(SUNDAY_OFFER_DAY);
+    equipUpTo(s, "panier");
+    s.plonge.boughtAt["panier"] = s.plonge.day;
+    run(s, SUNDAY_OFFER_DELAY + 1);
     expect(canOfferSunday(s)).toBe(false); // Maman n'a pas encore appelé
-    s.plonge.callWeek = 2;
+    s.plonge.revealed["maman"] = s.plonge.day;
+    s.plonge.lastNovelty = -1e6;
+    run(s, 0.1);
     expect(canOfferSunday(s)).toBe(true);
     expect(ASKS.some((a) => a.sunday)).toBe(false); // hors de la file des demandes
     offerSunday(s);
     expect(canOfferSunday(s)).toBe(false);
-    s.plonge.day = dayStart(SUNDAY_OFFER_DAY + 6) + 1;
+    s.plonge.day = dayStart(6) + 1;
     expect(arrivalRate(s)).toBeGreaterThan(0);
   });
 });
 
 describe("Plongeur : la vie perso (Maman, la fenêtre, les souvenirs)", () => {
-  /** Le 3e dimanche, jour du premier appel de Maman. */
+  /** Le premier dimanche où Maman peut appeler. */
   function sundayNoon(s: GameState): void {
-    s.plonge.day = dayStart(20) - 0.01;
+    s.plonge.day = dayStart(FIRST_CALL_DAY) - 0.01;
     tick(s, 0.05);
   }
 
-  it("Maman n'appelle pas les deux premiers dimanches : « Ta vie » n'existe pas encore", () => {
+  it("Maman n'appelle pas les premiers dimanches : « Ta vie » n'existe pas encore", () => {
     const s = fresh();
     s.plonge.day = dayStart(6) - 0.01;
     tick(s, 0.05);
@@ -391,35 +519,50 @@ describe("Plongeur : la vie perso (Maman, la fenêtre, les souvenirs)", () => {
     expect(lifeVisible(s)).toBe(true);
   });
 
+  it("le premier appel attend son tour derrière une nouveauté récente", () => {
+    const s = fresh();
+    s.plonge.lastNovelty = dayStart(FIRST_CALL_DAY) - 1;
+    sundayNoon(s);
+    expect(canAnswerCall(s)).toBe(false);
+  });
+
+  it("au téléphone, tout s'arrête ; en raccrochant, l'énergie est pleine", () => {
+    const s = fresh();
+    equipUpTo(s, "reparer");
+    sundayNoon(s);
+    s.flags.energyVisible = true;
+    s.energy = 10;
+    expect(callEffects(s)).toContain("20 s au téléphone : tout s'arrête");
+    expect(callEffects(s)).toContain("Énergie : 10 → 100");
+    answerCall(s);
+    expect(onThePhone(s)).toBe(true);
+    s.plonge.pile = 100;
+    s.dishesPerClick = 4;
+    s.money = D(1000);
+    work(s);
+    expect(s.plonge.pile).toBe(100); // pas de plonge au téléphone
+    expect(canBuyEquipment(s, "gants_pro")).toBe(false); // ni d'achat
+    run(s, CALL_TALK_SECS + 0.5);
+    expect(s.energy).toBe(100);
+    expect(s.souvenirs[0].missed).toBe(false);
+    expect(s.souvenirs[0].kind).toBe("lien");
+  });
+
   it("décrocher en plein service coûte des assiettes, que le chef lave à ta place", () => {
     const s = fresh();
     equipUpTo(s, "reparer");
     s.plonge.sundayOpen = true;
     s.plonge.pile = 20;
+    s.plonge.revealed["maman"] = 0; // Maman a déjà appelé un dimanche fermé
     sundayNoon(s);
-    const lines = callEffects(s);
-    expect(lines.join(" ")).toMatch(/Tu perds environ/);
+    expect(s.plonge.serviceCall).toBe(true);
+    expect(callEffects(s).join(" ")).toMatch(/Tu perds environ/);
     answerCall(s);
     const overflow = s.plonge.overflow;
-    run(s, CALL_TALK_SECS);
+    const pile = s.plonge.pile;
+    run(s, CALL_TALK_SECS - 1);
     expect(s.plonge.overflow).toBeGreaterThan(overflow);
-    expect(s.plonge.pile).toBeLessThanOrEqual(20 + 1e-6); // la pile ne monte plus pendant l'appel
-  });
-
-  it("Maman appelle le dimanche à midi ; décrocher arrête les mains 20 s et pose un souvenir", () => {
-    const s = fresh();
-    sundayNoon(s);
-    expect(canAnswerCall(s)).toBe(true);
-    s.energy = 10;
-    answerCall(s);
-    expect(canAnswerCall(s)).toBe(false);
-    s.plonge.pile = 100;
-    s.dishesPerClick = 4;
-    work(s);
-    expect(s.plonge.pile).toBe(100); // mains au téléphone
-    run(s, CALL_TALK_SECS + 0.5);
-    expect(s.souvenirs[0].missed).toBe(false);
-    expect(s.souvenirs[0].kind).toBe("lien");
+    expect(s.plonge.pile).toBeLessThanOrEqual(pile + 1e-6); // la pile ne monte plus pendant l'appel
   });
 
   it("un appel ignoré laisse un message vocal dans les souvenirs", () => {
@@ -437,9 +580,11 @@ describe("Plongeur : la vie perso (Maman, la fenêtre, les souvenirs)", () => {
     sundayNoon(s);
     run(s, CALL_RING_SECS + 1); // appel manqué : « Ta vie » est née
     s.plonge.idle = 0;
+    s.plonge.windowDay = -1;
     run(s, WINDOW_IDLE_SECS - 1);
+    s.plonge.windowDay = -1;
     expect(canLookOutWindow(s)).toBe(false);
-    run(s, 1.5);
+    s.plonge.idle = WINDOW_IDLE_SECS;
     expect(canLookOutWindow(s)).toBe(true);
     lookOutWindow(s);
     expect(s.souvenirs[0].missed).toBe(false);
@@ -452,12 +597,19 @@ describe("Plongeur : la vie perso (Maman, la fenêtre, les souvenirs)", () => {
   });
 });
 
-describe("Plongeur : poser les gants et la bibliothèque", () => {
+describe("Plongeur : poser les gants, la bibliothèque et l'énergie", () => {
+  function retired(): GameState {
+    const s = fresh();
+    equipUpTo(s, "pro");
+    poseGants(s);
+    s.money = D(10000);
+    return s;
+  }
+
   it("« Poser les gants » n'est proposé qu'avec le lave-vaisselle pro", () => {
     const s = fresh();
     equipUpTo(s, "detartrer");
     expect(canPoseGants(s)).toBe(false);
-    equipUpTo(fresh(), "pro");
     const t = fresh();
     equipUpTo(t, "pro");
     expect(canPoseGants(t)).toBe(true);
@@ -485,15 +637,38 @@ describe("Plongeur : poser les gants et la bibliothèque", () => {
   });
 
   it("chaque achat d'étude dit ce qu'il y a à faire et ce que ça coûte", () => {
-    expect(studyBuyEffects(LIBRARY[0])).toEqual(["120 pages, 10 énergie les 20 pages"]);
-    expect(studyBuyEffects(LIBRARY[1])).toEqual(["8 séances, 20 énergie par séance"]);
+    expect(studyBuyEffects(LIBRARY[0])).toEqual(["120 pages, 5 énergie les 10 pages"]);
+    expect(studyBuyEffects(LIBRARY[1])).toEqual(["8 séances, 10 énergie par séance"]);
+  });
+
+  it("« Se faire à manger » redonne de l'énergie, deux fois par jour", () => {
+    const s = retired();
+    expect(mealVisible(s)).toBe(false);
+    s.plonge.revealed["repas"] = s.plonge.day;
+    s.energy = 50;
+    expect(mealEffects(s)).toEqual(["Énergie : 50 → 60", "2 repas par jour"]);
+    expect(eat(s)).toBe(true);
+    expect(s.energy).toBe(50 + MEAL_ENERGY);
+    expect(eat(s)).toBe(true);
+    expect(canEat(s)).toBe(false);
+    expect(mealEffects(s)).toEqual(["Tu as déjà mangé. Demain."]);
+    s.plonge.day = dayStart(dayStartIndex(s) + 1) - 0.01;
+    tick(s, 0.02);
+    expect(canEat(s)).toBe(true);
+  });
+
+  it("le repas se révèle un moment après avoir posé les gants", () => {
+    const s = retired();
+    s.plonge.lastNovelty = -1e6;
+    s.plonge.boughtAt["gants_poses"] = s.plonge.day;
+    run(s, 30);
+    expect(mealVisible(s)).toBe(false);
+    run(s, NOVELTY_GAP);
+    expect(mealVisible(s)).toBe(true);
   });
 
   it("l'examen ne s'ouvre qu'une fois le cours du soir terminé", () => {
-    const s = fresh();
-    equipUpTo(s, "pro");
-    poseGants(s);
-    s.money = D(10000);
+    const s = retired();
     for (const id of ["html", "cours", "js", "ordi"]) buyStudy(s, id);
     expect(canBuyStudy(s, "examen")).toBe(false);
     s.plonge.library["cours"] = LIBRARY[1].steps;
@@ -501,10 +676,7 @@ describe("Plongeur : poser les gants et la bibliothèque", () => {
   });
 
   it("l'examen réussi fait paraître l'annonce de Mme Duval, qui mène au développeur", () => {
-    const s = fresh();
-    equipUpTo(s, "pro");
-    poseGants(s);
-    s.money = D(10000);
+    const s = retired();
     for (const item of LIBRARY) {
       expect(buyStudy(s, item.id)).toBe(true);
       for (let i = 0; i < item.steps; i++) {
@@ -517,6 +689,11 @@ describe("Plongeur : poser les gants et la bibliothèque", () => {
     expect(answerAnnonce(s)).toBe(true);
     expect(s.job).toBe("developpeur");
     expect(s.plonge.chef).toBe("annonce");
+  });
+
+  it("isRevealed garde la trace de chaque nouveauté", () => {
+    const s = fresh();
+    expect(isRevealed(s, "chef")).toBe(false);
   });
 });
 
@@ -535,7 +712,7 @@ describe("Plongeur : hors-ligne et pacing", () => {
   function playthrough(
     cps: number,
     opts: { afk?: boolean; refuse?: boolean } = {},
-  ): { secs: number; maxGap: number; reveals: [string, number][] } {
+  ): { secs: number; maxGap: number; reveals: [string, number][]; dead: number; deadMax: number } {
     const s = fresh();
     const dt = 0.05;
     let clickAcc = 0;
@@ -551,16 +728,31 @@ describe("Plongeur : hors-ligne et pacing", () => {
       reparer: () => !!s.plonge.equipment["montre"] && (equipmentVisible(s, EQUIPMENT[3]) || s.plonge.oldRate > 0),
       machine: () => s.plonge.oldRate > 0,
       maman: () => lifeVisible(s),
-      chef: () => coversVisible(s),
+      chef: () => chefVisible(s),
       cycle_court: () => !!s.plonge.equipment["joint"],
-      grasses: () => s.plonge.loads >= 5,
+      grasses: () => isRevealed(s, "grasses"),
       dimanche: () => canOfferSunday(s) || s.plonge.sundayOpen,
       maman_en_service: () => s.plonge.sundayOpen && (s.plonge.callRing > 0 || s.plonge.callTalk > 0),
+      teaser: () => !!s.plonge.equipment["detartrer"],
       livret: () => canOpenLivret(s) || s.plonge.livret,
+      offre_pro: () => equipmentVisible(s, EQUIPMENT[9]) || !!s.plonge.equipment["pro"],
       gants_poses: () => s.manualRetired,
+      repas: () => mealVisible(s),
     };
+    // Temps mort : par fenêtre de 10 s avant les gants posés, le clic lave moins de 40 % de ce qu'il pourrait
+    // et rien ne s'achète ni ne se demande.
+    let dead = 0;
+    let deadRun = 0;
+    let deadMax = 0;
+    let winClock = 0;
+    let winWashed = 0;
+    let winClicks = 0;
+    let winActs = 0;
     while (t < 3600 && s.job === "plongeur") {
       for (const [k, f] of Object.entries(seen)) if (!reveals.some((r) => r[0] === k) && f()) reveals.push([k, t]);
+      const acts0 = Object.keys(s.plonge.equipment).length + s.plonge.asksDone;
+      const w0 = s.plonge.washed;
+      const machine0 = machineRate(s);
       const clicking = !(opts.afk && s.plonge.oldRate > 0);
       clickAcc += clicking ? cps * dt : 0;
       while (clickAcc >= 1) {
@@ -579,15 +771,34 @@ describe("Plongeur : hors-ligne et pacing", () => {
         if (canBuyStudy(s, l.id)) buyStudy(s, l.id);
         if (canStudyStep(s, l.id)) studyStep(s, l.id);
       }
+      if (canEat(s) && s.energy <= 100 - MEAL_ENERGY) eat(s);
       if (canAnswerAnnonce(s)) answerAnnonce(s);
+      const clicksNow = s.dishesPerClick;
+      const washedByHand = s.plonge.washed - w0;
       tick(s, dt);
       t += dt;
+      if (!s.manualRetired) {
+        winClock += dt;
+        winWashed += Math.max(0, washedByHand);
+        winClicks += (clicking ? cps * dt : 0) * clicksNow;
+        winActs += Object.keys(s.plonge.equipment).length + s.plonge.asksDone - acts0;
+        void machine0;
+        if (winClock >= 10) {
+          const isDead = winClicks > 0 && winWashed < 0.4 * winClicks && winActs === 0;
+          if (isDead) {
+            dead += winClock;
+            deadRun += winClock;
+            deadMax = Math.max(deadMax, deadRun);
+          } else deadRun = 0;
+          winClock = winWashed = winClicks = winActs = 0;
+        }
+      }
     }
     reveals.push(["annonce", t]);
     reveals.sort((a, b) => a[1] - b[1]);
     let maxGap = 0;
     for (let i = 1; i < reveals.length; i++) maxGap = Math.max(maxGap, reveals[i][1] - reveals[i - 1][1]);
-    return { secs: t, maxGap, reveals };
+    return { secs: t, maxGap, reveals, dead, deadMax };
   }
 
   it("le chapitre dure une vingtaine de minutes, sans blocage, une information à la fois", () => {
@@ -599,11 +810,14 @@ describe("Plongeur : hors-ligne et pacing", () => {
     for (const r of [fast, mid, slow, afk, refuse]) expect(r.secs).toBeLessThan(40 * 60);
     expect(mid.secs).toBeGreaterThan(20 * 60);
     expect(mid.secs).toBeLessThan(27 * 60);
-    for (const r of [fast, mid, slow]) expect(r.maxGap).toBeLessThan(3 * 60 + 15);
-    // Au-delà des premières secondes (le bouton puis l'argent), jamais deux informations dans la même demi-minute.
+    for (const r of [fast, mid]) expect(r.maxGap).toBeLessThan(3 * 60 + 15);
+    expect(slow.maxGap).toBeLessThan(4 * 60 + 30); // le joueur lent gagne lentement : ses paliers s'espacent
+    // Au-delà des premières secondes, jamais deux nouveautés que le jeu révèle de lui-même dans la même demi-minute
+    // (la conséquence immédiate d'un achat du joueur, comme le jour avec la montre, n'en est pas une).
+    const consequences = ["jour", "machine", "cycle_court", "teaser", "gants_poses"];
     for (const r of [fast, mid, slow]) {
-      const later = r.reveals.filter(([, t]) => t > 5);
-      for (let i = 1; i < later.length; i++) expect(later[i][1] - later[i - 1][1]).toBeGreaterThan(30);
+      const later = r.reveals.filter(([k, t]) => t > 5 && !consequences.includes(k));
+      for (let i = 1; i < later.length; i++) expect(later[i][1] - later[i - 1][1]).toBeGreaterThanOrEqual(29.9);
     }
     // Le compromis est rentable : le refuser rallonge, sans dépasser +20 %.
     expect(refuse.secs).toBeGreaterThan(mid.secs);

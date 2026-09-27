@@ -62,6 +62,17 @@ describe("App P0 (DOM)", () => {
     unmount(component);
   });
 
+  it("plongeur : au téléphone avec Maman, tout s'arrête (chaque bouton est grisé)", () => {
+    game.state = createInitialState(Date.now());
+    game.state.plonge.callTalk = 10;
+    const { target, component } = mountApp();
+    expect((target.querySelector("fieldset.cols") as HTMLFieldSetElement).disabled).toBe(true);
+    expect(target.textContent).toContain("Tu es au téléphone avec Maman.");
+    expect(target.textContent).toContain("Encore 10 s");
+    expect((target.querySelector("button.wash") as HTMLButtonElement).textContent).toBe("Tu es au téléphone");
+    unmount(component);
+  });
+
   it("en développeur : le cadre de vie pilote l'interface (data-home + lieu nommé)", () => {
     game.state = createInitialState(Date.now());
     game.state.job = "developpeur";

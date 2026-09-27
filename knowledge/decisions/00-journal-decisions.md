@@ -4,6 +4,11 @@ Chaque décision de design, datée, avec sa justification et un lien vers le(s) 
 
 ---
 
+## 2026-09-27 · Chapitre 1 v3 : le restaurant devance le joueur, une file des nouveautés, Maman bloque tout
+**Décision :** 200 couverts et des journées de 15 s (l'offre devance la capacité, chaque achat rapporte), le chef répond quand tu rattrapes le restaurant (bouton grisé avec la cible), une file des nouveautés (35 s minimum entre deux révélations du jeu), au téléphone avec Maman tout s'arrête mais l'énergie revient pleine, plus d'assiettes grasses avec le pro, un geste « Se faire à manger » aux études.
+**Pourquoi :** au deuxième test, le plafond d'assiettes bridait tout (achats à 0 %, attente sans action), et l'énergie des études se regagnait en attendant. Bouton « Attendre » refusé : sauter le temps, c'est sauter le jeu. Maman qui bloque tout prépare la tentation de l'automatiser par l'IA (le piège du Sens).
+**Statut :** ✅ implémenté ; 🔲 nouveau test d'Alexandre.
+
 ## 2026-09-27 · Chapitre 1 v2 : une information à la fois, deux fois plus long, plus de mains automatiques
 **Décision :** après le premier test d'Alexandre, on supprime le lavage automatique à la main (une tâche manuelle ne s'automatise pas : c'est le lave-vaisselle qui prend le relais), on affiche l'argent exact dès le premier clic, on remplace « Dernière minute » par le revenu automatique en € / min, on repousse la banque en livret A (vers 18:30), et chaque information se révèle seule, par des gates en temps de calendrier. Durée ~23 min au lieu de ~11.
 **Pourquoi :** trop d'informations d'un coup, des libellés pas naturels (« Dans ta poche », « Tes mains … (fatiguées) »), et une automatisation des mains qui contredisait la métaphore. Challenge : 14 informations à 2 min d'écart minimum feraient 30 min ; on garde ~1 min pour les petites révélations du début, ~2 à 3 min ensuite.

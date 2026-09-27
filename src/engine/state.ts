@@ -3,7 +3,7 @@ import { MISSION_PERIOD } from "./content/missions";
 import { BADBUZZ_OFFSET } from "./content/audience";
 import { START_COVERS, START_PILE } from "./content/plonge";
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;
@@ -52,6 +52,13 @@ export interface PlongeState {
   asksDone: number; // demandes au chef acceptées (index de la prochaine)
   lastAskDay: number; // jour de la dernière demande (au plus une par jour)
   emptyToday: number; // secondes de pile vide aujourd'hui (le joueur va plus vite que le restaurant)
+  overflowToday: number; // assiettes lavées par le chef aujourd'hui
+  chefBefore: string; // réplique à retrouver quand le débordement se résorbe
+  serviceCall: boolean; // Maman a appelé un dimanche ouvert (en plein service)
+  mealsToday: number; // repas faits aujourd'hui
+  revealed: Record<string, number>; // nouveautés révélées → temps de calendrier (une information à la fois)
+  lastNovelty: number; // temps de la dernière nouveauté affichée
+  emptyFor: number; // secondes de pile vide d'affilée (le bouton ne dit « Aucune assiette sale » qu'au-delà d'un instant)
   overflow: number; // assiettes lavées par le chef faute de place (perdues pour le joueur)
   overflowDay: number; // dernier jour où le débordement a été signalé
   washed: number; // assiettes lavées au total
@@ -90,6 +97,13 @@ export function createPlongeState(): PlongeState {
     asksDone: 0,
     lastAskDay: -1,
     emptyToday: 0,
+    emptyFor: 0,
+    revealed: {},
+    lastNovelty: 0,
+    overflowToday: 0,
+    chefBefore: "debut",
+    serviceCall: false,
+    mealsToday: 0,
     overflow: 0,
     overflowDay: -1,
     washed: 0,

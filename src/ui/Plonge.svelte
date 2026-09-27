@@ -12,6 +12,7 @@
     STUDY_TEASER,
     SUNDAY_OFFER,
     LIVRET_CTA,
+    MEAL_CTA,
     ANNONCE_TEXT,
     ANNONCE_CTA,
     AGE_PLONGEUR,
@@ -21,7 +22,7 @@
     isPeak,
     openToday,
     pileCap,
-    clickPlates,
+    noDirtyPlates,
     machineRate,
     fmtEuros,
     autoIncomeLine,
@@ -45,6 +46,12 @@
     canAskChef,
     askChef,
     askEffects,
+    askStatus,
+    chefVisible,
+    mealVisible,
+    canEat,
+    eat,
+    mealEffects,
     canOfferSunday,
     offerSunday,
     canAnswerCall,
@@ -77,19 +84,21 @@
   const euros = fmtEuros;
   const rate = (n: number): string => (Math.round(n * 10) / 10).toString().replace(".", ",");
 
-  const plates = $derived(clickPlates(s));
+  // Libellé stable : il suit l'équipement, pas la pile (sinon il clignote quand on clique vite).
+  const empty = $derived(noDirtyPlates(s));
   const washLabel = $derived(
     onThePhone(s)
       ? "Tu es au téléphone"
-      : plates <= 0
+      : empty
         ? "Aucune assiette sale"
-        : `Laver ${s.dishesPerClick === 1 ? "une assiette" : `${plates} assiette${plates > 1 ? "s" : ""}`}`,
+        : `Laver ${s.dishesPerClick === 1 ? "une assiette" : `${s.dishesPerClick} assiettes`}`,
   );
   const dayLine = $derived(
     !openToday(s) ? `${dayName(s)}, restaurant fermé` : isPeak(s) ? `${dayName(s)}, coup de feu de midi` : dayName(s),
   );
   const nextEquipment = $derived(EQUIPMENT.find((e) => equipmentVisible(s, e)) ?? null);
-  const ask = $derived(canAskChef(s) ? currentAsk(s) : null);
+  const ask = $derived(chefVisible(s) ? currentAsk(s) : null);
+  const phone = $derived(onThePhone(s));
   const vie = $derived(lifeVisible(s));
   const studiesOwned = $derived(LIBRARY.filter((l) => l.id in p.library));
   const nextStudy = $derived(LIBRARY.find((l) => studyBuyVisible(s, l.id)) ?? null);
@@ -110,7 +119,8 @@
     {/if}
   </header>
 
-  <div class="cols" class:solo={!vie}>
+  <!-- Au téléphone avec Maman, tout s'arrête : chaque bouton est grisé le temps de l'appel. -->
+  <fieldset class="cols" class:solo={!vie} disabled={phone}>
     <section class="col travail" aria-label="Travail">
       {#if vie}<h2>Travail</h2>{/if}
       {#if dayVisible(s)}<p>{dayLine}</p>{/if}
@@ -119,11 +129,14 @@
         {#if p.pile > pileCap(s) * 0.7}
           <p class="sub">Au-delà de {pileCap(s)}, le chef les lave lui-même.</p>
         {/if}
+        {#if p.overflowToday >= 1}
+          <p class="sub">Aujourd'hui, il en a lavé {Math.floor(p.overflowToday)}.</p>
+        {/if}
       {/if}
       {#if coversVisible(s)}<p class="sub">{p.covers} couverts par jour</p>{/if}
 
       {#if !s.manualRetired}
-        <button class="bt wash" disabled={plates <= 0 || onThePhone(s)} onclick={() => work(s)}>{washLabel}</button>
+        <button class="bt wash" disabled={empty || onThePhone(s)} onclick={() => work(s)}>{washLabel}</button>
       {/if}
 
       {#if p.oldRate > 0}
@@ -168,8 +181,11 @@
         {/if}
         {#if ask}
           <div class="buy">
-            <button class="bt" onclick={() => askChef(s)}>{ask.cta}</button>
+            <button class="bt" disabled={!canAskChef(s)} onclick={() => askChef(s)}>{ask.cta}</button>
             {#each askEffects(s, ask) as l}<p class="sub">{l}</p>{/each}
+            {#if !canAskChef(s)}
+              {#each askStatus(s) as l}<p class="sub">{l}</p>{/each}
+            {/if}
           </div>
         {/if}
       {/if}
@@ -213,8 +229,18 @@
             <button class="bt" onclick={() => answerCall(s)}>Décrocher</button>
             {#each callEffects(s) as l}<p class="sub">{l}</p>{/each}
           </div>
-        {:else if onThePhone(s)}
-          <div class="call"><p>Tu es au téléphone avec Maman.</p></div>
+        {:else if phone}
+          <div class="call">
+            <p>Tu es au téléphone avec Maman.</p>
+            <p class="sub">Encore {Math.ceil(p.callTalk)} s</p>
+          </div>
+        {/if}
+
+        {#if mealVisible(s)}
+          <div class="buy">
+            <button class="bt" disabled={!canEat(s)} onclick={() => eat(s)}>{MEAL_CTA}</button>
+            {#each mealEffects(s) as l}<p class="sub">{l}</p>{/each}
+          </div>
         {/if}
 
         {#if libraryVisible(s)}
@@ -260,7 +286,7 @@
         {/if}
       </section>
     {/if}
-  </div>
+  </fieldset>
 </main>
 
 <style>
@@ -294,6 +320,10 @@
     margin-top: 0.4rem;
   }
   .cols {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 2.5rem;

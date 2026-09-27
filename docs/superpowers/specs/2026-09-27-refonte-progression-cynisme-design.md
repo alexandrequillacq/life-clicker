@@ -254,6 +254,19 @@ Retour : trop d'informations d'un coup, trop rapide, « Dans ta poche » pas nat
 - **Coûts** : gants 8 €, éponge 12 €, montre 30 €, réparation 35 € (4 assiettes / s), gants pro 40 €, joint 45 €, panier 70 €, douchette 90 €, détartrage 110 €, moitié du pro 240 €.
 - **Mesures du moteur** : fin à 23:38 à 4 clics/s, 24:05 à 2, 23:20 à 6, 31:12 sans cliquer après la réparation ; refuser le cycle court : 26:10 (+11 %). Plus grand écart entre deux nouveautés : 2:56 ; jamais deux informations dans la même demi-minute après le premier clic.
 
+### v3 après le deuxième test d'Alexandre (2026-09-27, 5e challenge)
+Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait sans rien pouvoir faire ; les améliorations affichaient « 12,34 € → 12,34 € / min » (pourquoi acheter ?) ; aux études on attendait l'énergie ; le temps doit filer, 200 couverts ; Maman doit tout bloquer (pour qu'on finisse par en avoir marre, l'IA répondra plus tard) mais recharger l'énergie ; plus d'assiettes grasses avec le pro. Ce qui change :
+- **L'offre devance la capacité** : 200 couverts, un jour de 15 s (coup de feu 5 s), soit 40 assiettes / s en moyenne. Chaque achat de clic ou de machine rapporte vraiment plus ; le débordement (« Aujourd'hui, il en a lavé 84. ») est la perte visible. Les sous-titres n'affichent jamais « A → A ».
+- **Le chef répond au rattrapage** : il paraît 35 s après la réparation, son bouton grisé donne la cible (« Le chef dit oui si tu suis : moins de 4 assiettes sales pendant 6 s dans la journée », « Aujourd'hui : 2 s sur 6 ») ; au plus une demande par jour. Pas de bouton « Attendre » : sauter le temps, c'est sauter le jeu.
+- **Une file des nouveautés** : ce que le jeu révèle de lui-même (pile, chef, premier appel de Maman, première fournée grasse, dimanche, premier appel en service, livret, offre du pro, repas) attend 35 s après la nouveauté précédente, et les achats qui changent l'écran (montre, réparation, joint, détartrage, pro, poser les gants, première demande) comptent comme nouveautés. Dimanche : 35 s après le panier, une fois Maman appelée ; livret : 60 s après le premier appel en plein service (ou 240 s après le panier sans dimanche) ; pro : 180 s après le détartrage.
+- **Au téléphone, tout s'arrête** (tous les boutons grisés, « Encore 14 s ») ; en raccrochant, l'énergie est pleine (« Énergie : 10 → 100 »). Maman appelle chaque dimanche à partir du 4e.
+- **Le lave-vaisselle pro ne sort pas d'assiettes grasses**, même en cycle court.
+- **Aux études**, la régénération passive tombe à 0,3 / s ; « Se faire à manger » (+10 énergie, deux repas par jour, sans souvenir : une corvée) et l'appel de Maman rechargent. Étapes plus fines : 10 pages pour 5 énergie.
+- **Le bouton « Laver N assiettes » garde un libellé stable** ; il ne dit « Aucune assiette sale » qu'après 1,5 s de pile vide.
+- **Chiffres** : gants 3 € (2 / clic), éponge 6 € (3 / clic), montre 65 €, réparation 45 € (6 assiettes / s), gants pro 80 € (4 / clic), joint 50 €, panier 160 €, douchette 200 € (5 / clic), détartrage 260 €, moitié du pro 720 € ; demandes +20, +25, +30, +35, +40, +50, +60, +70 couverts.
+- **Mesures du moteur** : 20:30 à 4 clics/s, 29:05 à 2, 16:18 à 6, 34:35 sans cliquer après la réparation ; refuser le cycle court : 21:50 (+6,5 %). Plus grand écart entre deux nouveautés : 2:59 à 4 et 6 clics/s, 3:37 à 2 ; jamais deux nouveautés du jeu dans la même demi-minute ; temps mort d'affilée au plus 20 s.
+- **À trancher plus tard** : « Dormir » (spec R2) arrive au freelance ; le repas recharge sans souvenir, pour rester déléguable sans creuser le Sens.
+
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 
 ## Ordre de travail
