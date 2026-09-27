@@ -38,32 +38,6 @@ export function energyFactor(state: GameState): number {
   return Math.max(0, state.energy) / ENERGY_MAX;
 }
 
-/** Assiettes/s lavées à la main en continu (plonge uniquement), modulé par l'énergie. */
-export function handDishesPerSec(state: GameState): number {
-  if (state.job !== "plongeur" || state.manualRetired || !state.handWashing) return 0;
-  return state.handRate * energyFactor(state);
-}
-
-/** Assiettes/s produites par les machines de plonge. */
-export function machineDishesPerSec(state: GameState): Decimal {
-  let total = ZERO;
-  for (const id in state.generators) {
-    const def = GENERATORS_BY_ID[id];
-    if (!def || def.kind !== "plonge") continue;
-    total = total.add(def.output.mul(state.generators[id]));
-  }
-  return total;
-}
-
-/** Débit total de plonge en assiettes/s (machines + main). */
-export function dishesPerSec(state: GameState): Decimal {
-  return machineDishesPerSec(state).add(handDishesPerSec(state));
-}
-
-export function dishesPerMinute(state: GameState): Decimal {
-  return dishesPerSec(state).mul(60);
-}
-
 /**
  * €/s des générateurs dev (automatisation, indépendant de l'énergie).
  * Les juniors : brut érodé par les GPU (l'IA reprend leur travail) moins un salaire fixe.
@@ -161,24 +135,19 @@ export function audienceFollowersPerSec(state: GameState): Decimal {
   return total;
 }
 
-/** Revenu passif (hors clic et hors lavage à la main) : plonge si encore plongeur + dev + IA + boîte + sponsoring. */
+/**
+ * Revenu passif : dev + IA + boîte + sponsoring + contrôle. La plonge n'y figure pas : son revenu
+ * dépend d'une pile finie et se calcule dans tickPlonge (voir plonge.ts).
+ */
 export function passiveIncomePerSec(state: GameState): Decimal {
-  let total = devIncomePerSec(state)
+  return devIncomePerSec(state)
     .add(aiIncomePerSec(state))
     .add(bizIncomePerSec(state))
     .add(sponsoringIncomePerSec(state))
     .add(controlIncomePerSec(state));
-  if (state.job === "plongeur") {
-    total = total.add(machineDishesPerSec(state).mul(state.valuePerDish));
-  }
-  return total;
 }
 
-/** Revenu/s en jeu : passif + lavage continu à la main (plonge). */
+/** Revenu/s en jeu (hors plonge, gérée par tickPlonge). */
 export function incomePerSec(state: GameState): Decimal {
-  let total = passiveIncomePerSec(state);
-  if (state.job === "plongeur") {
-    total = total.add(D(handDishesPerSec(state)).mul(state.valuePerDish));
-  }
-  return total;
+  return passiveIncomePerSec(state);
 }

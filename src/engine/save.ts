@@ -3,6 +3,7 @@ import {
   type GameState,
   SAVE_VERSION,
   createInitialState,
+  createPlongeState,
   INCIDENT_PERIOD,
   INCIDENT_AUTO_RESOLVE,
 } from "./state";
@@ -32,7 +33,8 @@ export function deserialize(json: string): GameState {
     money: D(raw.money) as Decimal,
     valuePerDish: D(raw.valuePerDish) as Decimal,
     // Valeurs par défaut pour les champs ajoutés à un schéma de même version.
-    studyLevel: raw.studyLevel ?? 0,
+    plonge: { ...createPlongeState(), ...(raw.plonge ?? {}) },
+    souvenirs: raw.souvenirs ?? [],
     homeLevel: raw.homeLevel ?? 0,
     job: raw.job ?? "plongeur",
     devClickMult: raw.devClickMult ?? 1,

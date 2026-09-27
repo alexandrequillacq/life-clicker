@@ -17,7 +17,7 @@ import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, LEAD_HIRING_BONUS, nextPromotion, type PromotionDef } from "./content/career";
 import { MISSIONS, MISSION_PERIOD } from "./content/missions";
 import { DECISIONS } from "./content/decisions";
-import { nextBook, studiesComplete } from "./content/studies";
+import { washClick, canPoseGants, retireHands } from "./plonge";
 import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
 import { CONTROLS_BY_ID } from "./content/control";
@@ -46,12 +46,6 @@ import {
 
 // --- Clic actif (dépend du métier) ---
 
-/** Clic plonge : lave `dishesPerClick` assiettes à pleine valeur (effort ponctuel, sans énergie). */
-export function clickWork(state: GameState): void {
-  if (state.manualRetired) return;
-  state.money = state.money.add(state.valuePerDish.mul(state.dishesPerClick));
-  state.totalClicks += 1;
-}
 
 /**
  * Action active du métier courant.
@@ -62,7 +56,7 @@ export function clickWork(state: GameState): void {
  */
 export function work(state: GameState): void {
   if (state.job === "plongeur") {
-    clickWork(state);
+    washClick(state); // la pile est finie : on ne lave que ce que le restaurant a sali
     return;
   }
   const job = JOBS[state.job];
@@ -336,7 +330,6 @@ export function decide(state: GameState, choice: "A" | "B"): boolean {
 export function upgradeAvailable(state: GameState, def: UpgradeDef): boolean {
   if (state.upgrades[def.id]) return false;
   if (def.requires && !state.upgrades[def.requires]) return false;
-  if (def.phase === "plonge" && state.job !== "plongeur") return false;
   if (def.phase === "dev" && state.job === "plongeur") return false;
   if (def.phase === "biz" && state.job !== "entrepreneur") return false;
   return state.money.gte(def.unlockAtMoney);
@@ -352,9 +345,6 @@ export function buyUpgrade(state: GameState, id: string): boolean {
   if (state.money.lt(def.cost)) return false;
   state.money = state.money.sub(def.cost);
   state.upgrades[id] = true;
-  if (def.setDishesPerClick !== undefined) state.dishesPerClick = def.setDishesPerClick;
-  if (def.unlocksHand) state.handWashing = true;
-  if (def.setHandRate !== undefined) state.handRate = def.setHandRate;
   if (def.mulClickValue !== undefined) state.devClickMult *= def.mulClickValue;
   if (def.unlocksAi) state.flags.aiUnlocked = true;
   if (def.startsAi) state.flags.aiResolving = true;
@@ -375,10 +365,11 @@ export function buyUpgrade(state: GameState, id: string): boolean {
 
 // --- Bascule plonge & Vie ---
 
-/** Poser les gants : stoppe tout le travail manuel à la plonge (clic + continu). */
-export function poseGants(state: GameState): void {
-  state.manualRetired = true;
-  state.handWashing = false;
+/** Poser les gants : proposé avec le lave-vaisselle pro, stoppe tout le travail manuel. */
+export function poseGants(state: GameState): boolean {
+  if (!canPoseGants(state)) return false;
+  retireHands(state);
+  return true;
 }
 
 /** Se reposer / vivre : regagne de l'énergie, et compte comme un geste de vie réel (nourrit le Sens). */
@@ -412,38 +403,6 @@ export function buyHome(state: GameState): boolean {
   return true;
 }
 
-// --- Études & carrière ---
-
-export function bookCost(state: GameState): Decimal | null {
-  return nextBook(state.studyLevel)?.cost ?? null;
-}
-
-export function canStudy(state: GameState): boolean {
-  const cost = bookCost(state);
-  return cost !== null && state.money.gte(cost);
-}
-
-/** Lire le prochain livre : monte le niveau d'études. */
-export function study(state: GameState): boolean {
-  const cost = bookCost(state);
-  if (cost === null || state.money.lt(cost)) return false;
-  state.money = state.money.sub(cost);
-  state.studyLevel += 1;
-  return true;
-}
-
-export function canBecomeDeveloper(state: GameState): boolean {
-  return state.job === "plongeur" && studiesComplete(state.studyLevel);
-}
-
-/** Postuler : on quitte la plonge (le revenu de plonge s'arrête) et on devient développeur. */
-export function becomeDeveloper(state: GameState): boolean {
-  if (!canBecomeDeveloper(state)) return false;
-  state.job = "developpeur";
-  state.flags.energyVisible = true; // le travail de dev sollicite l'énergie
-  state.flags.firstColor = true; // récompense de fin d'Acte I : la 1ère couleur apparaît
-  return true;
-}
 
 function promotionReady(state: GameState, promo: PromotionDef): boolean {
   // Toutes les conditions présentes se combinent en ET (les seuils absents sont neutres).

@@ -4,6 +4,13 @@ Chaque décision de design, datée, avec sa justification et un lien vers le(s) 
 
 ---
 
+## 2026-09-27 · Refonte de la progression vers le cynisme + chapitre 1 (plongeur) refait
+**Décision :** échelle ajustable (9 métiers, président et maître du monde fusionnés en chef d'État), registre satire grinçante, colonne vertébrale = un compromis concret choisi par le joueur à chaque métier (A) + l'humain devient un nombre (C) + même geste, autre cible en motif (B). Travail chapitre par chapitre, validé avec Alexandre, challengé avant chaque implémentation.
+**Chapitre 1 livré :** pile d'assiettes finie et affluence en couverts, demandes au chef gatées par la vitesse du joueur (dont « ouvrir le dimanche », qui fait tomber l'appel de Maman en plein service), objets uniques au lieu de générateurs répétables, cycle court avec assiettes grasses (« Relancer un cycle » / « Les ranger quand même »), deux colonnes Travail / Ta vie, énergie côté vie, études qui consomment l'énergie, souvenirs.
+**Règles de wording ajoutées :** tout libellé doit se comprendre sans contexte ; chaque achat affiche son sous-titre chiffré.
+**Pourquoi :** la thèse n'était pas jouée (l'axe Vie tenait en un bouton), le cynisme arrivait par sauts, et plusieurs métaphores sonnaient faux (15 lave-vaisselle, porte-monnaie unique). Recherche : [études de cas 2](../references/etudes-de-cas-jeux-2.md). Spec : [refonte](../../docs/superpowers/specs/2026-09-27-refonte-progression-cynisme-design.md).
+**Statut :** ✅ chapitre 1 implémenté ; 🔲 test en conditions réelles par Alexandre, puis chapitre 2 (freelance).
+
 ## 2026-06-21 · Stack technique actée + fondations + P0 implémentés
 **Décision :** **Svelte 5 + Vite + TypeScript (strict)**, `break_infinity.js` pour les gros nombres, **Vitest** (qui sert aussi de harnais d'équilibrage), sauvegarde `localStorage` versionnée, déploiement **GitHub Pages**.
 **Principe d'archi clé :** **moteur de jeu en TS pur** (`src/engine/`, 100 % testable, aucun import Svelte) **séparé de l'UI** (`src/ui/`, couche mince qui s'abonne). Theming par **variables CSS + `data-act`** pour l'UI qui évolue sur 3 actes (changer de tokens, pas réécrire l'écran).

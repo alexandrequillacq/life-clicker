@@ -1,5 +1,6 @@
 <script lang="ts">
   import { game, resetGame, doubleMoney, reincarnate } from "./store.svelte";
+  import Plonge from "./Plonge.svelte";
   import {
     work,
     buyGenerator,
@@ -8,11 +9,7 @@
     buyUpgrade,
     canBuyUpgrade,
     upgradeAvailable,
-    poseGants,
     rest,
-    study,
-    canStudy,
-    becomeDeveloper,
     promote,
     canPromote,
     buyFollowers,
@@ -43,7 +40,6 @@
   import { GENERATORS, generatorAvailable } from "../engine/content/generators";
   import { UPGRADES } from "../engine/content/upgrades";
   import { JOBS, nextPromotion } from "../engine/content/career";
-  import { nextBook } from "../engine/content/studies";
   import { currentHome, nextHome } from "../engine/content/homes";
   import { currentActe, VOID_LINES, ACTE_COUNTER_LABELS } from "../engine/content/power";
   import { CONTROLS } from "../engine/content/control";
@@ -57,9 +53,8 @@
 
   const s = $derived(game.state);
   const job = $derived(JOBS[s.job]);
-  const book = $derived(nextBook(s.studyLevel));
   const promo = $derived(nextPromotion(s.job));
-  const clickLabel = $derived(s.job === "plongeur" ? "Laver des assiettes" : job.clickLabel);
+  const clickLabel = $derived(job.clickLabel);
   const perMinute = $derived(incomePerSec(s).mul(60));
   const home = $derived(currentHome(s.homeLevel));
   const homeNext = $derived(nextHome(s.homeLevel));
@@ -80,7 +75,7 @@
 
   // Le clic actif (gagner de l'argent / des followers) disparaît dès qu'on devient manager.
   const showWork = $derived(
-    (s.job === "plongeur" && !s.manualRetired) || s.job === "developpeur" || s.job === "celebrite",
+    s.job === "developpeur" || s.job === "celebrite",
   );
   // Le dev IC ne peut plus cliquer s'il est épuisé : l'énergie limite la cadence (pas le gain).
   const workExhausted = $derived(s.job === "developpeur" && s.energy < job.clickEnergyCost);
@@ -342,37 +337,7 @@
 </div>
 
 {#if s.job === "plongeur"}
-  <!-- Acte I : plongeur. Texte brut, fond blanc, minimal (esprit Paperclips). -->
-  <main class="paper">
-    {#if s.flags.moneyVisible}<p class="counter">Argent : {fmtMoney(s.money)}</p>{/if}
-    {#if s.flags.moneyVisible && perMinute.gt(0)}<p class="line muted">Revenu : {fmtMoney(perMinute)} / min</p>{/if}
-    {#if s.flags.energyVisible}<p class="line">Énergie : {Math.round(s.energy)} / 100</p>{/if}
-    <p class="job">Métier : {job.label}</p>
-    {#if s.karma > 0}<p class="line muted">Karma : {s.karma}</p>{/if}
-    {#if showWork}<button class="action" onclick={() => work(s)}>{clickLabel}</button>{/if}
-    {@render upgradesList()}
-    {@render generatorsList()}
-    {#if s.flags.poseGantsVisible && !s.manualRetired}
-      <button class="action" onclick={() => poseGants(s)}>Poser les gants</button>
-    {/if}
-    {#if s.flags.lifeVisible}
-      <section class="pblock"><p class="job">Vie</p><button class="action" onclick={() => rest(s)}>Se reposer</button></section>
-    {/if}
-    {#if s.flags.studyVisible}
-      <section class="pblock">
-        <p class="job">Études</p>
-        {#if book}
-          <div class="row">
-            <button class="buy" disabled={!canStudy(s)} onclick={() => study(s)}>Lire « {book.label} »</button>
-            <span class="price">{fmtMoney(book.cost)}</span>
-          </div>
-        {/if}
-        {#if s.flags.postulerVisible}
-          <button class="action" onclick={() => becomeDeveloper(s)}>Postuler à un poste de développeur</button>
-        {/if}
-      </section>
-    {/if}
-  </main>
+  <Plonge />
 {:else}
   <!-- À partir du développeur : le cadre de vie EMBELLIT l'interface. Le logement (data-home)
        pose l'ambiance du décor et la matière du panneau ; le métier/acte posent la couleur. -->
@@ -704,85 +669,6 @@
   :global(html, body) {
     margin: 0;
     background: #ffffff;
-  }
-
-  /* ---------- Acte I : plongeur (papier blanc minimal) ---------- */
-  .paper {
-    --fg: #111111;
-    --muted: #777777;
-    --line: #cccccc;
-    --accent: #111111;
-    background: #ffffff;
-    color: var(--fg);
-    font-family: "Times New Roman", Times, Georgia, serif;
-    font-size: 16px;
-    line-height: 1.7;
-    min-height: 100vh;
-    box-sizing: border-box;
-    max-width: 560px;
-    padding: 2.5rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
-    font-variant-numeric: tabular-nums;
-  }
-  .paper .counter {
-    margin: 0 0 0.25rem;
-  }
-  .paper .line {
-    margin: 0;
-  }
-  .paper .muted {
-    color: var(--muted);
-  }
-  .paper .job {
-    margin: 0.5rem 0 0.25rem;
-    color: var(--muted);
-  }
-  .paper .action,
-  .paper .buy {
-    font-family: inherit;
-    font-size: inherit;
-    color: var(--fg);
-    background: #ffffff;
-    border: 1px solid var(--line);
-    border-radius: 0;
-    padding: 0.25rem 0.6rem;
-    cursor: pointer;
-  }
-  .paper .action {
-    margin: 0.15rem 0;
-  }
-  .paper .row {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin: 0.35rem 0;
-  }
-  .paper .price,
-  .paper .count {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .paper .pblock {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--line);
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
-  }
-  .paper button:hover:not(:disabled) {
-    background: #f0f0f0;
-  }
-  .paper button:disabled {
-    color: var(--muted);
-    border-color: #e5e5e5;
-    cursor: default;
   }
 
   /* ---------- À partir du dev : le cadre de vie EMBELLIT l'interface ----------

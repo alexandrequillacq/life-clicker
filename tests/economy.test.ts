@@ -2,9 +2,6 @@ import { describe, it, expect } from "vitest";
 import { D } from "../src/engine/numbers";
 import {
   costOf,
-  machineDishesPerSec,
-  dishesPerMinute,
-  incomePerSec,
   aiIncomePerSec,
   bizIncomePerSec,
   energyFactor,
@@ -12,7 +9,6 @@ import {
 import { createInitialState } from "../src/engine/state";
 import { GENERATORS_BY_ID, AI_BASE_INCOME, GPU_MULT_PER_UNIT } from "../src/engine/content/generators";
 
-const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
 
 describe("costOf", () => {
   it("vaut le prix de base quand rien n'est possédé", () => {
@@ -26,24 +22,7 @@ describe("costOf", () => {
   });
 });
 
-describe("débit & revenu", () => {
-  it("1 lave-vaisselle produit son débit en assiettes/s", () => {
-    const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 1;
-    expect(machineDishesPerSec(s).toNumber()).toBeCloseTo(LV);
-  });
-  it("assiettes/min agrège machines + main", () => {
-    const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 1;
-    s.handWashing = true;
-    s.handRate = 2; // +2/s (énergie pas en jeu → ×1)
-    expect(dishesPerMinute(s).toNumber()).toBeCloseTo((LV + 2) * 60);
-  });
-  it("revenu/s = débit × valeur par assiette", () => {
-    const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 1;
-    expect(incomePerSec(s).toNumber()).toBeCloseTo(LV * s.valuePerDish.toNumber());
-  });
+describe("énergie", () => {
   it("energyFactor vaut 1 tant que l'énergie n'est pas en jeu, puis fraction", () => {
     const s = createInitialState(0);
     s.energy = 50;

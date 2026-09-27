@@ -232,6 +232,16 @@ Variantes mesurées (fin du chapitre) : 2 clics/s 12:04 · 6 clics/s 9:43 · ref
 - `SAVE_VERSION` 6 → 7 (les anciens lave-vaisselle étaient comptés en quantité).
 - Gardé de l'existant : clic sans énergie, révélation progressive (prix visible vers 75 %, 2 lignes au plus), revenu hors-ligne passif ; `vieVecueTicks` alimenté par la fenêtre et par Maman.
 
+### Décisions d'implémentation (2026-09-27, retours d'Alexandre sur les maquettes + 3e challenge)
+- **Deux colonnes** : « Travail » (jour, pile, bouton Laver, mains, dernière minute, lave-vaisselle, améliorations, le chef, poser les gants, l'annonce) et « Ta vie » (âge, énergie, appel de Maman, tes études, la fenêtre, souvenirs). L'argent et la réplique du chef sont en tête, sur toute la largeur. « Ta vie » naît au coup de main (avec l'énergie) ou au premier moment de vie ; sur téléphone, les colonnes s'empilent, Travail d'abord.
+- **L'énergie est côté vie** : la fatigue du travail la vide (1 énergie par assiette lavée à la main, 0,6 avec les gants pro, 0,4 avec la douchette ; au challenge, 0,5 laissait la jauge au-dessus de 93, donc morte), et elle alimente les études. Écho côté travail : « Tes mains : 7 assiettes / s (fatiguées) ».
+- **L'argent avant la banque** : « Dans ta poche : 8 pièces de 5 centimes », puis « environ 3 € en pièces » ; la banque donne le centime près (« Bocal » rejeté, pas clair).
+- **Souvenirs** au lieu de la frise (rejetée : on ne comprenait pas ce qu'elle représentait) : une ligne par moment, « Dimanche : Maman t'a raconté son jardin. », les manqués en gris. Chaque souvenir est typé (lien, contemplation) pour le bilan final et la révélation du Sens. Les études n'y figurent pas.
+- **Règle dure : chaque achat affiche son sous-titre chiffré**, calculé par le moteur (jamais codé en dur, puisque le cycle court et l'ordre des achats changent les chiffres).
+- **Tes études** s'ouvrent en posant les gants (avant : une ligne grise « Quand les machines tourneront seules, tu auras le temps d'étudier. »). Chiffres : manuel de HTML 30 € (6 × 20 pages, 10 énergie), cours du soir 45 € (8 séances, 20 énergie), manuel de JavaScript 60 € (6 × 20 pages), ordinateur reconditionné 150 € (5 exercices, 15 énergie), examen 40 € après le cours (3 révisions puis « Passer l'examen », 15 énergie ; « Reçu. 16 sur 20. »). Total 415 énergie, 325 €. L'appel de Maman suspend les études ; lire ne compte pas comme une action de travail (la fenêtre reste découvrable pendant les études, avec des lignes « chez soi »).
+- **Coûts ajustés au moteur réel** : détartrage 150 €, moitié du lave-vaisselle pro 200 € ; une pile de 12 assiettes attend le joueur à son arrivée (le premier bouton n'est jamais grisé).
+- **Mesures du moteur** (joueur glouton qui accepte tout) : fin du chapitre à 11:35 à 4 clics/s, 12:09 à 2 clics/s, 10:35 à 6 clics/s, 16:42 sans cliquer après le coup de main ; refuser le cycle court rallonge de 4 %. Plus long creux : 76 s à 4 clics/s. L'énergie descend à ~32 au pire du coup de feu.
+
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 
 ## Ordre de travail

@@ -1,5 +1,7 @@
 import { ENERGY_MAX, ENERGY_REGEN_PER_SEC, type GameState } from "./state";
 import { passiveIncomePerSec } from "./economy";
+import { plongeOfflineIncomePerSec } from "./plonge";
+import { PLONGE_OFFLINE_CAP } from "./content/plonge";
 import { type Decimal } from "./numbers";
 
 export const OFFLINE_CAP_SECONDS = 4 * 3600;
@@ -11,8 +13,13 @@ export const OFFLINE_CAP_SECONDS = 4 * 3600;
  */
 export function applyOffline(state: GameState, now: number): { seconds: number; earned: Decimal } {
   const elapsed = Math.max(0, (now - state.lastSeen) / 1000);
-  const seconds = Math.min(elapsed, OFFLINE_CAP_SECONDS) * state.tempo;
-  const earned = passiveIncomePerSec(state).mul(seconds);
+  // Au plongeur, le hors-ligne est plafonné à 10 min (sinon une nuit d'absence saute le chapitre)
+  // et limité par ce que le restaurant salit : les machines seules, jamais les mains.
+  const plongeur = state.job === "plongeur";
+  const cap = plongeur ? PLONGE_OFFLINE_CAP : OFFLINE_CAP_SECONDS;
+  const seconds = Math.min(elapsed, cap) * state.tempo;
+  const rate = plongeur ? plongeOfflineIncomePerSec(state) : passiveIncomePerSec(state);
+  const earned = rate.mul(seconds);
   state.money = state.money.add(earned);
   state.energy = Math.min(ENERGY_MAX, state.energy + ENERGY_REGEN_PER_SEC * seconds);
   state.lastSeen = now;

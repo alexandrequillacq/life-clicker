@@ -1,14 +1,13 @@
 import { D } from "./numbers";
 import {
-  ENERGY_DRAIN_PER_DISH,
   ENERGY_MAX,
   ENERGY_REGEN_PER_SEC,
   INCIDENT_PERIOD,
   type GameState,
 } from "./state";
-import { incomePerSec, handDishesPerSec, audienceFollowersPerSec, emprisePerSec, humanTeamSize } from "./economy";
+import { incomePerSec, audienceFollowersPerSec, emprisePerSec, humanTeamSize } from "./economy";
+import { tickPlonge } from "./plonge";
 import { GENERATORS, generatorAvailable } from "./content/generators";
-import { studiesComplete } from "./content/studies";
 import {
   computeInitialSens,
   NEGLECT_SECONDS,
@@ -154,25 +153,13 @@ export function updateFlags(state: GameState): void {
   if (!state.flags.moneyVisible && (state.totalClicks > 0 || state.money.gt(0))) {
     state.flags.moneyVisible = true;
   }
-  // L'énergie entre en jeu dès qu'on lave en continu à la main.
+  // L'énergie entre en jeu dès qu'on lave en continu à la main (le coup de main, voir plonge.ts).
   if (!state.flags.energyVisible && state.handWashing) {
     state.flags.energyVisible = true;
   }
-  // « Poser les gants » : proposé une fois 2 machines en route, tant qu'on bosse encore à la main.
-  if (
-    !state.flags.poseGantsVisible &&
-    (state.generators["lave_vaisselle"] ?? 0) >= 2 &&
-    !state.manualRetired
-  ) {
-    state.flags.poseGantsVisible = true;
-  }
-  // La Vie apparaît une fois les gants posés.
-  if (!state.flags.lifeVisible && state.manualRetired) {
+  // La Vie (panneau des métiers suivants) : acquise une fois quittée la plonge.
+  if (!state.flags.lifeVisible && state.job !== "plongeur") {
     state.flags.lifeVisible = true;
-  }
-  // Les études s'ouvrent une fois la Vie là (on a enfin le temps).
-  if (!state.flags.studyVisible && state.flags.lifeVisible) {
-    state.flags.studyVisible = true;
   }
   // Révélation du Sens (célébrité) : causée par la NÉGLIGENCE de la vie ou son automatisation, jamais par l'argent.
   if (
@@ -186,14 +173,6 @@ export function updateFlags(state: GameState): void {
   // Épilogue : empereur cosmique au-delà du seuil final d'Emprise.
   if (!state.flags.epilogue && state.job === "empereur" && state.emprise.gte(EPILOGUE_EMPRISE)) {
     state.flags.epilogue = true;
-  }
-  // Postuler comme développeur quand tous les livres sont lus.
-  if (
-    !state.flags.postulerVisible &&
-    state.job === "plongeur" &&
-    studiesComplete(state.studyLevel)
-  ) {
-    state.flags.postulerVisible = true;
   }
   // Révélation des générateurs au seuil d'argent (et flag requis + bon métier).
   for (const g of GENERATORS) {
@@ -212,6 +191,9 @@ export function updateFlags(state: GameState): void {
 
 export function tick(state: GameState, dt: number): void {
   const t = dt * state.tempo;
+
+  // Chapitre 1 : le restaurant a son propre moteur (pile finie, machines, fatigue des mains, études).
+  if (state.job === "plongeur") tickPlonge(state, t);
 
   // Revenu : assiettes × valeur. Le manuel est modulé par l'énergie ; les machines non.
   // Le net peut être négatif (équipe de juniors en perte sous IA forte) ; jamais d'argent négatif.
@@ -239,12 +221,9 @@ export function tick(state: GameState, dt: number): void {
     state.sens = Math.max(0, state.sens - SENS_DRIFT_PER_SEC * t);
   }
 
-  // Énergie : le lavage continu à la main la draine proportionnellement aux assiettes
-  // lavées ; régénération constante par ailleurs → palier soutenable, jamais bloqué à 0.
-  if (state.flags.energyVisible) {
-    const drain = ENERGY_DRAIN_PER_DISH * handDishesPerSec(state);
-    const delta = (ENERGY_REGEN_PER_SEC - drain) * t;
-    state.energy = Math.max(0, Math.min(ENERGY_MAX, state.energy + delta));
+  // Énergie : régénération constante (au plongeur, la fatigue des mains est gérée par tickPlonge).
+  if (state.flags.energyVisible && state.job !== "plongeur") {
+    state.energy = Math.max(0, Math.min(ENERGY_MAX, state.energy + ENERGY_REGEN_PER_SEC * t));
   }
 
   tickArcDev(state, t);

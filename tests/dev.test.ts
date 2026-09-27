@@ -184,18 +184,3 @@ describe("équipe : juniors (manager+) et seniors (CTO+)", () => {
   });
 });
 
-describe("P0 enrichi", () => {
-  it("une machine de plonge plus rapide existe", () => {
-    const pro = GENERATORS_BY_ID["lave_vaisselle_pro"];
-    expect(pro).toBeDefined();
-    expect(pro.kind).toBe("plonge");
-    expect(pro.output.toNumber()).toBeGreaterThan(GENERATORS_BY_ID["lave_vaisselle"].output.toNumber());
-  });
-
-  it("les gants pro se proposent pendant la plonge à la main, avant de poser les gants", () => {
-    const gp = UPGRADES_BY_ID["gants_pro"];
-    const lv = GENERATORS_BY_ID["lave_vaisselle"];
-    // révélables bien avant d'avoir 2 lave-vaisselle (le déclencheur de « poser les gants »)
-    expect(gp.unlockAtMoney.toNumber()).toBeLessThan(lv.baseCost.toNumber() * 2);
-  });
-});

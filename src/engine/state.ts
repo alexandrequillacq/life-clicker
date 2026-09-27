@@ -1,13 +1,13 @@
 import { D, type Decimal, ZERO } from "./numbers";
 import { MISSION_PERIOD } from "./content/missions";
 import { BADBUZZ_OFFSET } from "./content/audience";
+import { START_COVERS, START_PILE, BASE_FATIGUE } from "./content/plonge";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;
 export const ENERGY_REGEN_PER_SEC = 3; // récupération passive (toujours)
-export const ENERGY_DRAIN_PER_DISH = 0.5; // énergie dépensée par assiette lavée à la main en continu
 export const REST_ENERGY = 40; // « Se reposer » regagne ceci
 
 /** Incidents (lead dev & CTO) : une équipe humaine sans IA subit des pannes périodiques. */
@@ -40,6 +40,97 @@ export type Job =
   | "monde"
   | "empereur";
 
+/** Un moment de vie perso : vécu (point plein) ou manqué (message vocal, rendez-vous raté). */
+export interface Souvenir {
+  day: string; // jour de la semaine où c'est arrivé
+  kind: "lien" | "contemplation"; // un lien (Maman, plus tard Camille, Lou) ou un moment pour soi
+  text: string;
+  missed: boolean;
+}
+
+/** Chapitre 1 (plongeur) : tout l'état du restaurant, isolé du reste du jeu. */
+export interface PlongeState {
+  day: number; // secondes écoulées dans le calendrier du restaurant (un jour = DAY_SECS)
+  pile: number; // assiettes sales en attente
+  covers: number; // couverts par jour
+  sundayOpen: boolean; // le restaurant ouvre-t-il le dimanche ?
+  asksDone: number; // demandes au chef acceptées (index de la prochaine)
+  lastAskDay: number; // jour de la dernière demande (au plus une par jour)
+  emptyToday: number; // secondes de pile vide aujourd'hui (le joueur va plus vite que le restaurant)
+  overflow: number; // assiettes lavées par le chef faute de place (perdues pour le joueur)
+  overflowDay: number; // dernier jour où le débordement a été signalé
+  washed: number; // assiettes lavées au total
+  earned: number; // € gagnés au total à la plonge
+  handUnlocked: boolean; // le coup de main est venu (300 assiettes)
+  fatigue: number; // énergie dépensée par assiette lavée à la main en continu
+  equipment: Record<string, boolean>; // objets uniques achetés
+  oldRate: number; // vieille machine réparée (assiettes/s, 0 si en panne)
+  oldMult: number; // réglages de la vieille machine (joint, panier, détartrage)
+  proRate: number; // lave-vaisselle pro (assiettes/s)
+  watch: boolean; // la montre : gains réels affichés
+  bank: boolean; // compte en banque : argent exact affiché
+  cycleCourt: boolean; // compromis : programme court (+30 %, certaines assiettes ressortent grasses)
+  loadClock: number; // secondes de machine dans la fournée courante
+  loads: number; // fournées terminées en cycle court
+  greasy: boolean; // fournée grasse : la machine est à l'arrêt en attendant une décision
+  relaunchLeft: number; // secondes restantes du cycle relancé (la machine relave, rien ne sort)
+  shelved: number; // fournées grasses rangées quand même
+  complaint: boolean; // une plainte de client arrivera au service suivant
+  callRing: number; // secondes restantes où Maman sonne (0 = pas d'appel)
+  callTalk: number; // secondes restantes au téléphone (les mains s'arrêtent)
+  callWeek: number; // dernière semaine où Maman a appelé
+  idle: number; // secondes sans aucune action du joueur
+  windowDay: number; // dernier jour où l'on a regardé par la fenêtre
+  windowCount: number; // nombre de fois (fait tourner les lignes)
+  library: Record<string, number>; // études achetées → étapes faites
+  gains: number[]; // gains par seconde, 60 dernières secondes (la montre)
+  gainsAcc: number; // gains de la seconde en cours
+  gainsClock: number; // avancement de la seconde en cours
+  chef: string; // id de la dernière réplique du chef (CHEF_LINES)
+}
+
+export function createPlongeState(): PlongeState {
+  return {
+    day: 0,
+    pile: START_PILE,
+    covers: START_COVERS,
+    sundayOpen: false,
+    asksDone: 0,
+    lastAskDay: -1,
+    emptyToday: 0,
+    overflow: 0,
+    overflowDay: -1,
+    washed: 0,
+    earned: 0,
+    handUnlocked: false,
+    fatigue: BASE_FATIGUE,
+    equipment: {},
+    oldRate: 0,
+    oldMult: 1,
+    proRate: 0,
+    watch: false,
+    bank: false,
+    cycleCourt: false,
+    loadClock: 0,
+    loads: 0,
+    greasy: false,
+    relaunchLeft: 0,
+    shelved: 0,
+    complaint: false,
+    callRing: 0,
+    callTalk: 0,
+    callWeek: -1,
+    idle: 0,
+    windowDay: -1,
+    windowCount: 0,
+    library: {},
+    gains: [],
+    gainsAcc: 0,
+    gainsClock: 0,
+    chef: "debut",
+  };
+}
+
 export interface GameState {
   version: number;
   money: Decimal;
@@ -51,7 +142,8 @@ export interface GameState {
   energy: number; // 0..ENERGY_MAX
   generators: Record<string, number>; // machines (lave-vaisselle…), id → quantité
   upgrades: Record<string, boolean>; // upgrades one-shot achetés
-  studyLevel: number; // index du prochain livre à lire (progrès vers développeur)
+  plonge: PlongeState; // chapitre 1 : le restaurant, la pile, les machines, la bibliothèque
+  souvenirs: Souvenir[]; // la vie perso vécue (ou manquée), la plus récente en tête
   homeLevel: number; // niveau de logement (décor de fond), du sous-sol à la villa
   job: Job; // métier courant
   devClickMult: number; // multiplicateur de valeur du clic (upgrades dev)
@@ -116,7 +208,8 @@ export function createInitialState(now: number, karma = 0): GameState {
     energy: ENERGY_MAX,
     generators: {},
     upgrades: {},
-    studyLevel: 0,
+    plonge: createPlongeState(),
+    souvenirs: [],
     homeLevel: 0,
     job: "plongeur",
     devClickMult: 1,

@@ -1,48 +1,46 @@
 import { describe, it, expect } from "vitest";
-import { D } from "../src/engine/numbers";
 import { createInitialState, ENERGY_MAX } from "../src/engine/state";
 import { tick, updateFlags } from "../src/engine/loop";
 import { GENERATORS_BY_ID } from "../src/engine/content/generators";
-import { STUDIES } from "../src/engine/content/studies";
 
-const LV = GENERATORS_BY_ID["lave_vaisselle"].output.toNumber();
+// Le chapitre plongeur (pile finie, fatigue des mains, études) a son propre moteur : tests/plonge.test.ts.
+
+const JUNIOR = GENERATORS_BY_ID["junior"];
+const JUNIOR_NET = JUNIOR.output.sub(JUNIOR.salaryPerSec!).toNumber();
+
+function lead() {
+  const s = createInitialState(0);
+  s.job = "lead_dev";
+  s.incidentTimer = 1e9; // pas d'incident pendant la mesure
+  return s;
+}
 
 describe("tick : revenu", () => {
-  it("les machines produisent du revenu", () => {
-    const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 2;
+  it("les générateurs produisent du revenu", () => {
+    const s = lead();
+    s.generators["junior"] = 2;
     tick(s, 10);
-    const expected = 2 * LV * s.valuePerDish.toNumber() * 10;
-    expect(s.money.toNumber()).toBeCloseTo(expected);
+    expect(s.money.toNumber()).toBeCloseTo(2 * JUNIOR_NET * 10);
   });
   it("le tempo accélère le temps", () => {
-    const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 1;
+    const s = lead();
+    s.generators["junior"] = 1;
     s.tempo = 2;
     tick(s, 10); // ×2 → 20 s
-    const expected = LV * s.valuePerDish.toNumber() * 10 * 2;
-    expect(s.money.toNumber()).toBeCloseTo(expected);
+    expect(s.money.toNumber()).toBeCloseTo(JUNIOR_NET * 20);
   });
 });
 
-describe("tick : énergie", () => {
-  it("le continu intensif fait chuter l'énergie (drain ∝ débit)", () => {
-    const s = createInitialState(0);
-    s.handWashing = true;
-    s.handRate = 10; // drain plein = 0,5 × 10 = 5/s > regen 3/s
-    s.flags.energyVisible = true;
-    tick(s, 1); // net (3 - 5) = -2 → 98
-    expect(s.energy).toBeCloseTo(98);
-  });
-  it("régénère quand on ne lave pas en continu", () => {
-    const s = createInitialState(0);
+describe("tick : énergie (hors plonge)", () => {
+  it("régénère en continu", () => {
+    const s = lead();
     s.flags.energyVisible = true;
     s.energy = 50;
-    tick(s, 10); // +3/s × 10 → plafonné à 80
+    tick(s, 10); // +3/s × 10
     expect(s.energy).toBeCloseTo(80);
   });
   it("plafonnée à 100", () => {
-    const s = createInitialState(0);
+    const s = lead();
     s.flags.energyVisible = true;
     s.energy = 95;
     tick(s, 10);
@@ -63,34 +61,12 @@ describe("révélation progressive", () => {
     updateFlags(s);
     expect(s.flags.energyVisible).toBe(true);
   });
-  it("« Poser les gants » proposé à 2 machines", () => {
+  it("la Vie (métiers suivants) est acquise une fois la plonge quittée", () => {
     const s = createInitialState(0);
-    s.generators["lave_vaisselle"] = 2;
     updateFlags(s);
-    expect(s.flags.poseGantsVisible).toBe(true);
-  });
-  it("la Vie apparaît une fois les gants posés", () => {
-    const s = createInitialState(0);
-    s.manualRetired = true;
+    expect(s.flags.lifeVisible).toBeFalsy();
+    s.job = "developpeur";
     updateFlags(s);
     expect(s.flags.lifeVisible).toBe(true);
-  });
-  it("les études s'ouvrent une fois la Vie là", () => {
-    const s = createInitialState(0);
-    s.flags.lifeVisible = true;
-    updateFlags(s);
-    expect(s.flags.studyVisible).toBe(true);
-  });
-  it("« Postuler » s'ouvre quand tous les livres sont lus", () => {
-    const s = createInitialState(0);
-    s.studyLevel = STUDIES.length;
-    updateFlags(s);
-    expect(s.flags.postulerVisible).toBe(true);
-  });
-  it("machine révélée au seuil d'argent", () => {
-    const s = createInitialState(0);
-    s.money = D(40);
-    updateFlags(s);
-    expect(s.flags["gen_lave_vaisselle_unlocked"]).toBe(true);
   });
 });

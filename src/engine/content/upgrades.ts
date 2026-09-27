@@ -1,17 +1,14 @@
 import { D, type Decimal } from "../numbers";
 
-export type UpgradePhase = "plonge" | "dev" | "biz";
+export type UpgradePhase = "dev" | "biz";
 
 export interface UpgradeDef {
   id: string;
   label: string;
   cost: Decimal;
   unlockAtMoney: Decimal; // seuil de révélation
-  phase: UpgradePhase; // plonge (métier plongeur) ou dev (métiers dev)
+  phase: UpgradePhase; // dev (métiers dev) ou biz (fondateur)
   requires?: string; // upgrade prérequis (enchaîne la séquence)
-  setDishesPerClick?: number; // plonge : fixe les assiettes/clic
-  unlocksHand?: boolean; // plonge : débloque le lavage continu à la main
-  setHandRate?: number; // plonge : fixe le débit continu (assiettes/s)
   mulClickValue?: number; // dev : multiplie la valeur du clic (résoudre un bug)
   unlocksAi?: boolean; // dev : débloque l'orchestration d'agents IA
   startsAi?: boolean; // dev : active l'IA qui résout les bugs en continu (révèle les GPU)
@@ -21,12 +18,6 @@ export interface UpgradeDef {
 }
 
 export const UPGRADES: UpgradeDef[] = [
-  // --- Plonge ---
-  { id: "gants", label: "Gants de plonge", cost: D(0.5), unlockAtMoney: D(0.2), phase: "plonge", setDishesPerClick: 2 },
-  { id: "eponge", label: "Meilleure éponge", cost: D(2), unlockAtMoney: D(1.5), phase: "plonge", requires: "gants", setDishesPerClick: 4 },
-  { id: "coup_de_main", label: "Prendre le coup de main", cost: D(5), unlockAtMoney: D(4), phase: "plonge", requires: "eponge", unlocksHand: true, setHandRate: 10 },
-  { id: "gants_pro", label: "Gants pro", cost: D(10), unlockAtMoney: D(7), phase: "plonge", requires: "coup_de_main", setDishesPerClick: 8, setHandRate: 20 },
-
   // --- Développeur (multiplie la valeur d'un bug résolu ; seul le dev IC clique) ---
   { id: "ide", label: "Installer un meilleur IDE", cost: D(80), unlockAtMoney: D(60), phase: "dev", mulClickValue: 2 },
 

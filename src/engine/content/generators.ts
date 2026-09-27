@@ -1,13 +1,11 @@
 import { D, type Decimal } from "../numbers";
 import type { Job } from "../state";
 
-export type GeneratorKind = "plonge" | "dev" | "ia" | "biz" | "audience" | "emprise";
+export type GeneratorKind = "dev" | "ia" | "biz" | "audience" | "emprise";
 
 /** Quels générateurs sont achetables selon le métier courant. */
 export function generatorVisible(kind: GeneratorKind, job: Job): boolean {
   switch (kind) {
-    case "plonge":
-      return job === "plongeur";
     case "biz":
       return job === "entrepreneur";
     case "audience":
@@ -22,7 +20,7 @@ export interface GeneratorDef {
   label: string;
   baseCost: Decimal;
   growth: number;
-  output: Decimal; // plonge → assiettes/s ; dev/biz → €/s ; ia → ignoré (voir aiIncomePerSec)
+  output: Decimal; // dev/biz → €/s ; ia → ignoré (voir aiIncomePerSec)
   unlockAtMoney: Decimal; // seuil de révélation
   kind: GeneratorKind;
   requiresFlag?: string; // ne se révèle que si ce flag est posé
@@ -49,25 +47,6 @@ export const SENIOR_SETTLEMENT = 4000;
 export const EMPRISE_GPU_BOOST = 0.15;
 
 export const GENERATORS: GeneratorDef[] = [
-  // Plonge : automatisation par assiettes (s'arrête quand on quitte le métier).
-  {
-    id: "lave_vaisselle",
-    label: "Acheter un lave-vaisselle",
-    baseCost: D(8),
-    growth: 1.15,
-    output: D(4), // assiettes/s
-    unlockAtMoney: D(6),
-    kind: "plonge",
-  },
-  {
-    id: "lave_vaisselle_pro",
-    label: "Acheter un lave-vaisselle pro",
-    baseCost: D(90),
-    growth: 1.15,
-    output: D(20), // assiettes/s : la machine industrielle qui fait accélérer la plonge
-    unlockAtMoney: D(70),
-    kind: "plonge",
-  },
   // Équipe humaine (manager+). Brut érodé par les GPU (l'IA fait peu à peu leur travail)
   // moins un salaire fixe : utile au début, puis pure charge une fois l'IA forte → on est
   // poussé à remplacer toute l'équipe par l'IA. On n'embauche qu'à partir du métier de manager.
