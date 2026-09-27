@@ -8,9 +8,13 @@ import {
   PILE_BASE_CAP,
   DAY_NAMES,
   SUNDAY,
-  HAND_UNLOCK_PLATES,
-  HAND_RATE,
-  BANK_UNLOCK_EARNED,
+  PILE_VISIBLE_AT,
+  FIRST_ASK_AT,
+  ASK_GAP_DAYS,
+  FIRST_CALL_WEEK,
+  SUNDAY_OFFER_DAY,
+  LIVRET_AT,
+  LIVRET_RATE,
   CYCLE_COURT_MULT,
   LOAD_SECS,
   GREASY_EVERY,
@@ -22,6 +26,7 @@ import {
   ASK_EMPTY_SECS,
   EQUIPMENT_BY_ID,
   ASKS,
+  SUNDAY_OFFER,
   LIBRARY,
   LIBRARY_BY_ID,
   WINDOW_LINES,
@@ -34,45 +39,62 @@ import {
 } from "./content/plonge";
 
 // Moteur du chapitre 1 (plongeur). Pur et déterministe : le restaurant salit des assiettes au
-// rythme de ses couverts, on lave ce qui arrive (jamais plus), les machines ne se fatiguent pas,
-// les mains si. Automatiser son travail libère du temps et de l'énergie pour sa vie (la bibliothèque).
+// rythme de ses couverts, on lave ce qui arrive (jamais plus). Le clic est le seul lavage à la main ;
+// les machines prennent le relais et ne se fatiguent pas. Chaque information se révèle seule, à son heure.
+// Automatiser son travail libère du temps et de l'énergie pour sa vie (la bibliothèque).
 
 const fmtRate = (n: number): string => (Math.round(n * 10) / 10).toString().replace(".", ",");
+export const fmtEuros = (n: number): string => `${n.toFixed(2).replace(".", ",")} €`;
 
 // --- Calendrier ---
 
 export function dayIndex(s: GameState): number {
   return Math.floor(s.plonge.day / DAY_SECS);
 }
-function dayOfWeek(s: GameState): number {
-  return dayIndex(s) % 7;
+function dayOfWeekAt(day: number): number {
+  return Math.floor(day / DAY_SECS) % 7;
 }
 export function dayName(s: GameState): string {
-  return DAY_NAMES[dayOfWeek(s)];
+  return DAY_NAMES[dayOfWeekAt(s.plonge.day)];
 }
-function timeInDay(s: GameState): number {
-  return s.plonge.day - dayIndex(s) * DAY_SECS;
+function openAt(s: GameState, day: number): boolean {
+  return dayOfWeekAt(day) !== SUNDAY || s.plonge.sundayOpen;
 }
 export function openToday(s: GameState): boolean {
-  return dayOfWeek(s) !== SUNDAY || s.plonge.sundayOpen;
+  return openAt(s, s.plonge.day);
+}
+function peakAt(s: GameState, day: number): boolean {
+  return openAt(s, day) && day - Math.floor(day / DAY_SECS) * DAY_SECS < PEAK_SECS;
 }
 /** Le coup de feu de midi : les premières secondes de chaque jour ouvert. */
 export function isPeak(s: GameState): boolean {
-  return openToday(s) && timeInDay(s) < PEAK_SECS;
+  return peakAt(s, s.plonge.day);
 }
 export function pileCap(s: GameState): number {
   return PILE_BASE_CAP + s.plonge.covers;
 }
+function arrivalRateAt(s: GameState, day: number): number {
+  if (!openAt(s, day)) return 0;
+  const plates = s.plonge.covers * PLATES_PER_COVER;
+  return peakAt(s, day) ? (plates * PEAK_SHARE) / PEAK_SECS : (plates * (1 - PEAK_SHARE)) / (DAY_SECS - PEAK_SECS);
+}
 /** Assiettes sales/s qui arrivent en ce moment. */
 export function arrivalRate(s: GameState): number {
-  if (!openToday(s)) return 0;
-  const plates = s.plonge.covers * PLATES_PER_COVER;
-  return isPeak(s) ? (plates * PEAK_SHARE) / PEAK_SECS : (plates * (1 - PEAK_SHARE)) / (DAY_SECS - PEAK_SECS);
+  return arrivalRateAt(s, s.plonge.day);
 }
-/** Moyenne d'arrivée sur une semaine (hors-ligne). */
-function weeklyArrivalRate(s: GameState): number {
-  const open = s.plonge.sundayOpen ? 7 : 6;
-  return ((s.plonge.covers * PLATES_PER_COVER) / DAY_SECS) * (open / 7);
+/** Assiettes sales qui arriveront dans les `secs` prochaines secondes. */
+function arrivalsIn(s: GameState, secs: number): number {
+  const step = 0.25;
+  let total = 0;
+  for (let t = 0; t < secs; t += step) total += arrivalRateAt(s, s.plonge.day + t) * Math.min(step, secs - t);
+  return total;
+}
+/** Assiettes par seconde en moyenne sur un jour ouvert. */
+function openDayArrivalRate(s: GameState): number {
+  return (s.plonge.covers * PLATES_PER_COVER) / DAY_SECS;
+}
+function openDaysShare(s: GameState): number {
+  return (s.plonge.sundayOpen ? 7 : 6) / 7;
 }
 
 // --- Capacités ---
@@ -91,13 +113,8 @@ function machineRunning(s: GameState): boolean {
 function handsBusy(s: GameState): boolean {
   return s.manualRetired || s.plonge.callTalk > 0;
 }
-/** Débit des mains en continu, modulé par l'énergie (la fatigue ne touche que les mains). */
-export function handRateNow(s: GameState): number {
-  if (!s.handWashing || handsBusy(s)) return 0;
-  return s.handRate * (Math.max(0, s.energy) / ENERGY_MAX);
-}
 
-// --- Argent et gains ---
+// --- Argent ---
 
 function pay(s: GameState, plates: number): void {
   if (plates <= 0) return;
@@ -105,31 +122,25 @@ function pay(s: GameState, plates: number): void {
   s.money = s.money.add(euros);
   s.plonge.washed += plates;
   s.plonge.earned += euros;
-  s.plonge.gainsAcc += euros;
 }
-/** Gains réels des 60 dernières secondes (ce que montre la montre), clic compris. */
-export function gainsPerMinute(s: GameState): number {
-  return s.plonge.gains.reduce((a, b) => a + b, 0);
+/** Ce que rapportent des machines de ce débit, sans toi : limité par ce que le restaurant salit. */
+function autoIncomeFor(s: GameState, rate: number): number {
+  return Math.min(rate, openDayArrivalRate(s)) * openDaysShare(s) * s.valuePerDish.toNumber() * 60;
 }
-/** Avant la banque, l'argent ne se compte pas : il se sent dans la poche. */
-export function pocketLabel(s: GameState): string {
-  const m = s.money.toNumber();
-  if (m < 1) {
-    const coins = Math.round(m / 0.05);
-    return `${coins} pièce${coins > 1 ? "s" : ""} de 5 centimes`;
-  }
-  return `environ ${Math.round(m)} € en pièces`;
+/** L'argent qui tombe tout seul, en € / min (hors clic) ; 0 quand la machine est à l'arrêt. */
+export function autoIncomePerMin(s: GameState): number {
+  return machineRunning(s) ? autoIncomeFor(s, machineRate(s)) : 0;
 }
-export const BANK_EFFECTS = ["Ton argent au centime près"];
-export function canOpenBank(s: GameState): boolean {
-  return s.job === "plongeur" && !s.plonge.bank && s.plonge.earned >= BANK_UNLOCK_EARNED;
+/** Libellé du revenu automatique (au pluriel une fois le lave-vaisselle pro installé). */
+export function autoIncomeLine(s: GameState): string {
+  const who = s.plonge.proRate > 0 ? "Les lave-vaisselle te rapportent" : "Le lave-vaisselle te rapporte";
+  return `${who} ${fmtEuros(autoIncomePerMin(s))} / min`;
 }
-export function openBank(s: GameState): boolean {
-  if (!canOpenBank(s)) return false;
-  s.plonge.bank = true;
-  s.plonge.chef = "banque";
-  markAction(s);
-  return true;
+function incomeEffects(s: GameState, now: number, after: number, plural = s.plonge.proRate > 0): string[] {
+  const who = plural ? "Les lave-vaisselle te rapportent" : "Il te rapporte";
+  const out = [`${who} : ${fmtEuros(autoIncomeFor(s, now))} → ${fmtEuros(autoIncomeFor(s, after))} / min`];
+  if (after >= openDayArrivalRate(s)) out.push("Pas plus : le restaurant ne salit pas plus d'assiettes.");
+  return out;
 }
 
 /** Toute action du joueur remet à zéro le compteur d'inactivité (la fenêtre ne s'offre qu'au repos). */
@@ -143,7 +154,7 @@ function markAction(s: GameState): void {
 export function clickPlates(s: GameState): number {
   return Math.min(Math.floor(s.plonge.pile), s.dishesPerClick);
 }
-/** Laver à la main : sans énergie (effort ponctuel), limité par la pile, impossible au téléphone. */
+/** Laver à la main : le seul lavage manuel, limité par la pile, impossible au téléphone. */
 export function washClick(s: GameState): boolean {
   if (handsBusy(s)) return false;
   s.totalClicks += 1;
@@ -155,11 +166,31 @@ export function washClick(s: GameState): boolean {
   return true;
 }
 
+// --- Ce qui est révélé ---
+
+/** La montre donne le jour et le coup de feu. */
+export function dayVisible(s: GameState): boolean {
+  return !!s.plonge.equipment["montre"];
+}
+/** Les couverts se révèlent avec la première demande acceptée. */
+export function coversVisible(s: GameState): boolean {
+  return s.plonge.asksDone > 0 || s.plonge.sundayOpen;
+}
+/** La colonne « Ta vie » naît avec le premier appel de Maman (ou le temps libre). */
+export function lifeVisible(s: GameState): boolean {
+  const p = s.plonge;
+  return s.souvenirs.length > 0 || p.callRing > 0 || p.callTalk > 0 || s.manualRetired;
+}
+
 // --- Équipement ---
 
 export function equipmentVisible(s: GameState, def: EquipmentDef): boolean {
-  if (s.job !== "plongeur" || s.plonge.equipment[def.id]) return false;
-  return !def.requires || !!s.plonge.equipment[def.requires];
+  const p = s.plonge;
+  if (s.job !== "plongeur" || p.equipment[def.id]) return false;
+  if (def.revealAt !== undefined && p.day < def.revealAt) return false;
+  if (!def.requires) return true;
+  if (!p.equipment[def.requires]) return false;
+  return def.revealDelay === undefined || p.day >= (p.boughtAt[def.requires] ?? 0) + def.revealDelay;
 }
 export function canBuyEquipment(s: GameState, id: string): boolean {
   const def = EQUIPMENT_BY_ID[id];
@@ -170,13 +201,11 @@ export function buyEquipment(s: GameState, id: string): boolean {
   const def = EQUIPMENT_BY_ID[id];
   s.money = s.money.sub(def.cost);
   s.plonge.equipment[id] = true;
+  s.plonge.boughtAt[id] = s.plonge.day;
   if (def.dishesPerClick !== undefined) s.dishesPerClick = def.dishesPerClick;
-  if (def.handRate !== undefined) s.handRate = def.handRate;
-  if (def.fatigue !== undefined) s.plonge.fatigue = def.fatigue;
   if (def.oldRate !== undefined) s.plonge.oldRate = def.oldRate;
   if (def.oldMult !== undefined) s.plonge.oldMult *= def.oldMult;
   if (def.proRate !== undefined) s.plonge.proRate = def.proRate;
-  if (def.watch) s.plonge.watch = true;
   if (def.chef) s.plonge.chef = def.chef;
   markAction(s);
   return true;
@@ -185,20 +214,24 @@ export function buyEquipment(s: GameState, id: string): boolean {
 export function equipmentEffects(s: GameState, def: EquipmentDef): string[] {
   const out: string[] = [];
   if (def.dishesPerClick !== undefined) out.push(`Par clic : ${s.dishesPerClick} → ${def.dishesPerClick} assiettes`);
-  if (def.fatigue !== undefined) {
-    const rate = s.handWashing ? s.handRate : HAND_RATE;
-    out.push(`Énergie dépensée par tes mains : ${fmtRate(rate * s.plonge.fatigue)} → ${fmtRate(rate * def.fatigue)} par seconde`);
-  }
-  if (def.watch) out.push("Affiche ce que tu gagnes en une minute");
+  if (def.watch) out.push("Affiche le jour de la semaine", "Et le coup de feu de midi : la moitié des assiettes du jour");
   const cc = s.plonge.cycleCourt ? CYCLE_COURT_MULT : 1;
-  if (def.oldRate !== undefined) out.push(`Vieux lave-vaisselle : 0 → ${fmtRate(def.oldRate * cc)} assiettes / s. Il ne se fatigue pas.`);
+  if (def.oldRate !== undefined) {
+    const after = def.oldRate * cc;
+    out.push(`Vieux lave-vaisselle : 0 → ${fmtRate(after)} assiettes / s`);
+    out.push(`Il te rapporte ${fmtEuros(autoIncomeFor(s, after))} / min, même sans toi.`);
+  }
   if (def.oldMult !== undefined) {
     const now = oldMachineRate(s) * cc;
-    out.push(`Vieux lave-vaisselle : ${fmtRate(now)} → ${fmtRate(now * def.oldMult)} assiettes / s`);
+    const after = now * def.oldMult;
+    out.push(`Vieux lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`);
+    out.push(...incomeEffects(s, machineRate(s), machineRate(s) - now + after));
   }
   if (def.proRate !== undefined) {
     const now = machineRate(s);
-    out.push(`Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(now + def.proRate * cc)} assiettes / s`);
+    const after = now + def.proRate * cc;
+    out.push(`Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`);
+    out.push(...incomeEffects(s, now, after, true));
   }
   if (def.note) out.push(def.note);
   return out;
@@ -211,7 +244,12 @@ export function cycleCourtAvailable(s: GameState): boolean {
 }
 export function cycleCourtEffects(s: GameState): string[] {
   const now = machineRate(s);
-  return [`Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(now * CYCLE_COURT_MULT)} assiettes / s`, "Certaines assiettes ressortent grasses."];
+  const after = now * CYCLE_COURT_MULT;
+  return [
+    `Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`,
+    ...incomeEffects(s, now, after),
+    "Certaines assiettes ressortent grasses.",
+  ];
 }
 export function setCycleCourt(s: GameState): boolean {
   if (!cycleCourtAvailable(s)) return false;
@@ -242,33 +280,75 @@ export function shelveGreasy(s: GameState): boolean {
 export function currentAsk(s: GameState): AskDef | null {
   return ASKS[s.plonge.asksDone] ?? null;
 }
-/** Le chef veut bien grandir si ta pile est restée vide 12 s aujourd'hui (tu suis), une fois par jour. */
+/**
+ * Le chef veut bien grandir si ta pile est restée vide 12 s aujourd'hui (tu suis), une fois le vieux
+ * lave-vaisselle réparé, pas avant FIRST_ASK_AT, et au plus une demande tous les ASK_GAP_DAYS jours.
+ */
 export function canAskChef(s: GameState): boolean {
+  const p = s.plonge;
   return (
     s.job === "plongeur" &&
     currentAsk(s) !== null &&
-    s.plonge.emptyToday >= ASK_EMPTY_SECS &&
-    s.plonge.lastAskDay < dayIndex(s)
+    p.oldRate > 0 &&
+    p.day >= FIRST_ASK_AT &&
+    p.emptyToday >= ASK_EMPTY_SECS &&
+    dayIndex(s) - p.lastAskDay >= ASK_GAP_DAYS
   );
 }
 export function askEffects(s: GameState, def: AskDef): string[] {
   const out: string[] = [];
   if (def.covers) out.push(`Couverts par jour : ${s.plonge.covers} → ${s.plonge.covers + def.covers}`);
-  if (s.plonge.asksDone === 0) out.push(`1 couvert = ${PLATES_PER_COVER} assiettes sales`);
+  if (def.covers && s.plonge.asksDone === 0) out.push(`1 couvert = ${PLATES_PER_COVER} assiettes sales`);
   if (def.sunday) out.push("Jours ouverts par semaine : 6 → 7");
   if (def.note) out.push(def.note);
   return out;
 }
-export function askChef(s: GameState): boolean {
-  if (!canAskChef(s)) return false;
-  const def = currentAsk(s)!;
+function applyAsk(s: GameState, def: AskDef): void {
   if (def.covers) s.plonge.covers += def.covers;
   if (def.sunday) s.plonge.sundayOpen = true;
   if (def.chef) s.plonge.chef = def.chef;
+  markAction(s);
+}
+export function askChef(s: GameState): boolean {
+  if (!canAskChef(s)) return false;
+  applyAsk(s, currentAsk(s)!);
   s.plonge.asksDone += 1;
   s.plonge.lastAskDay = dayIndex(s);
+  return true;
+}
+/** Ouvrir le dimanche : une proposition unique, le 6e lundi, une fois que Maman a appelé. */
+export function canOfferSunday(s: GameState): boolean {
+  const p = s.plonge;
+  return s.job === "plongeur" && !p.sundayOpen && dayIndex(s) >= SUNDAY_OFFER_DAY && p.callWeek >= 0;
+}
+export function offerSunday(s: GameState): boolean {
+  if (!canOfferSunday(s)) return false;
+  applyAsk(s, SUNDAY_OFFER);
+  return true;
+}
+
+// --- Le livret A : l'argent qui travaille pour toi ---
+
+export function canOpenLivret(s: GameState): boolean {
+  return s.job === "plongeur" && !s.plonge.livret && s.plonge.day >= LIVRET_AT;
+}
+export function livretEffects(s: GameState): string[] {
+  return [
+    `Chaque lundi : +${Math.round(LIVRET_RATE * 100)} % de ton argent`,
+    `Aujourd'hui, ce serait +${fmtEuros(s.money.toNumber() * LIVRET_RATE)}`,
+  ];
+}
+export function openLivret(s: GameState): boolean {
+  if (!canOpenLivret(s)) return false;
+  s.plonge.livret = true;
+  s.plonge.chef = "banque";
   markAction(s);
   return true;
+}
+export function livretLine(s: GameState): string {
+  return s.plonge.lastInterest > 0
+    ? `Livret A : +${fmtEuros(s.plonge.lastInterest)} lundi dernier`
+    : `Livret A : ${Math.round(LIVRET_RATE * 100)} % chaque lundi`;
 }
 
 // --- La vie perso ---
@@ -281,9 +361,16 @@ function remember(s: GameState, kind: "lien" | "contemplation", text: string, mi
 export function canAnswerCall(s: GameState): boolean {
   return s.plonge.callRing > 0;
 }
+/** Ce que coûte de décrocher : pendant l'appel, le chef lave ce que la machine ne suit pas. */
+function callLoss(s: GameState): number {
+  if (s.manualRetired) return 0;
+  const lost = arrivalsIn(s, CALL_TALK_SECS) - (machineRunning(s) ? machineRate(s) : 0) * CALL_TALK_SECS;
+  return Math.max(0, lost) * s.valuePerDish.toNumber();
+}
 export function callEffects(s: GameState): string[] {
   const out = [`${CALL_TALK_SECS} s au téléphone`];
-  if (openToday(s) && !s.manualRetired) out.push("Tes mains s'arrêtent en plein service.");
+  const loss = callLoss(s);
+  if (loss >= 0.01) out.push(`Pendant ce temps, le chef lave à ta place. Tu perds environ ${fmtEuros(loss)}.`);
   return out;
 }
 /** Décrocher : les mains (et les études) s'arrêtent le temps de l'appel. */
@@ -297,7 +384,9 @@ export function onThePhone(s: GameState): boolean {
   return s.plonge.callTalk > 0;
 }
 export function canLookOutWindow(s: GameState): boolean {
-  return s.job === "plongeur" && s.plonge.idle >= WINDOW_IDLE_SECS && s.plonge.windowDay !== dayIndex(s);
+  return (
+    s.job === "plongeur" && lifeVisible(s) && s.plonge.idle >= WINDOW_IDLE_SECS && s.plonge.windowDay !== dayIndex(s)
+  );
 }
 export function lookOutWindow(s: GameState): boolean {
   if (!canLookOutWindow(s)) return false;
@@ -315,16 +404,15 @@ export function canPoseGants(s: GameState): boolean {
   return s.job === "plongeur" && !s.manualRetired && !!s.plonge.equipment["pro"];
 }
 export function poseGantsEffects(s: GameState): string[] {
-  const avg = (s.plonge.covers * PLATES_PER_COVER) / DAY_SECS;
   return [
-    `Tu arrêtes de laver. Les lave-vaisselle suivent seuls : ${fmtRate(machineRate(s))} assiettes / s pour ${fmtRate(avg)} de vaisselle en moyenne.`,
+    `Tu arrêtes de laver. Les lave-vaisselle suivent seuls : ${fmtRate(machineRate(s))} assiettes / s pour ${fmtRate(openDayArrivalRate(s))} de vaisselle en moyenne.`,
     "Nouveau : tes études.",
   ];
 }
-/** Poser les gants : plus de travail manuel, place au temps libre. */
+/** Poser les gants : plus de travail manuel, place au temps libre (et à l'énergie qu'il demande). */
 export function retireHands(s: GameState): void {
   s.manualRetired = true;
-  s.handWashing = false;
+  s.flags.energyVisible = true;
   s.plonge.chef = "gants_poses";
   markAction(s);
 }
@@ -411,8 +499,7 @@ export function answerAnnonce(s: GameState): boolean {
 
 /** Revenu hors-ligne au plongeur : les machines seules, limitées par ce que le restaurant salit. */
 export function plongeOfflineIncomePerSec(s: GameState): Decimal {
-  const plates = Math.min(machineRunning(s) ? machineRate(s) : 0, weeklyArrivalRate(s));
-  return D(plates).mul(s.valuePerDish);
+  return D(autoIncomePerMin(s) / 60);
 }
 
 // --- Le tick ---
@@ -429,27 +516,25 @@ export function tickPlonge(s: GameState, t: number): void {
       p.complaint = false;
       p.chef = "plainte";
     }
-    // Maman appelle le dimanche à midi, une fois par semaine.
+    // Maman appelle le dimanche à midi, une fois par semaine, à partir du 3e dimanche.
     const week = Math.floor(today / 7);
-    if (today % 7 === SUNDAY && p.callWeek !== week) {
+    if (today % 7 === SUNDAY && week >= FIRST_CALL_WEEK && p.callWeek !== week) {
       p.callWeek = week;
       p.callRing = CALL_RING_SECS;
+    }
+    // Le livret A verse ses intérêts chaque lundi.
+    if (today % 7 === 0 && p.livret) {
+      const interest = s.money.toNumber() * LIVRET_RATE;
+      s.money = s.money.add(interest);
+      p.lastInterest = interest;
     }
   }
 
   // Le restaurant salit des assiettes ; au-delà de la place disponible, le chef lave lui-même.
+  const pileBefore = p.pile;
   p.pile += arrivalRate(s) * t;
-  const cap = pileCap(s);
-  if (p.pile > cap) {
-    p.overflow += p.pile - cap;
-    p.pile = cap;
-    if (p.overflowDay !== today) {
-      p.overflowDay = today;
-      p.chef = "debordement";
-    }
-  }
 
-  // L'appel : il sonne, puis on parle (les mains s'arrêtent et se reposent).
+  // L'appel : il sonne, puis on parle (les mains s'arrêtent).
   if (p.callRing > 0) {
     p.callRing -= t;
     if (p.callRing <= 0) {
@@ -457,6 +542,7 @@ export function tickPlonge(s: GameState, t: number): void {
       remember(s, "lien", CALL_MISSED, true);
     }
   }
+  const talking = p.callTalk > 0;
   if (p.callTalk > 0) {
     p.callTalk -= t;
     if (p.callTalk <= 0) {
@@ -465,13 +551,12 @@ export function tickPlonge(s: GameState, t: number): void {
     }
   }
 
-  // Les machines d'abord (elles ne se fatiguent pas), puis les mains prennent le reste.
-  let washed = 0;
+  // Les machines lavent (elles ne se fatiguent pas).
   if (p.relaunchLeft > 0) p.relaunchLeft = Math.max(0, p.relaunchLeft - t);
   if (machineRunning(s) && machineRate(s) > 0) {
     const w = Math.min(p.pile, machineRate(s) * t);
     p.pile -= w;
-    washed += w;
+    pay(s, w);
     if (p.cycleCourt && w > 0) {
       p.loadClock += t;
       if (p.loadClock >= LOAD_SECS) {
@@ -481,35 +566,35 @@ export function tickPlonge(s: GameState, t: number): void {
       }
     }
   }
-  const hands = Math.min(p.pile, handRateNow(s) * t);
-  p.pile -= hands;
-  washed += hands;
-  pay(s, washed);
 
-  // Énergie : la fatigue des mains contre le repos continu.
-  s.energy = Math.max(0, Math.min(ENERGY_MAX, s.energy + ENERGY_REGEN * t - hands * p.fatigue));
-
-  // Le coup de main vient avec l'habitude.
-  if (!p.handUnlocked && p.washed >= HAND_UNLOCK_PLATES) {
-    p.handUnlocked = true;
-    s.handWashing = true;
-    s.handRate = Math.max(s.handRate, HAND_RATE);
-    s.flags.energyVisible = true;
-    p.chef = "coup_de_main";
+  // Au téléphone en plein service, le chef lave à ta place ce que la machine ne suit pas.
+  let lost = 0;
+  if (talking && !s.manualRetired && p.pile > pileBefore) {
+    lost = p.pile - pileBefore;
+    p.pile = pileBefore;
   }
+  const cap = pileCap(s);
+  if (p.pile > cap) {
+    lost += p.pile - cap;
+    p.pile = cap;
+  }
+  if (lost > 0) {
+    p.overflow += lost;
+    if (p.pileVisible && p.overflowDay !== today) {
+      p.overflowDay = today;
+      p.chef = "debordement";
+    }
+  }
+
+  // Le compteur d'assiettes se révèle quand la pile se vide (ou déborde) pour la première fois.
+  if (!p.pileVisible && p.day >= PILE_VISIBLE_AT && (p.pile < 1 || p.overflow > 0)) p.pileVisible = true;
+
+  // Énergie : le repos continu (elle ne se dépense qu'en études).
+  s.energy = Math.min(ENERGY_MAX, s.energy + ENERGY_REGEN * t);
 
   // Tu suis le restaurant : la pile est vide un jour ouvert.
   if (openToday(s) && p.pile < 1) p.emptyToday += t;
 
   // Inactivité (la fenêtre) : le téléphone ne compte pas comme du temps libre.
   if (p.callTalk <= 0) p.idle += t;
-
-  // La montre : gains réels, seconde par seconde, sur une minute glissante.
-  p.gainsClock += t;
-  while (p.gainsClock >= 1) {
-    p.gainsClock -= 1;
-    p.gains.push(p.gainsAcc);
-    p.gainsAcc = 0;
-    if (p.gains.length > 60) p.gains.shift();
-  }
 }

@@ -1,9 +1,9 @@
 import { D, type Decimal, ZERO } from "./numbers";
 import { MISSION_PERIOD } from "./content/missions";
 import { BADBUZZ_OFFSET } from "./content/audience";
-import { START_COVERS, START_PILE, BASE_FATIGUE } from "./content/plonge";
+import { START_COVERS, START_PILE } from "./content/plonge";
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;
@@ -22,11 +22,6 @@ export const MEETING_SHARE = 0.02; // 2 % des followers courants consommés (pla
 export const MEETING_MIN_FOLLOWERS = 10_000; // consommation plancher ET seuil minimal pour tenir un meeting
 export const MEETING_RATE = 0.002; // Emprise créée par follower consommé
 export const MEETING_ENERGY_COST = 6; // énergie dépensée par meeting (action active du joueur)
-
-// Le clic reste à pleine valeur (effort ponctuel délibéré) ; seul le lavage
-// CONTINU à la main dépense de l'énergie, proportionnellement aux assiettes
-// lavées. Comme le débit baisse avec l'énergie, la dépense baisse aussi :
-// l'énergie se stabilise à un palier soutenable au lieu de tomber à zéro.
 
 export type Job =
   | "plongeur"
@@ -61,14 +56,14 @@ export interface PlongeState {
   overflowDay: number; // dernier jour où le débordement a été signalé
   washed: number; // assiettes lavées au total
   earned: number; // € gagnés au total à la plonge
-  handUnlocked: boolean; // le coup de main est venu (300 assiettes)
-  fatigue: number; // énergie dépensée par assiette lavée à la main en continu
+  pileVisible: boolean; // le compteur d'assiettes sales est révélé
   equipment: Record<string, boolean>; // objets uniques achetés
+  boughtAt: Record<string, number>; // temps de calendrier de chaque achat (révélations différées)
   oldRate: number; // vieille machine réparée (assiettes/s, 0 si en panne)
   oldMult: number; // réglages de la vieille machine (joint, panier, détartrage)
   proRate: number; // lave-vaisselle pro (assiettes/s)
-  watch: boolean; // la montre : gains réels affichés
-  bank: boolean; // compte en banque : argent exact affiché
+  livret: boolean; // livret A ouvert : intérêts chaque lundi
+  lastInterest: number; // € versés au dernier lundi
   cycleCourt: boolean; // compromis : programme court (+30 %, certaines assiettes ressortent grasses)
   loadClock: number; // secondes de machine dans la fournée courante
   loads: number; // fournées terminées en cycle court
@@ -83,9 +78,6 @@ export interface PlongeState {
   windowDay: number; // dernier jour où l'on a regardé par la fenêtre
   windowCount: number; // nombre de fois (fait tourner les lignes)
   library: Record<string, number>; // études achetées → étapes faites
-  gains: number[]; // gains par seconde, 60 dernières secondes (la montre)
-  gainsAcc: number; // gains de la seconde en cours
-  gainsClock: number; // avancement de la seconde en cours
   chef: string; // id de la dernière réplique du chef (CHEF_LINES)
 }
 
@@ -102,14 +94,14 @@ export function createPlongeState(): PlongeState {
     overflowDay: -1,
     washed: 0,
     earned: 0,
-    handUnlocked: false,
-    fatigue: BASE_FATIGUE,
+    pileVisible: false,
     equipment: {},
+    boughtAt: {},
     oldRate: 0,
     oldMult: 1,
     proRate: 0,
-    watch: false,
-    bank: false,
+    livret: false,
+    lastInterest: 0,
     cycleCourt: false,
     loadClock: 0,
     loads: 0,
@@ -124,9 +116,6 @@ export function createPlongeState(): PlongeState {
     windowDay: -1,
     windowCount: 0,
     library: {},
-    gains: [],
-    gainsAcc: 0,
-    gainsClock: 0,
     chef: "debut",
   };
 }

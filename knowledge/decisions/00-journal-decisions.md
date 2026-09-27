@@ -4,6 +4,11 @@ Chaque décision de design, datée, avec sa justification et un lien vers le(s) 
 
 ---
 
+## 2026-09-27 · Chapitre 1 v2 : une information à la fois, deux fois plus long, plus de mains automatiques
+**Décision :** après le premier test d'Alexandre, on supprime le lavage automatique à la main (une tâche manuelle ne s'automatise pas : c'est le lave-vaisselle qui prend le relais), on affiche l'argent exact dès le premier clic, on remplace « Dernière minute » par le revenu automatique en € / min, on repousse la banque en livret A (vers 18:30), et chaque information se révèle seule, par des gates en temps de calendrier. Durée ~23 min au lieu de ~11.
+**Pourquoi :** trop d'informations d'un coup, des libellés pas naturels (« Dans ta poche », « Tes mains … (fatiguées) »), et une automatisation des mains qui contredisait la métaphore. Challenge : 14 informations à 2 min d'écart minimum feraient 30 min ; on garde ~1 min pour les petites révélations du début, ~2 à 3 min ensuite.
+**Statut :** ✅ implémenté ; 🔲 nouveau test d'Alexandre.
+
 ## 2026-09-27 · Refonte de la progression vers le cynisme + chapitre 1 (plongeur) refait
 **Décision :** échelle ajustable (9 métiers, président et maître du monde fusionnés en chef d'État), registre satire grinçante, colonne vertébrale = un compromis concret choisi par le joueur à chaque métier (A) + l'humain devient un nombre (C) + même geste, autre cible en motif (B). Travail chapitre par chapitre, validé avec Alexandre, challengé avant chaque implémentation.
 **Chapitre 1 livré :** pile d'assiettes finie et affluence en couverts, demandes au chef gatées par la vitesse du joueur (dont « ouvrir le dimanche », qui fait tomber l'appel de Maman en plein service), objets uniques au lieu de générateurs répétables, cycle court avec assiettes grasses (« Relancer un cycle » / « Les ranger quand même »), deux colonnes Travail / Ta vie, énergie côté vie, études qui consomment l'énergie, souvenirs.

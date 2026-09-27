@@ -147,7 +147,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Option : « Vendre sa frise » (15 Md€) : l'épilogue montre alors une frise vide.
 - Épilogue : la frise comme seul bilan, puis deux choix (régner sur le vide, ou renoncer et renaître). Aucun commentaire.
 
-## Chapitre 1 détaillé : Plongeur (v1, challengé, en attente de validation d'Alexandre)
+## Chapitre 1 détaillé : Plongeur (v2, challengé, en test par Alexandre)
 
 **Intention.** Apprendre la grammaire de l'idle (clic, équipement, passif, automatisation) dans un monde pauvre et concret, drôle. Poser les fils du jeu : le chef (canal périphérique), le calendrier, la frise de vie, le premier compromis. La durée n'est pas une cible : Alexandre jugera au test (simulé : ~10 min à 4 clics/s, ~12 min à 2 clics/s).
 
@@ -241,6 +241,18 @@ Variantes mesurées (fin du chapitre) : 2 clics/s 12:04 · 6 clics/s 9:43 · ref
 - **Tes études** s'ouvrent en posant les gants (avant : une ligne grise « Quand les machines tourneront seules, tu auras le temps d'étudier. »). Chiffres : manuel de HTML 30 € (6 × 20 pages, 10 énergie), cours du soir 45 € (8 séances, 20 énergie), manuel de JavaScript 60 € (6 × 20 pages), ordinateur reconditionné 150 € (5 exercices, 15 énergie), examen 40 € après le cours (3 révisions puis « Passer l'examen », 15 énergie ; « Reçu. 16 sur 20. »). Total 415 énergie, 325 €. L'appel de Maman suspend les études ; lire ne compte pas comme une action de travail (la fenêtre reste découvrable pendant les études, avec des lignes « chez soi »).
 - **Coûts ajustés au moteur réel** : détartrage 150 €, moitié du lave-vaisselle pro 200 € ; une pile de 12 assiettes attend le joueur à son arrivée (le premier bouton n'est jamais grisé).
 - **Mesures du moteur** (joueur glouton qui accepte tout) : fin du chapitre à 11:35 à 4 clics/s, 12:09 à 2 clics/s, 10:35 à 6 clics/s, 16:42 sans cliquer après le coup de main ; refuser le cycle court rallonge de 4 %. Plus long creux : 76 s à 4 clics/s. L'énergie descend à ~32 au pire du coup de feu.
+
+### v2 après le premier test d'Alexandre (2026-09-27, 4e challenge)
+Retour : trop d'informations d'un coup, trop rapide, « Dans ta poche » pas naturel, « Dernière minute » et « Tes mains » pas clairs, et on n'automatise pas une tâche manuelle. Ce qui change (et remplace les puces ci-dessus quand elles se contredisent) :
+- **Plus de mains automatiques.** Seul le clic lave à la main ; les machines prennent le relais. Les gants pro et la douchette donnent des assiettes par clic (6, puis 8). L'énergie ne sert plus qu'aux études et n'apparaît qu'en posant les gants (régénération 2 / s).
+- **« Argent : 12,35 € »** au centime près dès le premier clic. Plus de poche ni de compte en banque au début.
+- **Revenu automatique** en tête : « Le lave-vaisselle te rapporte 10,29 € / min » (au pluriel avec le pro), hors clic, calculé comme min(débit des machines, assiettes d'un jour ouvert) × jours ouverts / 7 × 0,05 × 60 ; 0 quand la machine est à l'arrêt. La même fonction sert au hors-ligne. Les sous-titres des machines disent « Il te rapporte : A → B € / min » et « Pas plus : le restaurant ne salit pas plus d'assiettes. » quand les arrivées plafonnent.
+- **La montre donne le jour et le coup de feu** (« Affiche le jour de la semaine »).
+- **Livret A** vers 18:30 : gratuit, +5 % de l'argent chaque lundi (« Aujourd'hui, ce serait +8,40 € »). L'argent qui travaille est célébré ; plafond pour les chapitres suivants à trancher au chapitre 2.
+- **Maman en plein service coûte vraiment** : pendant l'appel, la pile ne monte plus et le chef lave à ta place ce que la machine ne suit pas (« Tu perds environ 11,31 € »).
+- **Une information à la fois**, par des gates en temps de calendrier (qui ne tourne pas hors-ligne) : gants à 0:45, compteur d'assiettes à la première pile vide après 1:45, montre 90 s après l'éponge, réparation 75 s après la montre, gants pro 45 s après, Maman à partir du 3e dimanche (naissance de « Ta vie »), première demande au chef après 10:15 et la machine réparée (puis 2 jours entre deux demandes ; les couverts s'affichent avec la première), « Proposer d'ouvrir le dimanche » sort de la file et devient une proposition unique au 6e lundi après un appel, livret à 18:30. Le débordement et la fenêtre restent cachés tant que ce qu'ils expliquent n'est pas visible.
+- **Coûts** : gants 8 €, éponge 12 €, montre 30 €, réparation 35 € (4 assiettes / s), gants pro 40 €, joint 45 €, panier 70 €, douchette 90 €, détartrage 110 €, moitié du pro 240 €.
+- **Mesures du moteur** : fin à 23:38 à 4 clics/s, 24:05 à 2, 23:20 à 6, 31:12 sans cliquer après la réparation ; refuser le cycle court : 26:10 (+11 %). Plus grand écart entre deux nouveautés : 2:56 ; jamais deux informations dans la même demi-minute après le premier clic.
 
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 

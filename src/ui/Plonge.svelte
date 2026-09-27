@@ -2,6 +2,7 @@
   // Acte I, chapitre 1 : le plongeur. Papier blanc, texte brut, boutons carrés (esprit Paperclips).
   // Deux colonnes : « Travail » (le restaurant) et « Ta vie » (l'énergie, les études, Maman, les souvenirs).
   // Chaque élément a une place fixe : ce qui apparaît s'insère, rien ne décale le bouton « Laver ».
+  // Une information à la fois : chaque ligne n'apparaît que quand le moteur la révèle.
   import { game } from "./store.svelte";
   import { work, poseGants } from "../engine/actions";
   import {
@@ -9,6 +10,8 @@
     LIBRARY,
     CHEF_LINES,
     STUDY_TEASER,
+    SUNDAY_OFFER,
+    LIVRET_CTA,
     ANNONCE_TEXT,
     ANNONCE_CTA,
     AGE_PLONGEUR,
@@ -19,13 +22,16 @@
     openToday,
     pileCap,
     clickPlates,
-    handRateNow,
     machineRate,
-    gainsPerMinute,
-    pocketLabel,
-    BANK_EFFECTS,
-    canOpenBank,
-    openBank,
+    fmtEuros,
+    autoIncomeLine,
+    dayVisible,
+    coversVisible,
+    lifeVisible,
+    canOpenLivret,
+    openLivret,
+    livretEffects,
+    livretLine,
     equipmentVisible,
     canBuyEquipment,
     buyEquipment,
@@ -39,6 +45,8 @@
     canAskChef,
     askChef,
     askEffects,
+    canOfferSunday,
+    offerSunday,
     canAnswerCall,
     answerCall,
     callEffects,
@@ -66,7 +74,7 @@
   const s = $derived(game.state);
   const p = $derived(s.plonge);
 
-  const euros = (n: number): string => `${n.toFixed(2).replace(".", ",")} €`;
+  const euros = fmtEuros;
   const rate = (n: number): string => (Math.round(n * 10) / 10).toString().replace(".", ",");
 
   const plates = $derived(clickPlates(s));
@@ -82,10 +90,7 @@
   );
   const nextEquipment = $derived(EQUIPMENT.find((e) => equipmentVisible(s, e)) ?? null);
   const ask = $derived(canAskChef(s) ? currentAsk(s) : null);
-  const handsNow = $derived(handRateNow(s));
-  const lifeVisible = $derived(
-    s.flags.energyVisible || s.souvenirs.length > 0 || canAnswerCall(s) || canLookOutWindow(s),
-  );
+  const vie = $derived(lifeVisible(s));
   const studiesOwned = $derived(LIBRARY.filter((l) => l.id in p.library));
   const nextStudy = $derived(LIBRARY.find((l) => studyBuyVisible(s, l.id)) ?? null);
   const souvenirLine = (text: string): string => (text.startsWith("Tu ") ? `t${text.slice(1)}` : text);
@@ -95,32 +100,30 @@
   <header class="top">
     <p class="chef">{CHEF_LINES[p.chef]}</p>
     {#if s.flags.moneyVisible}
-      {#if p.bank}
-        <p class="money">Argent : {euros(s.money.toNumber())}</p>
-      {:else}
-        <p class="money">Dans ta poche : {pocketLabel(s)}</p>
-      {/if}
+      <p class="money">Argent : {euros(s.money.toNumber())}</p>
+    {/if}
+    {#if p.oldRate > 0}
+      <p class="sub auto">{autoIncomeLine(s)}</p>
+    {/if}
+    {#if p.livret}
+      <p class="sub">{livretLine(s)}</p>
     {/if}
   </header>
 
-  <div class="cols" class:solo={!lifeVisible}>
+  <div class="cols" class:solo={!vie}>
     <section class="col travail" aria-label="Travail">
-      <h2>Travail</h2>
-      <p>{dayLine}</p>
-      <p>Assiettes sales : {Math.floor(p.pile)}</p>
-      {#if p.pile > pileCap(s) * 0.7}
-        <p class="sub">Au-delà de {pileCap(s)}, le chef les lave lui-même.</p>
+      {#if vie}<h2>Travail</h2>{/if}
+      {#if dayVisible(s)}<p>{dayLine}</p>{/if}
+      {#if p.pileVisible}
+        <p>Assiettes sales : {Math.floor(p.pile)}</p>
+        {#if p.pile > pileCap(s) * 0.7}
+          <p class="sub">Au-delà de {pileCap(s)}, le chef les lave lui-même.</p>
+        {/if}
       {/if}
-      <p class="sub">{p.covers} couverts par jour</p>
+      {#if coversVisible(s)}<p class="sub">{p.covers} couverts par jour</p>{/if}
 
       {#if !s.manualRetired}
         <button class="bt wash" disabled={plates <= 0 || onThePhone(s)} onclick={() => work(s)}>{washLabel}</button>
-        {#if s.handWashing}
-          <p class="line">Tes mains : {rate(handsNow)} assiettes / s{s.energy < 50 ? " (fatiguées)" : ""}</p>
-        {/if}
-      {/if}
-      {#if p.watch}
-        <p class="line">Dernière minute : {euros(gainsPerMinute(s))}</p>
       {/if}
 
       {#if p.oldRate > 0}
@@ -146,29 +149,37 @@
         {/if}
       {/if}
 
-      {#if nextEquipment || canOpenBank(s)}
+      {#if nextEquipment}
         <h3>Améliorations</h3>
-        {#if canOpenBank(s)}
+        <div class="buy">
+          <button class="bt" disabled={!canBuyEquipment(s, nextEquipment.id)} onclick={() => buyEquipment(s, nextEquipment.id)}>{nextEquipment.cta}</button>
+          <span class="price">{euros(nextEquipment.cost)}</span>
+          {#each equipmentEffects(s, nextEquipment) as l}<p class="sub">{l}</p>{/each}
+        </div>
+      {/if}
+
+      {#if ask || canOfferSunday(s)}
+        <h3>Le chef</h3>
+        {#if canOfferSunday(s)}
           <div class="buy">
-            <button class="bt" onclick={() => openBank(s)}>Ouvrir un compte en banque</button>
-            <span class="price">gratuit</span>
-            {#each BANK_EFFECTS as l}<p class="sub">{l}</p>{/each}
+            <button class="bt" onclick={() => offerSunday(s)}>{SUNDAY_OFFER.cta}</button>
+            {#each askEffects(s, SUNDAY_OFFER) as l}<p class="sub">{l}</p>{/each}
           </div>
         {/if}
-        {#if nextEquipment}
+        {#if ask}
           <div class="buy">
-            <button class="bt" disabled={!canBuyEquipment(s, nextEquipment.id)} onclick={() => buyEquipment(s, nextEquipment.id)}>{nextEquipment.cta}</button>
-            <span class="price">{euros(nextEquipment.cost)}</span>
-            {#each equipmentEffects(s, nextEquipment) as l}<p class="sub">{l}</p>{/each}
+            <button class="bt" onclick={() => askChef(s)}>{ask.cta}</button>
+            {#each askEffects(s, ask) as l}<p class="sub">{l}</p>{/each}
           </div>
         {/if}
       {/if}
 
-      {#if ask}
-        <h3>Le chef</h3>
+      {#if canOpenLivret(s)}
+        <h3>La banque</h3>
         <div class="buy">
-          <button class="bt" onclick={() => askChef(s)}>{ask.cta}</button>
-          {#each askEffects(s, ask) as l}<p class="sub">{l}</p>{/each}
+          <button class="bt" onclick={() => openLivret(s)}>{LIVRET_CTA}</button>
+          <span class="price">gratuit</span>
+          {#each livretEffects(s) as l}<p class="sub">{l}</p>{/each}
         </div>
       {/if}
 
@@ -188,7 +199,7 @@
       {/if}
     </section>
 
-    {#if lifeVisible}
+    {#if vie}
       <section class="col vie" aria-label="Ta vie">
         <h2>Ta vie</h2>
         <p class="sub">{AGE_PLONGEUR} ans</p>
@@ -231,7 +242,7 @@
               {#each studyBuyEffects(nextStudy) as l}<p class="sub">{l}</p>{/each}
             </div>
           {/if}
-        {:else if p.oldRate > 0}
+        {:else if p.equipment["detartrer"]}
           <p class="sub">{STUDY_TEASER}</p>
         {/if}
 

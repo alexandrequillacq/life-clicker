@@ -16,45 +16,48 @@ function mountApp(): { target: HTMLElement; component: ReturnType<typeof mount> 
 }
 
 describe("App P0 (DOM)", () => {
-  it("plongeur : un bouton, l'argent en pièces après le premier clic, pas encore de colonne « Ta vie »", () => {
+  it("plongeur : au début, le chef et un bouton ; l'argent exact après le premier clic, rien d'autre", () => {
     game.state = createInitialState(Date.now());
     const { target, component } = mountApp();
 
-    // Au départ : le chef, un bouton, pas d'argent affiché (révélation progressive), pas de vie perso.
+    // Au départ : le chef, un bouton. Ni argent, ni jour, ni pile, ni améliorations, ni vie perso.
     const wash = target.querySelector("button.wash") as HTMLButtonElement;
     expect(wash).not.toBeNull();
     expect(wash.textContent).toContain("Laver une assiette");
     expect(target.querySelector(".money")).toBeNull();
     expect(target.querySelector(".vie")).toBeNull();
     expect(target.textContent).toContain("5 centimes l'assiette. En liquide.");
+    expect(target.textContent).not.toContain("Lundi");
+    expect(target.textContent).not.toContain("Assiettes sales");
+    expect(target.textContent).not.toContain("Améliorations");
 
-    // Clic : une assiette lavée ; le tick révèle l'argent, en pièces tant qu'on n'a pas de compte.
+    // Clic : une assiette lavée ; le tick révèle l'argent, au centime près.
     wash.click();
     tick(game.state, 0.016);
     flushSync();
-    expect((target.querySelector(".money") as HTMLElement).textContent).toContain("1 pièce de 5 centimes");
+    expect((target.querySelector(".money") as HTMLElement).textContent).toBe("Argent : 0,05 €");
+    expect(target.textContent).not.toContain("Améliorations");
 
     unmount(component);
   });
 
-  it("plongeur : chaque achat affiche son sous-titre chiffré ; le coup de main ouvre « Ta vie »", () => {
+  it("plongeur : chaque achat affiche son sous-titre chiffré ; le lave-vaisselle affiche ce qu'il rapporte", () => {
     game.state = createInitialState(Date.now());
-    game.state.money = D(1);
+    game.state.money = D(100);
     game.state.flags.moneyVisible = true;
+    game.state.plonge.day = 45; // les gants se proposent
     const { target, component } = mountApp();
 
     // Le premier achat proposé (les gants) dit ce qu'il change.
     expect(target.textContent).toContain("Mettre des gants de plonge");
     expect(target.textContent).toContain("Par clic : 1 → 2 assiettes");
 
-    // 300 assiettes lavées : le coup de main vient, l'énergie apparaît côté « Ta vie ».
-    game.state.plonge.washed = 300;
+    // Le vieux lave-vaisselle réparé : l'argent qui tombe tout seul, par minute, hors clic.
+    game.state.plonge.oldRate = 4;
     tick(game.state, 0.016);
     flushSync();
-    const vie = target.querySelector(".vie") as HTMLElement;
-    expect(vie).not.toBeNull();
-    expect(vie.textContent).toContain("Énergie");
-    expect(target.querySelector(".travail")!.textContent).toContain("Tes mains");
+    expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 10,29 € / min");
+    expect(target.textContent).not.toContain("Tes mains");
 
     unmount(component);
   });

@@ -17,10 +17,16 @@ export const SUNDAY = 6;
 
 // --- Le travail ---
 export const VALUE_PER_DISH = 0.05; // 5 centimes l'assiette
-export const HAND_UNLOCK_PLATES = 300; // le coup de main vient avec l'habitude, il ne s'achète pas
-export const HAND_RATE = 10; // assiettes/s lavées par les mains seules, reposées
-export const BASE_FATIGUE = 1; // énergie dépensée par assiette lavée à la main en continu (10/s à plein régime)
-export const BANK_UNLOCK_EARNED = 25; // € gagnés au total avant qu'on propose d'ouvrir un compte
+// Seul le clic lave à la main : une tâche manuelle ne s'automatise pas, c'est le lave-vaisselle qui prend le relais.
+
+// --- Révélation : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
+export const PILE_VISIBLE_AT = 105; // le compteur d'assiettes apparaît quand la pile se vide (ou déborde) pour la première fois après ce temps
+export const FIRST_ASK_AT = 615; // première demande au chef possible (et vieux lave-vaisselle réparé)
+export const ASK_GAP_DAYS = 2; // au moins 2 jours entre deux demandes
+export const FIRST_CALL_WEEK = 2; // Maman appelle à partir du 3e dimanche
+export const SUNDAY_OFFER_DAY = 35; // « Proposer d'ouvrir le dimanche » : le 6e lundi, après un appel de Maman
+export const LIVRET_AT = 1110; // le livret A se propose après ce temps
+export const LIVRET_RATE = 0.05; // intérêts versés chaque lundi, en part de l'argent
 
 // --- Le compromis : le cycle court ---
 export const CYCLE_COURT_MULT = 1.3; // +30 % d'assiettes pour les deux machines (c'est un programme)
@@ -29,7 +35,7 @@ export const GREASY_EVERY = 5; // en cycle court, une fournée sur cinq ressort 
 export const RELAUNCH_SECS = 8; // relancer un cycle : la machine relave pendant 8 s
 
 // --- La vie ---
-export const ENERGY_REGEN = 3; // énergie/s récupérée en continu (le repos)
+export const ENERGY_REGEN = 2; // énergie/s récupérée en continu (le repos)
 export const CALL_RING_SECS = 30; // l'appel de Maman sonne 30 s
 export const CALL_TALK_SECS = 20; // décrocher occupe les mains 20 s
 export const WINDOW_IDLE_SECS = 20; // « Regarder par la fenêtre » : après 20 s sans rien faire
@@ -42,28 +48,28 @@ export interface EquipmentDef {
   cta: string;
   cost: number;
   requires?: string; // équipement prérequis (révélation en chaîne)
+  revealAt?: number; // n'apparaît pas avant ce temps de calendrier
+  revealDelay?: number; // n'apparaît que ce nombre de secondes après l'achat du prérequis
   dishesPerClick?: number; // fixe les assiettes lavées par clic
-  handRate?: number; // fixe le débit des mains reposées
-  fatigue?: number; // fixe l'énergie dépensée par assiette lavée à la main
   oldRate?: number; // répare la vieille machine (assiettes/s)
   oldMult?: number; // multiplie la vieille machine seule (joint, panier, détartrage)
   proRate?: number; // le lave-vaisselle pro (assiettes/s)
-  watch?: boolean; // la montre : affiche les gains réels des 60 dernières secondes
+  watch?: boolean; // la montre : affiche le jour et le coup de feu de midi
   note?: string; // précision ajoutée au sous-titre chiffré
   chef?: string; // réplique du chef à l'achat (id de CHEF_LINES)
 }
 
 export const EQUIPMENT: EquipmentDef[] = [
-  { id: "gants", cta: "Mettre des gants de plonge", cost: 0.5, dishesPerClick: 2 },
-  { id: "eponge", cta: "Acheter une vraie éponge", cost: 2, requires: "gants", dishesPerClick: 4 },
-  { id: "montre", cta: "S'acheter une montre", cost: 5, requires: "eponge", watch: true },
-  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 20, requires: "montre", oldRate: 6, chef: "reparer" },
-  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 40, requires: "reparer", dishesPerClick: 6, fatigue: 0.6 },
-  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 60, requires: "gants_pro", oldMult: 1.5 },
-  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 100, requires: "joint", oldMult: 1.5 },
-  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 135, requires: "panier", fatigue: 0.4 },
-  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 150, requires: "douchette", oldMult: 1.5 },
-  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 200, requires: "detartrer", proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
+  { id: "gants", cta: "Mettre des gants de plonge", cost: 8, revealAt: 45, dishesPerClick: 2 },
+  { id: "eponge", cta: "Acheter une vraie éponge", cost: 12, requires: "gants", dishesPerClick: 4 },
+  { id: "montre", cta: "S'acheter une montre", cost: 30, requires: "eponge", revealDelay: 90, watch: true },
+  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 35, requires: "montre", revealDelay: 75, oldRate: 4, chef: "reparer" },
+  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 40, requires: "reparer", revealDelay: 45, dishesPerClick: 6 },
+  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 45, requires: "gants_pro", oldMult: 1.5 },
+  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 70, requires: "joint", oldMult: 1.5 },
+  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 90, requires: "panier", dishesPerClick: 8 },
+  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 110, requires: "douchette", oldMult: 1.5 },
+  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 240, requires: "detartrer", proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
 ];
 
 export const EQUIPMENT_BY_ID: Record<string, EquipmentDef> = Object.fromEntries(EQUIPMENT.map((e) => [e.id, e]));
@@ -82,13 +88,15 @@ export const ASKS: AskDef[] = [
   { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 15, chef: "si_tu_suis" },
   { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 20 },
   { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 25 },
-  { id: "dimanche", cta: "Proposer d'ouvrir le dimanche", sunday: true, note: "Tu travailles le dimanche.", chef: "ta_mere" },
   { id: "groupes", cta: "Proposer d'accepter les groupes", covers: 35 },
   { id: "brunch", cta: "Proposer un brunch le samedi", covers: 45 },
   { id: "livraison", cta: "Proposer de s'inscrire sur une appli de livraison", covers: 65 },
   { id: "seminaires", cta: "Proposer de louer la salle pour des séminaires", covers: 85 },
   { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 120, chef: "meilleure_chose" },
 ];
+
+/** Hors de la file : une proposition unique, datée (le 6e lundi, une fois que Maman a appelé). */
+export const SUNDAY_OFFER: AskDef = { id: "dimanche", cta: "Proposer d'ouvrir le dimanche", sunday: true, note: "Tu travailles le dimanche.", chef: "ta_mere" };
 
 // --- La bibliothèque : le temps libre gagné en automatisant son travail ---
 export interface StudyItemDef {
@@ -119,7 +127,6 @@ export const LIBRARY_BY_ID: Record<string, StudyItemDef> = Object.fromEntries(LI
 // --- Ce que dit le chef (canal périphérique : il euphémise, il ne commente jamais le joueur) ---
 export const CHEF_LINES: Record<string, string> = {
   debut: "5 centimes l'assiette. En liquide.",
-  coup_de_main: "Tu as pris le coup de main. Tes mains lavent toutes seules.",
   banque: "Tu vides tes poches au guichet.",
   reparer: "Il marche ? Il reste au restaurant.",
   si_tu_suis: "Si tu suis, moi je veux bien.",
@@ -146,6 +153,7 @@ export const WINDOW_LINES_HOME = [
 ];
 export const CALL_SOUVENIR = "Maman t'a raconté son jardin.";
 export const CALL_MISSED = "Maman a laissé un message vocal.";
+export const LIVRET_CTA = "Ouvrir un livret A";
 export const STUDY_TEASER = "Quand les machines tourneront seules, tu auras le temps d'étudier.";
 export const AGE_PLONGEUR = 22;
 
