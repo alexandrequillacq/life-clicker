@@ -81,6 +81,7 @@ import {
 } from "../src/engine/plonge";
 import { poseGants } from "../src/engine/actions";
 import { applyOffline } from "../src/engine/offline";
+import { playthrough } from "./rythme/playthrough";
 
 function fresh(): GameState {
   return createInitialState(0);
@@ -708,99 +709,6 @@ describe("Plongeur : hors-ligne et pacing", () => {
     expect(s.money.toNumber()).toBeCloseTo(avgArrival * (6 / 7) * 0.05 * 600, 0);
   });
 
-  /** Joueur glouton : clique à `cps`, achète tout dès que possible, propose tout, lit dès qu'il peut. */
-  function playthrough(
-    cps: number,
-    opts: { afk?: boolean; refuse?: boolean } = {},
-  ): { secs: number; maxGap: number; reveals: [string, number][]; dead: number; deadMax: number } {
-    const s = fresh();
-    const dt = 0.05;
-    let clickAcc = 0;
-    let t = 0;
-    const reveals: [string, number][] = [];
-    // Ce que le joueur voit apparaître, une information à la fois.
-    const seen: Record<string, () => boolean> = {
-      argent: () => s.totalClicks > 0,
-      ameliorations: () => equipmentVisible(s, EQUIPMENT[0]) || !!s.plonge.equipment["gants"],
-      pile: () => s.plonge.pileVisible,
-      montre: () => !!s.plonge.equipment["eponge"] && (equipmentVisible(s, EQUIPMENT[2]) || dayVisible(s)),
-      jour: () => dayVisible(s),
-      reparer: () => !!s.plonge.equipment["montre"] && (equipmentVisible(s, EQUIPMENT[3]) || s.plonge.oldRate > 0),
-      machine: () => s.plonge.oldRate > 0,
-      maman: () => lifeVisible(s),
-      chef: () => chefVisible(s),
-      cycle_court: () => !!s.plonge.equipment["joint"],
-      grasses: () => isRevealed(s, "grasses"),
-      dimanche: () => canOfferSunday(s) || s.plonge.sundayOpen,
-      maman_en_service: () => s.plonge.sundayOpen && (s.plonge.callRing > 0 || s.plonge.callTalk > 0),
-      teaser: () => !!s.plonge.equipment["detartrer"],
-      livret: () => canOpenLivret(s) || s.plonge.livret,
-      offre_pro: () => equipmentVisible(s, EQUIPMENT[9]) || !!s.plonge.equipment["pro"],
-      gants_poses: () => s.manualRetired,
-      repas: () => mealVisible(s),
-    };
-    // Temps mort : par fenêtre de 10 s avant les gants posés, le clic lave moins de 40 % de ce qu'il pourrait
-    // et rien ne s'achète ni ne se demande.
-    let dead = 0;
-    let deadRun = 0;
-    let deadMax = 0;
-    let winClock = 0;
-    let winWashed = 0;
-    let winClicks = 0;
-    let winActs = 0;
-    while (t < 3600 && s.job === "plongeur") {
-      for (const [k, f] of Object.entries(seen)) if (!reveals.some((r) => r[0] === k) && f()) reveals.push([k, t]);
-      const acts0 = Object.keys(s.plonge.equipment).length + s.plonge.asksDone;
-      const w0 = s.plonge.washed;
-      const machine0 = machineRate(s);
-      const clicking = !(opts.afk && s.plonge.oldRate > 0);
-      clickAcc += clicking ? cps * dt : 0;
-      while (clickAcc >= 1) {
-        work(s);
-        clickAcc -= 1;
-      }
-      for (const e of EQUIPMENT) if (canBuyEquipment(s, e.id)) buyEquipment(s, e.id);
-      if (canOpenLivret(s)) openLivret(s);
-      if (canAskChef(s)) askChef(s);
-      if (canOfferSunday(s)) offerSunday(s);
-      if (!opts.refuse && cycleCourtAvailable(s)) setCycleCourt(s);
-      if (s.plonge.greasy) shelveGreasy(s);
-      if (canAnswerCall(s)) answerCall(s);
-      if (canPoseGants(s)) poseGants(s);
-      for (const l of LIBRARY) {
-        if (canBuyStudy(s, l.id)) buyStudy(s, l.id);
-        if (canStudyStep(s, l.id)) studyStep(s, l.id);
-      }
-      if (canEat(s) && s.energy <= 100 - MEAL_ENERGY) eat(s);
-      if (canAnswerAnnonce(s)) answerAnnonce(s);
-      const clicksNow = s.dishesPerClick;
-      const washedByHand = s.plonge.washed - w0;
-      tick(s, dt);
-      t += dt;
-      if (!s.manualRetired) {
-        winClock += dt;
-        winWashed += Math.max(0, washedByHand);
-        winClicks += (clicking ? cps * dt : 0) * clicksNow;
-        winActs += Object.keys(s.plonge.equipment).length + s.plonge.asksDone - acts0;
-        void machine0;
-        if (winClock >= 10) {
-          const isDead = winClicks > 0 && winWashed < 0.4 * winClicks && winActs === 0;
-          if (isDead) {
-            dead += winClock;
-            deadRun += winClock;
-            deadMax = Math.max(deadMax, deadRun);
-          } else deadRun = 0;
-          winClock = winWashed = winClicks = winActs = 0;
-        }
-      }
-    }
-    reveals.push(["annonce", t]);
-    reveals.sort((a, b) => a[1] - b[1]);
-    let maxGap = 0;
-    for (let i = 1; i < reveals.length; i++) maxGap = Math.max(maxGap, reveals[i][1] - reveals[i - 1][1]);
-    return { secs: t, maxGap, reveals, dead, deadMax };
-  }
-
   it("le chapitre dure une vingtaine de minutes, sans blocage, une information à la fois", () => {
     const fast = playthrough(6);
     const mid = playthrough(4);
@@ -814,13 +722,14 @@ describe("Plongeur : hors-ligne et pacing", () => {
     expect(slow.maxGap).toBeLessThan(4 * 60 + 30); // le joueur lent gagne lentement : ses paliers s'espacent
     // Au-delà des premières secondes, jamais deux nouveautés que le jeu révèle de lui-même dans la même demi-minute
     // (la conséquence immédiate d'un achat du joueur, comme le jour avec la montre, n'en est pas une).
-    const consequences = ["jour", "machine", "cycle_court", "teaser", "gants_poses"];
+    const spaced = ["gants", "pile", "montre", "reparer", "maman", "chef", "grasses", "dimanche", "service", "livret", "offre_pro", "repas", "annonce"];
     for (const r of [fast, mid, slow]) {
-      const later = r.reveals.filter(([k, t]) => t > 5 && !consequences.includes(k));
+      const later = r.reveals.filter(([k, t]) => t > 5 && spaced.includes(k));
       for (let i = 1; i < later.length; i++) expect(later[i][1] - later[i - 1][1]).toBeGreaterThanOrEqual(29.9);
     }
     // Le compromis est rentable : le refuser rallonge, sans dépasser +20 %.
     expect(refuse.secs).toBeGreaterThan(mid.secs);
     expect(refuse.secs).toBeLessThan(mid.secs * 1.2);
+    for (const r of [fast, mid, slow, refuse]) expect(r.deadMax).toBeLessThan(20.5); // jamais plus de 20 s d'affilée sans rien d'utile à faire
   });
 });
