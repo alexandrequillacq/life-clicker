@@ -71,13 +71,15 @@
 
 ## L'échelle (9 métiers)
 
+> **2026-09-28 : les chapitres 2 à 5 changent.** Plus de CDI, de lead dev ni de CTO : c'est ta propre boîte qui grandit (freelance, studio, agence, boîte d'IA). Passer de freelance à CDI se lisait comme une régression, et payer ses juniors ou ses GPU de sa poche n'a de sens que si la boîte est à toi. Les fiches des chapitres 3 à 5 ci-dessous datent de l'ancienne échelle et seront reprises chapitre par chapitre. La fiche du chapitre 2 est remplacée par la section « Chapitre 2 détaillé » plus bas.
+
 | # | Métier | Âge | Durée | Les autres, vus comme | Compromis |
 |---|---|---|---|---|---|
 | 1 | Plongeur | 22 | 10 min | toi seul, le chef par une ligne | Programmer le lave-vaisselle en cycle court |
-| 2 | Développeur freelance | 24 | 14 min | clients nommés | Désactiver le test qui échoue |
-| 3 | Lead dev | 27 | 14 min | collègues avec prénom | Garder l'équipe jusqu'à 22 h |
-| 4 | CTO | 31 | 14 min | pastilles d'initiales | Entraîner l'IA sur les messages privés des utilisateurs |
-| 5 | Fondateur | 34 | 16 min | un effectif | Licencier 38 des 96 salariés de DataNova |
+| 2 | Développeur freelance | 24 | 14 min | toi seul, clients nommés | Désactiver le test qui échoue |
+| 3 | Ton studio : une équipe | 27 | 14 min | collègues avec prénom, que tu embauches | Garder l'équipe jusqu'à 22 h |
+| 4 | Ton agence : plusieurs équipes | 31 | 14 min | pastilles d'initiales, des chefs d'équipe entre toi et eux | à trouver |
+| 5 | Ta boîte d'IA | 34 | 16 min | un effectif | Licencier 38 des 96 salariés de DataNova |
 | 6 | Célébrité | 40 | 16 min | des followers | Faire la promo du jeton $MOI à ses abonnés |
 | 7 | Figure politique | 46 | 13 min | des électeurs en % | Rendre les chômeurs responsables de la dette |
 | 8 | Chef d'État | 52 | 16 min | la population en %, puis des milliards | Reporter les élections de deux ans · Couper Internet dans les régions qui résistent |
@@ -93,7 +95,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Vie : « Regarder par la fenêtre » apparaît après 20 s sans clic (0 €, un point sur la frise). Premier rendez-vous : « Appeler Maman, dimanche ».
 - Promotion : 5 livres lus → « Répondre à l'annonce de Mme Duval » (site vitrine de sa boulangerie).
 
-**2. Développeur freelance, 24 ans (~14 min)**
+**2. Développeur freelance, 24 ans (~14 min)** (fiche remplacée, voir « Chapitre 2 détaillé »)
 - Verbes : **missions payées à la livraison** (le clic résout les bugs qui font avancer la mission ; plus de paiement au bug). Clients : Mme Duval (site vitrine), M. Petit (appli du club de foot), Kévin (migration de sa start-up de livraison). Puis « Écrire un script qui met les sites en ligne » : une file de 3 tâches qui s'exécute seule, première automatisation de son travail, célébrée.
 - Compromis : « Désactiver le test qui échoue » (mission livrée tout de suite ; le bug revient chez Kévin sous forme d'incident quand on y est lead).
 - Vie : « Dîner avec des amis, vendredi 20 h », « Aller courir ». Délégation de corvée : « Se faire livrer ses courses » (point neutre).
@@ -286,6 +288,113 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 - **Restent à trancher :** après les gants posés, le deuxième restaurant fait déborder la pile environ 7 min, jusqu'au deuxième pro ; en AFK, 4:19 entre l'annonce des études et « Poser les gants ».
 
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
+
+## Chapitre 2 détaillé : Freelance (v1, décidé avec Alexandre le 2026-09-28, challengé deux fois, à relire)
+
+**Pourquoi le refaire.** « Répondre à l'annonce de Mme Duval » menait à l'ancien écran : « Résoudre un bug » payé 1 € au clic, et des missions « 10 bugs en 30 s ». On promettait un site et l'on corrigeait les bugs d'un site qui n'existait pas. On était payé au bug alors que la spec disait « à la livraison ». Mme Duval disparaissait, et l'interface sautait de la feuille blanche au tableau de bord.
+
+**Intention.** Rejouer la grammaire du plongeur dans un monde de code, avec deux sources d'argent qui tirent en sens contraire. **Construire** paie une fois à la livraison. **Entretenir** paie chaque lundi sans toi, mais envoie des bugs. Chaque contrat que tu proposes te charge un peu plus, et c'est toi qui le proposes. Le chapitre se termine quand tu ne suis plus seul : tu embauches, ce qui ouvre le studio. Personne ne te propose de poste, tu grandis.
+
+**Continuité avec le plongeur (mesurée, `playthrough` + `autoIncomePerMin`).** À la sortie, le joueur a 1 à 120 € en poche (les études ont tout pris), un livret vide et 432 € / min de revenu automatique, qui reste au chef avec les machines. Le chapitre 2 part donc de 0 € / min. La première livraison doit rapporter du même ordre par minute, pour que le nouveau métier ne se lise pas comme une régression. L'argent et le livret A (1 % chaque lundi) sont conservés.
+
+### La boucle : deux axes et un carnet
+- **Capacité** (lignes de code par seconde) : le bouton « Écrire du code », les outils, puis le générateur.
+- **Demande** (lignes commandées par semaine) : des propositions que tu fais toi-même, gratuites, qui ne paraissent que quand tu suis (comme les demandes au chef : carnet vide pendant 6 s, au moins 35 s après la nouveauté précédente, au plus 120 s).
+- **Le tarif** dépend du type de commande et monte un peu avec la taille (sinon deux petits sites valent un gros, et la taille n'est pas un levier).
+- **Le carnet** est une seule file. Les bugs passent en tête et le clic les traite en premier. Un bug coûte **10 clics fixes, quels que soient les outils** : un clavier ne trouve pas un bug, et le générateur n'écrit que des pages neuves. C'est ce travail de jugement qui sature et justifie l'embauche (chapitre 3), puis l'IA (chapitre 5).
+- **Bug ouvert, client qui ne paie pas** : tant que le site d'un client a un bug ouvert, il ne paie pas l'entretien du lundi. La perte est chiffrée (« M. Petit ne paiera pas lundi : l'appli plante au lancement. »), jamais définitive : il suffit de corriger. Les livraisons continuent de payer, donc aucun blocage.
+- **Les pièces nommées** (« Page d'accueil », « Horaires d'ouverture », « Photos des viennoiseries », « Plan d'accès ») sont les libellés de la progression de la commande en cours, pas un axe.
+- **Supprimé** : « Écrire un script qui met les sites en ligne » (il automatisait une étape que le jeu ne montre jamais).
+- **Le générateur écrit même pendant que tu corriges un bug** : c'est une machine, il n'a pas besoin de tes mains.
+
+### Ce que deviennent les axes aux chapitres 3 à 5
+- Capacité : toi, puis des collègues avec prénom (studio), des équipes avec leurs chefs (agence), l'IA qui écrit et corrige (boîte d'IA). Les personnes embauchées par leur prénom au chapitre 3 sont celles que l'IA remplace au chapitre 5.
+- Demande : Mme Duval et M. Petit, puis Kévin (sa start-up de livraison, un contrat qui exige une équipe), puis des grands comptes, puis le rachat de DataNova.
+- Bugs : toi, puis les personnes d'astreinte, puis l'IA qui les éteint tous d'un coup (cascade célébrée).
+
+### Séquence (simulation jetable v2, joueur glouton à 4 clics/s)
+Cadence du plongeur : 1 jour = 15 s, l'entretien tombe le lundi. Le clic écrit 5 lignes au départ. Les achats se proposent quand tu ne suis plus (plus de 2 500 lignes en attente ou 3 bugs en file pendant 6 s), au plus tard 120 s après la nouveauté précédente.
+
+| t | Nouveauté | Coût | Effet |
+|---|---|---|---|
+| 0:00 | Commande de Mme Duval : site vitrine | | 1 200 lignes, 600 € à la livraison |
+| 1:05 | « Proposer un contrat d'entretien à Mme Duval » | gratuit | 50 € chaque lundi ; ses bugs arrivent |
+| 1:40 | « Laisser tes cartes de visite à la boulangerie » | gratuit | +1 site vitrine par semaine |
+| 2:53 | « Proposer une appli à M. Petit » | gratuit | une appli de 4 000 lignes, 2 400 € |
+| 3:28 | « Acheter un deuxième écran » | 150 € | 5 → 8 lignes par clic |
+| 4:03 | « Acheter un clavier » | 400 € | 8 → 12 lignes par clic |
+| 5:49 | « Proposer l'entretien à chaque livraison » | gratuit | chaque site livré devient un contrat |
+| 6:24 | « Créer ton profil sur un site de freelances » | gratuit | +2 sites vitrines par semaine |
+| 6:59 | « Répondre aux clients le soir » | gratuit | +1 boutique en ligne par semaine ; les bugs arrivent aussi le vendredi soir |
+| 7:34 | « Écrire un générateur de pages » | 1 200 € | 20 lignes / s sans toi, sur les pages neuves seulement |
+| 8:09 | « Réutiliser le code de tes sites » | 2 000 € | sites suivants : 30 % de lignes en moins |
+| 9:03 | « Installer des tests automatiques » | 3 000 € | deux fois moins de bugs ; se propose quand 3 bugs sont arrivés dans la semaine |
+| 9:31 | Un test échoue, et « Désactiver le test qui échoue » paraît | gratuit | voir « Le compromis » |
+| 10:15 | « Accepter des commandes de boutiques en ligne » | gratuit | +1 boutique par semaine |
+| 10:50 | « Apprendre au générateur à faire les formulaires » | 6 000 € | 20 → 60 lignes / s |
+| 11:38 | « Demander à tes clients de te recommander » | gratuit | +1 appli par semaine |
+| 13:38 | « Prendre les clients d'un freelance qui arrête » | gratuit | +1 appli et +1 boutique par semaine |
+| 14:02 | « Embaucher quelqu'un pour corriger les bugs » | | ouvre le chapitre 3 |
+
+Commandes simulées (lignes, € à la livraison, entretien chaque lundi) : vitrine 1 200 / 600 / 50, appli 4 000 / 2 400 / 160, boutique 3 000 / 1 900 / 130. Chaque site entretenu envoie un bug par semaine (deux fois moins avec les tests), et le premier arrive entre 30 et 100 s après la livraison. Chaque bug est rattaché au site d'un client nommé.
+
+**Sortie** : « Embaucher quelqu'un pour corriger les bugs » se propose dès que **12 bugs** sont arrivés sur les 7 derniers jours, ou que 12 bugs attendent dans la file. Le seuil est absolu : il ne dépend ni de la vitesse de clic ni des lundis, et il est testé en continu. Les appels de Maman n'y comptent pas, puisqu'ils ne font arriver aucun bug.
+
+Mesures de la simulation v2 :
+
+| Partie | Fin | Plus grand écart | Compromis |
+|---|---|---|---|
+| 2 clics/s | 18:07 | 3:14 | 14:52 |
+| 4 clics/s | 14:02 | 2:00 | 9:31 |
+| 6 clics/s | 10:44 | 1:11 | 9:18 |
+| arrête de cliquer après le générateur | 17:30 | 2:18 | 9:31 |
+| refuse le compromis | 14:01 | 2:00 | refusé |
+
+Au départ, à 4 clics/s, une vitrine de 600 € prend environ une minute : on gagne environ 600 € par minute, au-dessus des 432 € du plongeur. La première simulation avait le sens des bugs inversé : les tests doublaient les bugs, et ses mesures sont caduques.
+
+**À reprendre au TDD, dans le vrai moteur :**
+- La simulation ne modélise ni l'énergie ni la vie.
+- À 2 clics/s, le compromis arrive après 10 min et le plus grand écart dépasse 3 min de 14 s.
+- Refuser le compromis ne rallonge presque rien (14:01 contre 14:02) : la sortie dépend des bugs reçus, et le compromis ne touche que la vitesse de livraison. Son gain doit se voir ailleurs, par exemple en argent par minute, ou en reliant la sortie à la demande tenue.
+
+### Le compromis
+- Une fois les tests installés, une livraison sur trois bute sur un test rouge. **Sans compromis, il y a une issue** : le test rouge est un bug de 10 clics, en tête du carnet, qu'on corrige avant de livrer. Rien ne bloque.
+- Au premier test rouge paraît « Désactiver le test qui échoue ». C'est gratuit, et irréversible une fois accepté. Le gain est permanent : plus aucun test rouge, et les livraisons vont 20 % plus vite (sous le plafond de +30 % de R3).
+- **Le coût tombe sur les clients, jamais sur toi.** Ils ne t'envoient pas un bug de plus. Leurs propres clients tombent parfois sur une page blanche, et tu l'apprends par la ligne du client, sans effet sur ton argent : « Mme Duval a perdu deux commandes de gâteaux ce week-end. Elle ne sait pas pourquoi. » Il rejoue « Ne plus relaver les assiettes grasses ».
+
+### Les collisions
+- « Répondre aux clients le soir » fait aussi arriver des bugs le vendredi soir. Si tu vas dîner, ils restent ouverts jusqu'à samedi, et un bug encore ouvert le lundi fait un impayé. Le coût se lit dans un système qui existe déjà.
+- Maman, le dimanche, produit le même effet : un bug laissé ouvert pendant l'appel peut coûter un lundi. Ces impayés ne comptent jamais dans la sortie.
+- Le dîner occupe les mains jusqu'au samedi matin, comme Maman jusqu'à lundi. La règle R2 (« 20 s ») est remplacée par cette durée en jours, déjà adoptée pour Maman au plongeur.
+
+### L'énergie
+- Écrire du code fatigue : chaque clic coûte un peu d'énergie. Quand la jauge est basse, le bouton écrit moins de lignes (« Écrire du code : 2 lignes », avec la fatigue écrite à côté), mais **il ne se grise jamais**.
+- La fatigue touche aussi les bugs : fatigué, un clic ne compte que pour moitié sur un bug. Sinon, l'énergie ne pèserait plus rien au moment précis où les bugs prennent le carnet.
+- Le générateur ne se fatigue pas : c'est une machine (règle de CLAUDE.md).
+
+### La vie
+- **Au clic, ce qui recharge :**
+  - « Se faire à manger », comme au plongeur ;
+  - de temps en temps, « Aller au cinéma » ou « Aller au restaurant » : rare, occupe les mains un moment, recharge beaucoup, laisse un souvenir ;
+  - **Maman, toujours le dimanche** : décrocher bloque tout jusqu'à lundi, sauf le générateur, et remplit l'énergie ;
+  - **« Dîner avec des amis, vendredi soir »** : y aller occupe les mains jusqu'à samedi. Après « Répondre aux clients le soir », il tombe pendant les commandes du soir. La collision vient de ta propre proposition, comme le dimanche du plongeur.
+- **L'automatisation de la vie arrive doucement.** Le joueur finit par se lasser de cliquer pour recharger. « Se faire livrer les repas du midi » donne alors de l'énergie qui remonte seule, et « Ta vie » affiche en tête « Ton repos : +N énergie / min », miroir exact de « Le lave-vaisselle te rapporte ». On commence à suivre sa vie comme un revenu. Le jeu ne le commente jamais : c'est le début de la pente.
+- **Garde-fous de la thèse.** Au chapitre 2, on n'automatise que des corvées (les repas) : souvenir neutre, le Sens ne se creuse pas. Les liens (Maman, les amis) ne s'automatisent que plus tard, et c'est là que le Sens se creuse. L'appel de Maman confié à une IA reste au chapitre 5.
+- **Retirés** : « Dormir » et « Aller courir » (une information à la fois), « Se faire livrer ses courses » (remplacé par les repas du midi).
+
+### L'interface
+La même page que le plongeur : les colonnes « Travail » et « Ta vie », une information à la fois, les nouveautés en file avec au moins 35 s d'écart. On ajoute seulement un léger habillage (la première couleur, récompense de la fin de l'Acte I). L'ancien tableau de bord (`App.svelte`, `missions.ts`, « Résoudre un bug » dans `career.ts`) n'est plus atteint depuis le plongeur.
+
+### Pour démarrer en TDD
+- **Tarif** : il se calcule sur la taille nominale de la commande. « Réutiliser le code » réduit le travail, pas le prix : c'est ce qui le rend rentable.
+- **Refus** : une proposition refusée reste proposée (R3) et ne bloque pas les suivantes. Sans « Répondre aux clients le soir », la sortie reste atteignable par les autres commandes (à verrouiller par un test R7).
+- **Garde-fous R7 à tester** : la sortie est atteignable à 2, 4 et 6 clics/s, en arrêtant de cliquer après le générateur, en refusant le compromis et en refusant chaque proposition une à une. Le test rouge ne bloque jamais le carnet. L'énergie ne grise jamais le bouton.
+- **Sauvegarde** : le passage du plongeur au freelance migre l'argent et le livret A ; les champs du plongeur restent en lecture pour le bilan final.
+
+### Restent à trancher
+- Les chiffres de l'énergie (coût du clic, seuil de fatigue, recharges, repas livrés, prix des repas) et le calendrier des sorties, à simuler avec la vie.
+- Le texte de la sortie (qui est la première personne embauchée, et sous quel prénom).
+- Le vrai gain du compromis (voir « À reprendre au TDD »).
 
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
