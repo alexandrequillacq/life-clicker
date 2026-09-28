@@ -96,7 +96,8 @@ function run(s: GameState, secs: number, dt = 0.05): void {
 function offerReady(s: GameState, id: string): void {
   const row = REVEAL_BY_ID[id];
   s.plonge.day = Math.max(s.plonge.day, row.at ?? 0);
-  for (const k of Object.keys(row.after ?? {})) if (REVEAL_BY_ID[k]?.kind === "jeu") s.plonge.revealed[k] = s.plonge.day;
+  s.plonge.earned = Math.max(s.plonge.earned, row.earned ?? 0);
+  for (const k of Object.keys(row.after ?? {})) if (REVEAL_BY_ID[k]?.kind === "jeu") s.plonge.revealed[k] ??= -1e6;
 }
 
 /** Donne tout l'équipement jusqu'à (inclus) l'id demandé, sans passer par la caisse ni attendre les révélations. */
@@ -176,6 +177,7 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     expect(pileCap(s)).toBe(PILE_BASE_CAP + START_COVERS);
     expect(s.plonge.overflow).toBeGreaterThan(0);
     expect(s.plonge.chef).toBe("debut"); // le chef ne parle pas d'une pile que tu ne vois pas encore
+    s.plonge.boughtAt["eponge"] = s.plonge.day; // l'éponge achetée : le compteur d'assiettes paraîtra
     run(s, 2 * DAY_SECS + 8); // un samedi
     expect(isRevealed(s, "pile")).toBe(true);
     expect(s.plonge.chef).toBe("debordement");
@@ -185,18 +187,35 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     expect(s.plonge.chef).toBe("debut");
   });
 
-  it("le compteur d'assiettes n'apparaît qu'à la première pile vide, après un moment", () => {
+  it("le compteur d'assiettes paraît 35 s après l'éponge, à la première pile vide (ou débordée)", () => {
     const s = fresh();
     s.plonge.pile = 0;
+    s.plonge.day = 200;
     tick(s, 0.05);
+    expect(isRevealed(s, "pile")).toBe(false); // pas d'éponge : pas de compteur
+    s.plonge.boughtAt["gants"] = s.plonge.day;
+    s.plonge.boughtAt["eponge"] = s.plonge.day;
+    s.plonge.covers = 0; // plus rien n'arrive : la pile reste où on la met
+    s.plonge.overflow = 0;
+    s.plonge.pile = 0;
+    run(s, 34);
     expect(isRevealed(s, "pile")).toBe(false); // trop tôt : une information à la fois
-    s.plonge.day = REVEAL_BY_ID.pile.at!;
     s.plonge.pile = 5;
-    tick(s, 0.05);
-    expect(isRevealed(s, "pile")).toBe(false);
+    run(s, 2);
+    expect(isRevealed(s, "pile")).toBe(false); // la pile n'est ni vide ni débordée
     s.plonge.pile = 0;
     tick(s, 0.01);
     expect(isRevealed(s, "pile")).toBe(true);
+  });
+
+  it("sans éponge, le compteur paraît quand même 90 s après les gants", () => {
+    const s = fresh();
+    s.plonge.day = 200;
+    s.plonge.boughtAt["gants"] = s.plonge.day;
+    run(s, 89);
+    expect(isRevealed(s, "pile")).toBe(false);
+    run(s, 2);
+    expect(isRevealed(s, "pile")).toBe(true); // le restaurant a débordé depuis longtemps
   });
 
   it("le restaurant est fermé le dimanche au départ", () => {
@@ -221,10 +240,26 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     }
   });
 
+  it("les gants se proposent dès le premier euro, et se dégrisent à 3 €", () => {
+    const s = fresh();
+    s.plonge.pile = 1000;
+    for (let i = 0; i < 19; i++) work(s);
+    expect(equipmentVisible(s, EQUIPMENT[0])).toBe(false); // 0,95 € : le bouton et l'argent, rien d'autre
+    work(s);
+    expect(equipmentVisible(s, EQUIPMENT[0])).toBe(true); // 1 €
+    expect(canBuyEquipment(s, "gants")).toBe(false);
+    for (let i = 0; i < 39; i++) work(s);
+    expect(canBuyEquipment(s, "gants")).toBe(false); // 2,95 €
+    work(s);
+    expect(canBuyEquipment(s, "gants")).toBe(true); // 3 € (60 × 0,05 en virgule flottante : 2,9999… gagnés)
+    expect(buyEquipment(s, "gants")).toBe(true);
+    expect(equipmentVisible(s, EQUIPMENT[0])).toBe(false); // achetés : l'offre disparaît, l'argent retombé n'y change rien
+  });
+
   it("les équipements se révèlent en chaîne et ne s'achètent qu'une fois", () => {
     const s = fresh();
     expect(equipmentVisible(s, EQUIPMENT[0])).toBe(false); // au début : le bouton et l'argent, rien d'autre
-    s.plonge.day = REVEAL_BY_ID.gants.at!;
+    s.plonge.earned = REVEAL_BY_ID.gants.earned!;
     expect(equipmentVisible(s, EQUIPMENT[0])).toBe(true);
     expect(equipmentVisible(s, EQUIPMENT[1])).toBe(false);
     s.money = D(10);
@@ -247,13 +282,14 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     expect(s.plonge.pile).toBeGreaterThan(50);
   });
 
-  it("la montre n'arrive qu'un moment après l'éponge, et donne le jour", () => {
+  it("la montre arrive 40 s après le compteur d'assiettes, et donne le jour", () => {
     const s = fresh();
     equipUpTo(s, "eponge");
-    s.plonge.boughtAt["eponge"] = s.plonge.day;
+    s.plonge.revealed["pile"] = s.plonge.day;
     const montre = EQUIPMENT.find((e) => e.id === "montre")!;
+    s.plonge.day += 39;
     expect(equipmentVisible(s, montre)).toBe(false);
-    s.plonge.day += REVEAL_BY_ID.montre.after!.eponge;
+    s.plonge.day += 1;
     expect(equipmentVisible(s, montre)).toBe(true);
     expect(dayVisible(s)).toBe(false);
     s.money = D(montre.cost);
@@ -702,6 +738,37 @@ describe("Plongeur : poser les gants, la bibliothèque et l'énergie", () => {
   });
 });
 
+describe("Plongeur : le début du chapitre, une information à la fois", () => {
+  it("les gants pro se proposent 35 s après l'arrivée du chef", () => {
+    const s = fresh();
+    equipUpTo(s, "reparer");
+    delete s.plonge.revealed["chef"];
+    const pro = EQUIPMENT.find((e) => e.id === "gants_pro")!;
+    s.plonge.boughtAt["reparer"] = s.plonge.day - 1000;
+    expect(equipmentVisible(s, pro)).toBe(false); // la réparation seule ne suffit plus
+    s.plonge.revealed["chef"] = s.plonge.day;
+    s.plonge.day += 34;
+    expect(equipmentVisible(s, pro)).toBe(false);
+    s.plonge.day += 1;
+    expect(equipmentVisible(s, pro)).toBe(true);
+  });
+
+  it("à 2, 4 et 6 clics/s : gants tout de suite, puis éponge, compteur, montre, réparation, chef, gants pro, espacés", () => {
+    const order = ["gants", "eponge", "pile", "montre", "reparer", "chef", "gants_pro"];
+    for (const cps of [2, 4, 6]) {
+      const r = playthrough(cps);
+      const at = (k: string) => r.reveals.find((x) => x[0] === k)![1];
+      expect(at("gants")).toBeLessThanOrEqual(20 / cps + 0.1); // le premier euro
+      for (let i = 1; i < order.length; i++) expect(at(order[i])).toBeGreaterThan(at(order[i - 1]));
+      for (const [a, b] of [["pile", "montre"], ["montre", "reparer"], ["chef", "gants_pro"]]) {
+        expect(at(b) - at(a), `${a} → ${b} à ${cps} clics/s`).toBeGreaterThanOrEqual(30);
+      }
+      const bought = (k: string) => r.purchases.find((x) => x[0] === k)![1];
+      expect(at("pile") - bought("eponge")).toBeCloseTo(35, 0);
+    }
+  });
+});
+
 describe("Plongeur : la table des nouveautés", () => {
   it("chaque équipement a sa ligne d'offre, et chaque offre est un équipement", () => {
     const offers = REVEALS.filter((r) => r.kind === "offre").map((r) => r.id);
@@ -778,7 +845,7 @@ describe("Plongeur : hors-ligne et pacing", () => {
     const afk = playthrough(4, { afk: true });
     const refuse = playthrough(4, { refuse: true });
     for (const r of [fast, mid, slow, afk, refuse]) expect(r.secs).toBeLessThan(40 * 60);
-    expect(mid.secs).toBeGreaterThan(20 * 60);
+    expect(mid.secs).toBeGreaterThan(19 * 60);
     expect(mid.secs).toBeLessThan(27 * 60);
     for (const r of [fast, mid]) expect(r.maxGap).toBeLessThan(3 * 60 + 15);
     expect(slow.maxGap).toBeLessThan(4 * 60 + 30); // le joueur lent gagne lentement : ses paliers s'espacent

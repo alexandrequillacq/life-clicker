@@ -45,6 +45,7 @@ export function eventAt(s: GameState, key: string): number | undefined {
 function ready(s: GameState, r: RevealDef, m: TickMoments = {}): boolean {
   const p = s.plonge;
   if (r.at !== undefined && p.day < r.at) return false;
+  if (r.earned !== undefined && p.earned < r.earned - 1e-9) return false; // 20 × 0,05 ne fait pas toujours 1 en virgule flottante
   if (r.after) {
     const ok = Object.entries(r.after).some(([k, delay]) => {
       const at = eventAt(s, k);

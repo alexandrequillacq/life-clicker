@@ -267,6 +267,13 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 - **Mesures du moteur** : 20:30 à 4 clics/s, 29:05 à 2, 16:18 à 6, 34:35 sans cliquer après la réparation ; refuser le cycle court : 21:50 (+6,5 %). Plus grand écart entre deux nouveautés : 2:59 à 4 et 6 clics/s, 3:37 à 2 ; jamais deux nouveautés du jeu dans la même demi-minute ; temps mort d'affilée au plus 20 s.
 - **À trancher plus tard** : « Dormir » (spec R2) arrive au freelance ; le repas recharge sans souvenir, pour rester déléguable sans creuser le Sens.
 
+### v3.1 : code nettoyé, début resserré (2026-09-28, 6e challenge)
+- **Le réglage vit dans les données.** Chaque chose qui paraît à l'écran a sa ligne dans la table `REVEALS` (`src/engine/content/plonge.ts`), avec sa nature (jeu : attend son tour dans la file ; geste : conséquence d'une action ; offre : un achat qui se propose). Tous les textes sont dans `TEXTES`. Le moteur est découpé dans `src/engine/plonge/`, et l'écran est calculé par `vue.ts`.
+- **Mesurer :** `node_modules/.bin/vite-node tests/rythme/frise.ts` (durée, plus grand écart, temps mort, frise avec les achats, nouveautés à moins de 30 s).
+- **Début :** les gants se proposent dès le premier euro gagné (grisés jusqu'à 3 €) ; le compteur d'assiettes paraît 35 s après l'achat de l'éponge (90 s après les gants sans éponge) ; la montre 40 s après le compteur ; les gants pro 35 s après le chef (ils tombaient 10 s après lui).
+- **Mesures :** à 4 clics/s, gants 0:04 (achat 0:14), éponge 0:15 (0:29), compteur 1:04, montre 1:45 (2:18), réparation 3:03 (3:33), chef 4:08, gants pro 4:43 ; fin 19:29 (29:03 à 2 clics/s, 16:10 à 6, 34:30 en AFK, 21:36 en refusant le cycle court).
+- **Restent à trancher :** à 2 clics/s la montre reste grisée 142 s (prix) ; la douchette tombe à moins de 30 s de Maman ou du dimanche ; le souvenir de Maman est daté du lundi (l'appel de 20 s déborde sur le jour suivant).
+
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 
 ## Ordre de travail

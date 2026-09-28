@@ -37,6 +37,7 @@ export interface RevealDef {
   id: string; // clé de la nouveauté (pour une offre : l'id de l'équipement)
   kind: RevealKind;
   at?: number; // pas avant ce temps de calendrier (secondes depuis le premier lundi)
+  earned?: number; // pas avant d'avoir gagné ce nombre d'euros à la plonge, au total (ne redescend jamais)
   after?: Record<string, number>; // au moins N s après l'UN de ces événements (le premier arrivé suffit)
   needs?: string[]; // ces événements ont TOUS eu lieu
   when?: string[]; // conditions nommées, évaluées par le moteur (voir CONDITIONS dans engine/plonge/revelations.ts)
@@ -54,7 +55,7 @@ export const REVEALS: RevealDef[] = [
   { id: "maman", kind: "jeu", at: days(27), when: ["dimanche_midi"] }, // Maman appelle à partir du 4e dimanche
   { id: "service", kind: "jeu", needs: ["maman"], when: ["dimanche_midi", "en_service"] }, // le premier appel en plein service
   { id: "grasses", kind: "jeu", when: ["fournee_grasse"] }, // la première fournée grasse
-  { id: "pile", kind: "jeu", at: 80, when: ["pile_vide_ou_deborde"] }, // le compteur d'assiettes sales
+  { id: "pile", kind: "jeu", after: { eponge: 35, gants: 90 }, when: ["pile_vide_ou_deborde"] }, // le compteur d'assiettes sales
   { id: "chef", kind: "jeu", after: { reparer: 35 } }, // « Le chef » et ses demandes
   { id: "dimanche", kind: "jeu", after: { panier: 35 }, needs: ["maman"], when: ["pas_d_appel"] }, // « Proposer d'ouvrir le dimanche »
   { id: "livret", kind: "jeu", after: { service_call: 60, panier: 240 }, when: ["pas_d_appel"] }, // le livret A
@@ -62,11 +63,11 @@ export const REVEALS: RevealDef[] = [
   { id: "repas", kind: "jeu", after: { gants_poses: 35 } }, // « Se faire à manger »
 
   // Les achats, dans l'ordre où ils se proposent.
-  { id: "gants", kind: "offre", at: 45 },
+  { id: "gants", kind: "offre", earned: 1 }, // dès le premier euro, grisés jusqu'à 3 €
   { id: "eponge", kind: "offre", after: { gants: 0 } },
-  { id: "montre", kind: "offre", after: { eponge: 75 } },
+  { id: "montre", kind: "offre", after: { pile: 40 } },
   { id: "reparer", kind: "offre", after: { montre: 45 } },
-  { id: "gants_pro", kind: "offre", after: { reparer: 45 } },
+  { id: "gants_pro", kind: "offre", after: { chef: 35 } },
   { id: "joint", kind: "offre", after: { gants_pro: 30 } },
   { id: "panier", kind: "offre", after: { joint: 0 } },
   { id: "douchette", kind: "offre", after: { panier: 30 } },

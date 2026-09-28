@@ -41,11 +41,36 @@ describe("App P0 (DOM)", () => {
     unmount(component);
   });
 
+  it("plongeur : les gants paraissent grisés au premier euro, et se dégrisent à 3 €", () => {
+    game.state = createInitialState(Date.now());
+    game.state.plonge.pile = 1000;
+    const { target, component } = mountApp();
+    const wash = target.querySelector("button.wash") as HTMLButtonElement;
+    const gants = (): HTMLButtonElement | undefined =>
+      [...target.querySelectorAll("button")].find((b) => b.textContent === "Mettre des gants de plonge");
+    for (let i = 0; i < 19; i++) wash.click();
+    flushSync();
+    expect(gants()).toBeUndefined(); // 0,95 €
+    wash.click();
+    flushSync();
+    expect(gants()!.disabled).toBe(true); // 1 € : visible, grisé
+    expect(target.textContent).toContain("3,00 €");
+    expect(target.textContent).toContain("Par clic : 1 → 2 assiettes");
+    for (let i = 0; i < 40; i++) wash.click();
+    flushSync();
+    expect(gants()!.disabled).toBe(false); // 3 €
+    gants()!.click();
+    flushSync();
+    expect(wash.textContent).toBe("Laver 2 assiettes");
+    expect(target.textContent).toContain("Acheter une vraie éponge");
+    unmount(component);
+  });
+
   it("plongeur : chaque achat affiche son sous-titre chiffré ; le lave-vaisselle affiche ce qu'il rapporte", () => {
     game.state = createInitialState(Date.now());
     game.state.money = D(100);
     game.state.flags.moneyVisible = true;
-    game.state.plonge.day = 45; // les gants se proposent
+    game.state.plonge.earned = 1; // les gants se proposent
     const { target, component } = mountApp();
 
     // Le premier achat proposé (les gants) dit ce qu'il change.

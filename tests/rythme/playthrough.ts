@@ -131,7 +131,7 @@ export function showsByItself(id: string): boolean {
   const r = REVEAL_BY_ID[id];
   if (!r) return false;
   if (r.kind === "jeu") return true;
-  return r.kind === "offre" && (r.at !== undefined || Object.values(r.after ?? {}).some((d) => d > 0));
+  return r.kind === "offre" && (r.at !== undefined || r.earned !== undefined || Object.values(r.after ?? {}).some((d) => d > 0));
 }
 
 /** Les parties de référence : 2, 4 et 6 clics/s, en AFK après la réparation, et en refusant le cycle court. */
