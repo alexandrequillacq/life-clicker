@@ -12,6 +12,7 @@ export const PLATES_PER_COVER = 3; // entrée, plat, dessert
 export const START_COVERS = 200; // couverts par jour au départ : le restaurant salit plus que tu ne peux laver
 export const START_PILE = 12; // une pile t'attend déjà à ton arrivée (le premier bouton n'est jamais grisé)
 export const PILE_BASE_CAP = 60; // au-delà de (base + couverts) assiettes en attente, le chef lave lui-même
+export const PILE_WARN_SHARE = 0.7; // pile remplie à 70 % : l'écran prévient ; en dessous, la réplique du débordement s'efface
 export const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 export const SUNDAY = 6;
 
@@ -157,7 +158,7 @@ export const ASKS: AskDef[] = [
   { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 70, chef: "meilleure_chose" },
 ];
 
-/** Hors de la file : une proposition unique, datée (le 6e lundi, une fois que Maman a appelé). */
+/** Hors de la file des demandes : une proposition unique (quand elle paraît : la ligne « dimanche » de REVEALS). */
 export const SUNDAY_OFFER: AskDef = { id: "dimanche", cta: "Proposer d'ouvrir le dimanche", sunday: true, note: "Tu travailles le dimanche.", chef: "ta_mere" };
 
 // --- La bibliothèque : le temps libre gagné en automatisant son travail ---
@@ -215,10 +216,99 @@ export const WINDOW_LINES_HOME = [
 ];
 export const CALL_SOUVENIR = "Maman t'a raconté son jardin.";
 export const CALL_MISSED = "Maman a laissé un message vocal.";
-export const LIVRET_CTA = "Ouvrir un livret A";
-export const MEAL_CTA = "Se faire à manger";
-export const STUDY_TEASER = "Quand les machines tourneront seules, tu auras le temps d'étudier.";
 export const AGE_PLONGEUR = 22;
 
-export const ANNONCE_TEXT = "Boulangerie Duval. Cherche quelqu'un pour faire notre site.";
-export const ANNONCE_CTA = "Répondre à l'annonce de Mme Duval";
+// --- Tous les autres textes joueur du chapitre (les chiffres arrivent déjà formatés : « 12,34 € », « 7,5 ») ---
+type N = number | string;
+const pl = (n: number, one: string, many: string): string => (n > 1 ? many : one);
+export const TEXTES = {
+  // En tête
+  money: (euros: string) => `Argent : ${euros}`,
+  autoIncome: (plural: boolean, euros: string) => `${plural ? "Les lave-vaisselle te rapportent" : "Le lave-vaisselle te rapporte"} ${euros} / min`,
+  livretRate: (pct: N) => `Livret A : ${pct} % chaque lundi`,
+  livretLast: (euros: string) => `Livret A : +${euros} lundi dernier`,
+
+  // Travail
+  colWork: "Travail",
+  dayClosed: (day: string) => `${day}, restaurant fermé`,
+  dayPeak: (day: string) => `${day}, coup de feu de midi`,
+  pile: (n: N) => `Assiettes sales : ${n}`,
+  pileWarn: (cap: N) => `Au-delà de ${cap}, le chef les lave lui-même.`,
+  overflowToday: (n: N) => `Aujourd'hui, il en a lavé ${n}.`,
+  covers: (n: N) => `${n} couverts par jour`,
+  wash: (n: number) => (n === 1 ? "Laver une assiette" : `Laver ${n} assiettes`),
+  washEmpty: "Aucune assiette sale",
+  washPhone: "Tu es au téléphone",
+
+  // Lave-vaisselle
+  machineTitle: "Lave-vaisselle",
+  machineRate: (rate: string) => `${rate} assiettes / s`,
+  greasy: "Assiettes grasses. Le lave-vaisselle est à l'arrêt.",
+  relaunch: "Relancer un cycle",
+  shelve: "Les ranger quand même",
+  greasyChoice: (secs: N) => `Relancer : ${secs} s sans assiette propre. Les ranger : aucun arrêt.`,
+  relaunching: (secs: N) => `Le lave-vaisselle relave la fournée (${secs} s).`,
+  cycleCourtCta: "Programmer le lave-vaisselle en cycle court",
+  cycleCourtGreasy: "Certaines assiettes ressortent grasses.",
+  free: "gratuit",
+
+  // Sous-titres des achats
+  upgradesTitle: "Améliorations",
+  perClick: (a: N, b: N) => `Par clic : ${a} → ${b} assiettes`,
+  watch: ["Affiche le jour de la semaine", "Et le coup de feu de midi : la moitié des assiettes du jour"],
+  oldMachine: (a: string, b: string) => `Vieux lave-vaisselle : ${a} → ${b} assiettes / s`,
+  bothMachines: (a: string, b: string) => `Lave-vaisselle : ${a} → ${b} assiettes / s`,
+  repairIncome: (euros: string) => `Il te rapporte ${euros} / min, même sans toi.`,
+  incomeChange: (plural: boolean, a: string, b: string) => `${plural ? "Les lave-vaisselle te rapportent" : "Il te rapporte"} : ${a} → ${b} / min`,
+  incomeCapped: "Pas plus : le restaurant ne salit pas plus d'assiettes.",
+  proNoGreasy: "Plus d'assiettes grasses : il lave bien, même en cycle court.",
+
+  // Le chef
+  chefTitle: "Le chef",
+  askedToday: "Tu as déjà proposé aujourd'hui. Le chef répondra demain.",
+  askTarget: (n: number, secs: N) => `Le chef dit oui si tu suis : moins de ${n} ${pl(n, "assiette sale", "assiettes sales")} pendant ${secs} s dans la journée`,
+  askProgress: (done: N, secs: N) => `Aujourd'hui : ${done} s sur ${secs}`,
+  askCovers: (a: N, b: N) => `Couverts par jour : ${a} → ${b}`,
+  coverPlates: (n: N) => `1 couvert = ${n} assiettes sales`,
+  openDays: (a: N, b: N) => `Jours ouverts par semaine : ${a} → ${b}`,
+
+  // La banque
+  bankTitle: "La banque",
+  livretCta: "Ouvrir un livret A",
+  livretEach: (pct: N) => `Chaque lundi : +${pct} % de ton argent`,
+  livretToday: (euros: string) => `Aujourd'hui, ce serait +${euros}`,
+
+  // Poser les gants, l'annonce
+  poseGantsCta: "Poser les gants",
+  poseGants: (rate: string, dirty: string) => `Tu arrêtes de laver. Les lave-vaisselle suivent seuls : ${rate} assiettes / s pour ${dirty} de vaisselle en moyenne.`,
+  poseGantsStudies: "Nouveau : tes études.",
+  annonceText: "Boulangerie Duval. Cherche quelqu'un pour faire notre site.",
+  annonceCta: "Répondre à l'annonce de Mme Duval",
+  annonceEffects: ["Tu quittes la plonge. Tu fais des sites, payés à la livraison."],
+
+  // Ta vie
+  colLife: "Ta vie",
+  age: (n: N) => `${n} ans`,
+  energy: (n: N, max: N) => `Énergie : ${n} / ${max}`,
+  callRinging: "Maman appelle.",
+  callAnswer: "Décrocher",
+  callTalk: (secs: N) => `${secs} s au téléphone : tout s'arrête`,
+  callEnergy: (a: N, b: N) => `Énergie : ${a} → ${b}`,
+  callLoss: (euros: string) => `Pendant ce temps, le chef lave à ta place. Tu perds environ ${euros}.`,
+  onPhone: "Tu es au téléphone avec Maman.",
+  onPhoneLeft: (secs: N) => `Encore ${secs} s`,
+  mealCta: "Se faire à manger",
+  mealEnergy: (a: N, b: N) => `Énergie : ${a} → ${b}`,
+  mealsPerDay: (n: N) => `${n} repas par jour`,
+  mealDone: "Tu as déjà mangé. Demain.",
+  studiesTitle: "Tes études",
+  studyTeaser: "Quand les machines tourneront seules, tu auras le temps d'étudier.",
+  studyCost: (energy: N) => `Coûte ${energy} énergie`,
+  studyAdvance: (unit: string, a: N, b: N, total: N) => `${unit[0].toUpperCase()}${unit.slice(1)} : ${a} → ${b} sur ${total}`,
+  studyProgress: (done: N, total: N, unit: string) => `${done} / ${total} ${unit}`,
+  studyBuy: (total: N, unit: string, energy: N, perStep: number) =>
+    `${total} ${unit}, ${energy} énergie ${perStep > 1 ? `les ${perStep} ${unit}` : `par ${unit.replace(/s$/, "")}`}`,
+  windowCta: "Regarder par la fenêtre",
+  souvenirsTitle: "Souvenirs",
+  souvenir: (day: string, text: string) => `${day} : ${text.startsWith("Tu ") ? `t${text.slice(1)}` : text}`,
+};

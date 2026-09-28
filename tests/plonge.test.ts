@@ -81,6 +81,7 @@ import {
 import { poseGants } from "../src/engine/actions";
 import { applyOffline } from "../src/engine/offline";
 import { playthrough } from "./rythme/playthrough";
+import { vueAmelioration, vueChef, vueBanque, vueEtudes, vueRepas, vueAppel, vuePoserGants, vueLaveVaisselle } from "../src/engine/plonge";
 
 function fresh(): GameState {
   return createInitialState(0);
@@ -728,6 +729,34 @@ describe("Plongeur : la table des nouveautés", () => {
     expect(buyEquipment(s, "montre")).toBe(true);
     expect(s.plonge.lastNovelty).toBe(500); // le jour s'affiche : la file attend
     expect(isRevealed(s, "jour")).toBe(true);
+  });
+});
+
+describe("Plongeur : l'écran (engine/plonge/vue.ts)", () => {
+  it("sur toute une partie, chaque achat affiché porte un sous-titre, et aucun ne dit « A → A »", () => {
+    const seen = new Set<string>();
+    playthrough(4, {
+      onStep: (s) => {
+        const buys = [
+          vueAmelioration(s)?.buy,
+          ...(vueChef(s)?.offers ?? []),
+          vueBanque(s)?.buy,
+          vueEtudes(s)?.buy,
+          ...(vueEtudes(s)?.items.map((i) => i.step) ?? []),
+          vueRepas(s),
+          vueAppel(s)?.answer,
+          vuePoserGants(s),
+          vueLaveVaisselle(s)?.cycleCourt,
+        ];
+        for (const b of buys) {
+          if (!b) continue;
+          seen.add(b.label);
+          expect(b.lines.length, b.label).toBeGreaterThan(0);
+          for (const l of b.lines) expect(l).not.toMatch(/(\d+,\d\d €) → \1/);
+        }
+      },
+    });
+    expect(seen.size).toBeGreaterThan(20); // la partie a bien tout traversé
   });
 });
 

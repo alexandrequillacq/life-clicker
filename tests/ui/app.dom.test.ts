@@ -54,6 +54,7 @@ describe("App P0 (DOM)", () => {
 
     // Le vieux lave-vaisselle réparé : l'argent qui tombe tout seul, par minute, hors clic.
     game.state.plonge.oldRate = 4;
+    game.state.plonge.boughtAt["reparer"] = game.state.plonge.day; // la réparation fait paraître le lave-vaisselle
     tick(game.state, 0.016);
     flushSync();
     expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 10,29 € / min");

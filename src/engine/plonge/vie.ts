@@ -6,6 +6,7 @@ import {
   MEALS_PER_DAY,
   WINDOW_LINES,
   WINDOW_LINES_HOME,
+  TEXTES,
 } from "../content/plonge";
 import { fmtEuros, markAction, onThePhone } from "./commun";
 import { dayIndex, dayName, arrivalsIn } from "./restaurant";
@@ -33,10 +34,10 @@ function callLoss(s: GameState): number {
   return Math.max(0, lost) * s.valuePerDish.toNumber();
 }
 export function callEffects(s: GameState): string[] {
-  const out = [`${CALL_TALK_SECS} s au téléphone : tout s'arrête`];
-  if (s.flags.energyVisible) out.push(`Énergie : ${Math.round(s.energy)} → ${ENERGY_MAX}`);
+  const out = [TEXTES.callTalk(CALL_TALK_SECS)];
+  if (s.flags.energyVisible) out.push(TEXTES.callEnergy(Math.round(s.energy), ENERGY_MAX));
   const loss = callLoss(s);
-  if (loss >= 0.01) out.push(`Pendant ce temps, le chef lave à ta place. Tu perds environ ${fmtEuros(loss)}.`);
+  if (loss >= 0.01) out.push(TEXTES.callLoss(fmtEuros(loss)));
   return out;
 }
 /** Décrocher : les mains (et les études) s'arrêtent le temps de l'appel. */
@@ -77,8 +78,11 @@ export function canEat(s: GameState): boolean {
   return mealVisible(s) && s.plonge.mealsToday < MEALS_PER_DAY && s.energy < ENERGY_MAX && !onThePhone(s);
 }
 export function mealEffects(s: GameState): string[] {
-  if (s.plonge.mealsToday >= MEALS_PER_DAY) return ["Tu as déjà mangé. Demain."];
-  return [`Énergie : ${Math.round(s.energy)} → ${Math.min(ENERGY_MAX, Math.round(s.energy + MEAL_ENERGY))}`, `${MEALS_PER_DAY} repas par jour`];
+  if (s.plonge.mealsToday >= MEALS_PER_DAY) return [TEXTES.mealDone];
+  return [
+    TEXTES.mealEnergy(Math.round(s.energy), Math.min(ENERGY_MAX, Math.round(s.energy + MEAL_ENERGY))),
+    TEXTES.mealsPerDay(MEALS_PER_DAY),
+  ];
 }
 /** Se faire à manger : une corvée de vie, qui recharge sans poser de souvenir. */
 export function eat(s: GameState): boolean {

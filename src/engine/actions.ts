@@ -17,7 +17,7 @@ import { UPGRADES_BY_ID, type UpgradeDef } from "./content/upgrades";
 import { JOBS, LEAD_HIRING_BONUS, nextPromotion, type PromotionDef } from "./content/career";
 import { MISSIONS, MISSION_PERIOD } from "./content/missions";
 import { DECISIONS } from "./content/decisions";
-import { washClick, canPoseGants, retireHands, onThePhone } from "./plonge";
+import { washClick, retireHands } from "./plonge";
 import { nextHome } from "./content/homes";
 import { currentActe, ACTE_COOLDOWN } from "./content/power";
 import { CONTROLS_BY_ID } from "./content/control";
@@ -367,9 +367,7 @@ export function buyUpgrade(state: GameState, id: string): boolean {
 
 /** Poser les gants : proposé avec le lave-vaisselle pro, stoppe tout le travail manuel. */
 export function poseGants(state: GameState): boolean {
-  if (!canPoseGants(state) || onThePhone(state)) return false;
-  retireHands(state);
-  return true;
+  return retireHands(state);
 }
 
 /** Se reposer / vivre : regagne de l'énergie, et compte comme un geste de vie réel (nourrit le Sens). */

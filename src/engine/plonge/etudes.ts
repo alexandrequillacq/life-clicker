@@ -1,5 +1,5 @@
 import type { GameState } from "../state";
-import { LIBRARY, LIBRARY_BY_ID, type StudyItemDef } from "../content/plonge";
+import { LIBRARY, LIBRARY_BY_ID, TEXTES, type StudyItemDef } from "../content/plonge";
 import { fmtRate, onThePhone } from "./commun";
 import { openDayArrivalRate } from "./restaurant";
 import { machineRate } from "./equipement";
@@ -14,17 +14,19 @@ export function canPoseGants(s: GameState): boolean {
 }
 export function poseGantsEffects(s: GameState): string[] {
   return [
-    `Tu arrêtes de laver. Les lave-vaisselle suivent seuls : ${fmtRate(machineRate(s))} assiettes / s pour ${fmtRate(openDayArrivalRate(s))} de vaisselle en moyenne.`,
-    "Nouveau : tes études.",
+    TEXTES.poseGants(fmtRate(machineRate(s)), fmtRate(openDayArrivalRate(s))),
+    TEXTES.poseGantsStudies,
   ];
 }
 /** Poser les gants : plus de travail manuel, place au temps libre (et à l'énergie qu'il demande). */
-export function retireHands(s: GameState): void {
+export function retireHands(s: GameState): boolean {
+  if (!canPoseGants(s) || onThePhone(s)) return false;
   s.manualRetired = true;
   s.flags.energyVisible = true;
   s.plonge.boughtAt["gants_poses"] = s.plonge.day;
   s.plonge.chef = "gants_poses";
   acted(s);
+  return true;
 }
 
 // --- La bibliothèque ---
@@ -79,13 +81,11 @@ export function studyStepLabel(s: GameState, def: StudyItemDef): string {
 export function studyStepEffects(s: GameState, def: StudyItemDef): string[] {
   const done = (s.plonge.library[def.id] ?? 0) * def.perStep;
   const total = def.steps * def.perStep;
-  return [`Coûte ${def.energy} énergie`, `${def.unit[0].toUpperCase()}${def.unit.slice(1)} : ${done} → ${done + def.perStep} sur ${total}`];
+  return [TEXTES.studyCost(def.energy), TEXTES.studyAdvance(def.unit, done, done + def.perStep, total)];
 }
 /** Sous-titre chiffré d'un achat d'étude : ce qu'il y a à faire, et ce que ça coûte en énergie. */
 export function studyBuyEffects(def: StudyItemDef): string[] {
-  const total = def.steps * def.perStep;
-  const per = def.perStep > 1 ? `les ${def.perStep} ${def.unit}` : `par ${def.unit.replace(/s$/, "")}`;
-  return [`${total} ${def.unit}, ${def.energy} énergie ${per}`];
+  return [TEXTES.studyBuy(def.steps * def.perStep, def.unit, def.energy, def.perStep)];
 }
 export function studyProgress(s: GameState, def: StudyItemDef): { done: number; total: number } {
   return { done: (s.plonge.library[def.id] ?? 0) * def.perStep, total: def.steps * def.perStep };
@@ -93,7 +93,6 @@ export function studyProgress(s: GameState, def: StudyItemDef): { done: number; 
 
 // --- L'annonce ---
 
-export const ANNONCE_EFFECTS = ["Tu quittes la plonge. Tu fais des sites, payés à la livraison."];
 export function examPassed(s: GameState): boolean {
   return studyDone(s, LIBRARY[LIBRARY.length - 1].id);
 }

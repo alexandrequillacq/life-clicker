@@ -1,5 +1,5 @@
 import type { GameState } from "../state";
-import { PLATES_PER_COVER, ASK_GAP_DAYS, ASK_EMPTY_SECS, LIVRET_RATE, ASKS, SUNDAY_OFFER, type AskDef } from "../content/plonge";
+import { PLATES_PER_COVER, ASK_GAP_DAYS, ASK_EMPTY_SECS, LIVRET_RATE, ASKS, SUNDAY_OFFER, DAY_NAMES, TEXTES, type AskDef } from "../content/plonge";
 import { fmtEuros, onThePhone } from "./commun";
 import { dayIndex } from "./restaurant";
 import { acted, isRevealed } from "./revelations";
@@ -35,18 +35,17 @@ export function canAskChef(s: GameState): boolean {
 }
 /** Ce que le chef attend pour dire oui, et où tu en es aujourd'hui (le bouton grisé donne la cible). */
 export function askStatus(s: GameState): string[] {
-  if (askedToday(s)) return ["Tu as déjà proposé aujourd'hui. Le chef répondra demain."];
-  const n = Math.max(1, s.dishesPerClick);
+  if (askedToday(s)) return [TEXTES.askedToday];
   return [
-    `Le chef dit oui si tu suis : moins de ${n} assiette${n > 1 ? "s" : ""} sale${n > 1 ? "s" : ""} pendant ${ASK_EMPTY_SECS} s dans la journée`,
-    `Aujourd'hui : ${Math.min(ASK_EMPTY_SECS, Math.floor(s.plonge.emptyToday))} s sur ${ASK_EMPTY_SECS}`,
+    TEXTES.askTarget(Math.max(1, s.dishesPerClick), ASK_EMPTY_SECS),
+    TEXTES.askProgress(Math.min(ASK_EMPTY_SECS, Math.floor(s.plonge.emptyToday)), ASK_EMPTY_SECS),
   ];
 }
 export function askEffects(s: GameState, def: AskDef): string[] {
   const out: string[] = [];
-  if (def.covers) out.push(`Couverts par jour : ${s.plonge.covers} → ${s.plonge.covers + def.covers}`);
-  if (def.covers && s.plonge.asksDone === 0) out.push(`1 couvert = ${PLATES_PER_COVER} assiettes sales`);
-  if (def.sunday) out.push("Jours ouverts par semaine : 6 → 7");
+  if (def.covers) out.push(TEXTES.askCovers(s.plonge.covers, s.plonge.covers + def.covers));
+  if (def.covers && s.plonge.asksDone === 0) out.push(TEXTES.coverPlates(PLATES_PER_COVER));
+  if (def.sunday) out.push(TEXTES.openDays(DAY_NAMES.length - 1, DAY_NAMES.length));
   if (def.note) out.push(def.note);
   return out;
 }
@@ -84,8 +83,8 @@ export function canOpenLivret(s: GameState): boolean {
 }
 export function livretEffects(s: GameState): string[] {
   return [
-    `Chaque lundi : +${Math.round(LIVRET_RATE * 100)} % de ton argent`,
-    `Aujourd'hui, ce serait +${fmtEuros(s.money.toNumber() * LIVRET_RATE)}`,
+    TEXTES.livretEach(Math.round(LIVRET_RATE * 100)),
+    TEXTES.livretToday(fmtEuros(s.money.toNumber() * LIVRET_RATE)),
   ];
 }
 export function openLivret(s: GameState): boolean {
@@ -97,6 +96,6 @@ export function openLivret(s: GameState): boolean {
 }
 export function livretLine(s: GameState): string {
   return s.plonge.lastInterest > 0
-    ? `Livret A : +${fmtEuros(s.plonge.lastInterest)} lundi dernier`
-    : `Livret A : ${Math.round(LIVRET_RATE * 100)} % chaque lundi`;
+    ? TEXTES.livretLast(fmtEuros(s.plonge.lastInterest))
+    : TEXTES.livretRate(Math.round(LIVRET_RATE * 100));
 }

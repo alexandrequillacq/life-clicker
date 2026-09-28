@@ -8,6 +8,7 @@ import {
   CALL_RING_SECS,
   CALL_SOUVENIR,
   CALL_MISSED,
+  PILE_WARN_SHARE,
 } from "../content/plonge";
 import { dayIndex, arrivalRate, pileCap, openToday, pay } from "./restaurant";
 import { machineRate, machineRunning } from "./equipement";
@@ -101,7 +102,7 @@ export function tickPlonge(s: GameState, t: number): void {
     }
   }
   // La réplique du débordement s'efface quand la pile redescend.
-  if (p.chef === "debordement" && p.pile < pileCap(s) * 0.7) p.chef = p.chefBefore;
+  if (p.chef === "debordement" && p.pile < pileCap(s) * PILE_WARN_SHARE) p.chef = p.chefBefore;
 
   // La file des nouveautés, puis ce qu'elle autorise à ce tick : l'appel de Maman, la fournée grasse.
   revealQueue(s, moments);

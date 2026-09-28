@@ -11,3 +11,4 @@ export * from "./chef";
 export * from "./vie";
 export * from "./etudes";
 export * from "./tick";
+export * from "./vue";

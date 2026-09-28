@@ -2,286 +2,176 @@
   // Acte I, chapitre 1 : le plongeur. Papier blanc, texte brut, boutons carrés (esprit Paperclips).
   // Deux colonnes : « Travail » (le restaurant) et « Ta vie » (l'énergie, les études, Maman, les souvenirs).
   // Chaque élément a une place fixe : ce qui apparaît s'insère, rien ne décale le bouton « Laver ».
-  // Une information à la fois : chaque ligne n'apparaît que quand le moteur la révèle.
+  // Ce composant n'invente rien : chaque bloc, ses libellés et ses sous-titres viennent de engine/plonge/vue.ts
+  // (null = bloc caché).
   import { game } from "./store.svelte";
-  import { work, poseGants } from "../engine/actions";
   import {
-    EQUIPMENT,
-    LIBRARY,
-    CHEF_LINES,
-    STUDY_TEASER,
-    SUNDAY_OFFER,
-    LIVRET_CTA,
-    MEAL_CTA,
-    ANNONCE_TEXT,
-    ANNONCE_CTA,
-    AGE_PLONGEUR,
-  } from "../engine/content/plonge";
-  import {
-    dayName,
-    isPeak,
-    openToday,
-    pileCap,
-    noDirtyPlates,
-    machineRate,
-    fmtEuros,
-    autoIncomeLine,
-    dayVisible,
-    isRevealed,
-    coversVisible,
-    lifeVisible,
-    canOpenLivret,
-    openLivret,
-    livretEffects,
-    livretLine,
-    equipmentVisible,
-    canBuyEquipment,
-    buyEquipment,
-    equipmentEffects,
-    cycleCourtAvailable,
-    cycleCourtEffects,
-    setCycleCourt,
-    relaunchCycle,
-    shelveGreasy,
-    currentAsk,
-    canAskChef,
-    askChef,
-    askEffects,
-    askStatus,
-    chefVisible,
-    mealVisible,
-    canEat,
-    eat,
-    mealEffects,
-    canOfferSunday,
-    offerSunday,
-    canAnswerCall,
-    answerCall,
-    callEffects,
-    onThePhone,
-    canLookOutWindow,
-    lookOutWindow,
-    canPoseGants,
-    poseGantsEffects,
-    libraryVisible,
-    studyBuyVisible,
-    canBuyStudy,
-    buyStudy,
-    studyBuyEffects,
-    canStudyStep,
-    studyStep,
-    studyStepLabel,
-    studyStepEffects,
-    studyProgress,
-    studyDone,
-    canAnswerAnnonce,
-    answerAnnonce,
-    ANNONCE_EFFECTS,
+    vueEntete,
+    vueTelephone,
+    vueTitreTravail,
+    vueJour,
+    vuePile,
+    vueCouverts,
+    vueLaver,
+    vueLaveVaisselle,
+    vueAmelioration,
+    vueChef,
+    vueBanque,
+    vuePoserGants,
+    vueAnnonce,
+    vueVie,
+    vueAppel,
+    vueRepas,
+    vueEtudes,
+    vueTeaserEtudes,
+    vueFenetre,
+    vueSouvenirs,
   } from "../engine/plonge";
 
   const s = $derived(game.state);
-  const p = $derived(s.plonge);
-
-  const euros = fmtEuros;
-  const rate = (n: number): string => (Math.round(n * 10) / 10).toString().replace(".", ",");
-
-  // Libellé stable : il suit l'équipement, pas la pile (sinon il clignote quand on clique vite).
-  const empty = $derived(noDirtyPlates(s));
-  const washLabel = $derived(
-    onThePhone(s)
-      ? "Tu es au téléphone"
-      : empty
-        ? "Aucune assiette sale"
-        : `Laver ${s.dishesPerClick === 1 ? "une assiette" : `${s.dishesPerClick} assiettes`}`,
-  );
-  const dayLine = $derived(
-    !openToday(s) ? `${dayName(s)}, restaurant fermé` : isPeak(s) ? `${dayName(s)}, coup de feu de midi` : dayName(s),
-  );
-  const nextEquipment = $derived(EQUIPMENT.find((e) => equipmentVisible(s, e)) ?? null);
-  const ask = $derived(chefVisible(s) ? currentAsk(s) : null);
-  const phone = $derived(onThePhone(s));
-  const vie = $derived(lifeVisible(s));
-  const studiesOwned = $derived(LIBRARY.filter((l) => l.id in p.library));
-  const nextStudy = $derived(LIBRARY.find((l) => studyBuyVisible(s, l.id)) ?? null);
-  const souvenirLine = (text: string): string => (text.startsWith("Tu ") ? `t${text.slice(1)}` : text);
+  const entete = $derived(vueEntete(s));
+  const phone = $derived(vueTelephone(s));
+  const titreTravail = $derived(vueTitreTravail(s));
+  const jour = $derived(vueJour(s));
+  const pile = $derived(vuePile(s));
+  const couverts = $derived(vueCouverts(s));
+  const laver = $derived(vueLaver(s));
+  const machine = $derived(vueLaveVaisselle(s));
+  const amelioration = $derived(vueAmelioration(s));
+  const chef = $derived(vueChef(s));
+  const banque = $derived(vueBanque(s));
+  const poserGants = $derived(vuePoserGants(s));
+  const annonce = $derived(vueAnnonce(s));
+  const vie = $derived(vueVie(s));
+  const appel = $derived(vueAppel(s));
+  const repas = $derived(vueRepas(s));
+  const etudes = $derived(vueEtudes(s));
+  const teaser = $derived(vueTeaserEtudes(s));
+  const fenetre = $derived(vueFenetre(s));
+  const souvenirs = $derived(vueSouvenirs(s));
 </script>
+
+{#snippet achat(b: { label: string; price?: string; lines: string[]; disabled: boolean; act: () => void })}
+  <button class="bt" disabled={b.disabled} onclick={b.act}>{b.label}</button>
+  {#if b.price}<span class="price">{b.price}</span>{/if}
+  {#each b.lines as l}<p class="sub">{l}</p>{/each}
+{/snippet}
 
 <main class="plonge">
   <header class="top">
-    <p class="chef">{CHEF_LINES[p.chef]}</p>
-    {#if s.flags.moneyVisible}
-      <p class="money">Argent : {euros(s.money.toNumber())}</p>
-    {/if}
-    {#if p.oldRate > 0}
-      <p class="sub auto">{autoIncomeLine(s)}</p>
-    {/if}
-    {#if p.livret}
-      <p class="sub">{livretLine(s)}</p>
-    {/if}
+    <p class="chef">{entete.chef}</p>
+    {#if entete.money}<p class="money">{entete.money}</p>{/if}
+    {#if entete.auto}<p class="sub auto">{entete.auto}</p>{/if}
+    {#if entete.livret}<p class="sub">{entete.livret}</p>{/if}
   </header>
 
   <!-- Au téléphone avec Maman, tout s'arrête : chaque bouton est grisé le temps de l'appel. -->
   <fieldset class="cols" class:solo={!vie} disabled={phone}>
     <section class="col travail" aria-label="Travail">
-      {#if vie}<h2>Travail</h2>{/if}
-      {#if dayVisible(s)}<p>{dayLine}</p>{/if}
-      {#if isRevealed(s, "pile")}
-        <p>Assiettes sales : {Math.floor(p.pile)}</p>
-        {#if p.pile > pileCap(s) * 0.7}
-          <p class="sub">Au-delà de {pileCap(s)}, le chef les lave lui-même.</p>
-        {/if}
-        {#if p.overflowToday >= 1}
-          <p class="sub">Aujourd'hui, il en a lavé {Math.floor(p.overflowToday)}.</p>
-        {/if}
+      {#if titreTravail}<h2>{titreTravail}</h2>{/if}
+      {#if jour}<p>{jour}</p>{/if}
+      {#if pile}
+        <p>{pile[0]}</p>
+        {#each pile.slice(1) as l}<p class="sub">{l}</p>{/each}
       {/if}
-      {#if coversVisible(s)}<p class="sub">{p.covers} couverts par jour</p>{/if}
+      {#if couverts}<p class="sub">{couverts}</p>{/if}
 
-      {#if !s.manualRetired}
-        <button class="bt wash" disabled={empty || onThePhone(s)} onclick={() => work(s)}>{washLabel}</button>
+      {#if laver}
+        <button class="bt wash" disabled={laver.disabled} onclick={laver.act}>{laver.label}</button>
       {/if}
 
-      {#if p.oldRate > 0}
-        <h3>Lave-vaisselle</h3>
-        {#if p.greasy}
-          <p>Assiettes grasses. Le lave-vaisselle est à l'arrêt.</p>
+      {#if machine}
+        <h3>{machine.title}</h3>
+        <p>{machine.status}</p>
+        {#if machine.greasy}
           <div class="row">
-            <button class="bt" onclick={() => relaunchCycle(s)}>Relancer un cycle</button>
-            <button class="bt" onclick={() => shelveGreasy(s)}>Les ranger quand même</button>
+            <button class="bt" onclick={machine.greasy.relaunch.act}>{machine.greasy.relaunch.label}</button>
+            <button class="bt" onclick={machine.greasy.shelve.act}>{machine.greasy.shelve.label}</button>
           </div>
-          <p class="sub">Relancer : 8 s sans assiette propre. Les ranger : aucun arrêt.</p>
-        {:else if p.relaunchLeft > 0}
-          <p>Le lave-vaisselle relave la fournée ({Math.ceil(p.relaunchLeft)} s).</p>
-        {:else}
-          <p>{rate(machineRate(s))} assiettes / s</p>
+          <p class="sub">{machine.greasy.note}</p>
         {/if}
-        {#if cycleCourtAvailable(s)}
-          <div class="buy">
-            <button class="bt" onclick={() => setCycleCourt(s)}>Programmer le lave-vaisselle en cycle court</button>
-            <span class="price">gratuit</span>
-            {#each cycleCourtEffects(s) as l}<p class="sub">{l}</p>{/each}
-          </div>
+        {#if machine.cycleCourt}
+          <div class="buy">{@render achat(machine.cycleCourt)}</div>
         {/if}
       {/if}
 
-      {#if nextEquipment}
-        <h3>Améliorations</h3>
-        <div class="buy">
-          <button class="bt" disabled={!canBuyEquipment(s, nextEquipment.id)} onclick={() => buyEquipment(s, nextEquipment.id)}>{nextEquipment.cta}</button>
-          <span class="price">{euros(nextEquipment.cost)}</span>
-          {#each equipmentEffects(s, nextEquipment) as l}<p class="sub">{l}</p>{/each}
-        </div>
+      {#if amelioration}
+        <h3>{amelioration.title}</h3>
+        <div class="buy">{@render achat(amelioration.buy)}</div>
       {/if}
 
-      {#if ask || canOfferSunday(s)}
-        <h3>Le chef</h3>
-        {#if canOfferSunday(s)}
-          <div class="buy">
-            <button class="bt" onclick={() => offerSunday(s)}>{SUNDAY_OFFER.cta}</button>
-            {#each askEffects(s, SUNDAY_OFFER) as l}<p class="sub">{l}</p>{/each}
-          </div>
-        {/if}
-        {#if ask}
-          <div class="buy">
-            <button class="bt" disabled={!canAskChef(s)} onclick={() => askChef(s)}>{ask.cta}</button>
-            {#each askEffects(s, ask) as l}<p class="sub">{l}</p>{/each}
-            {#if !canAskChef(s)}
-              {#each askStatus(s) as l}<p class="sub">{l}</p>{/each}
-            {/if}
-          </div>
-        {/if}
+      {#if chef}
+        <h3>{chef.title}</h3>
+        {#each chef.offers as o (o.label)}
+          <div class="buy">{@render achat(o)}</div>
+        {/each}
       {/if}
 
-      {#if canOpenLivret(s)}
-        <h3>La banque</h3>
-        <div class="buy">
-          <button class="bt" onclick={() => openLivret(s)}>{LIVRET_CTA}</button>
-          <span class="price">gratuit</span>
-          {#each livretEffects(s) as l}<p class="sub">{l}</p>{/each}
-        </div>
+      {#if banque}
+        <h3>{banque.title}</h3>
+        <div class="buy">{@render achat(banque.buy)}</div>
       {/if}
 
-      {#if canPoseGants(s)}
-        <div class="buy pivot">
-          <button class="bt" onclick={() => poseGants(s)}>Poser les gants</button>
-          {#each poseGantsEffects(s) as l}<p class="sub">{l}</p>{/each}
-        </div>
+      {#if poserGants}
+        <div class="buy pivot">{@render achat(poserGants)}</div>
       {/if}
 
-      {#if canAnswerAnnonce(s)}
+      {#if annonce}
         <div class="annonce">
-          <p>{ANNONCE_TEXT}</p>
-          <button class="bt" onclick={() => answerAnnonce(s)}>{ANNONCE_CTA}</button>
-          {#each ANNONCE_EFFECTS as l}<p class="sub">{l}</p>{/each}
+          <p>{annonce.text}</p>
+          {@render achat(annonce.buy)}
         </div>
       {/if}
     </section>
 
     {#if vie}
       <section class="col vie" aria-label="Ta vie">
-        <h2>Ta vie</h2>
-        <p class="sub">{AGE_PLONGEUR} ans</p>
-        {#if s.flags.energyVisible}
-          <p>Énergie : {Math.round(s.energy)} / 100</p>
-        {/if}
+        <h2>{vie.title}</h2>
+        <p class="sub">{vie.age}</p>
+        {#if vie.energy}<p>{vie.energy}</p>{/if}
 
-        {#if canAnswerCall(s)}
+        {#if appel}
           <div class="call">
-            <p>Maman appelle.</p>
-            <button class="bt" onclick={() => answerCall(s)}>Décrocher</button>
-            {#each callEffects(s) as l}<p class="sub">{l}</p>{/each}
-          </div>
-        {:else if phone}
-          <div class="call">
-            <p>Tu es au téléphone avec Maman.</p>
-            <p class="sub">Encore {Math.ceil(p.callTalk)} s</p>
+            <p>{appel.text}</p>
+            {#if appel.answer}{@render achat(appel.answer)}{/if}
+            {#each appel.lines as l}<p class="sub">{l}</p>{/each}
           </div>
         {/if}
 
-        {#if mealVisible(s)}
-          <div class="buy">
-            <button class="bt" disabled={!canEat(s)} onclick={() => eat(s)}>{MEAL_CTA}</button>
-            {#each mealEffects(s) as l}<p class="sub">{l}</p>{/each}
-          </div>
+        {#if repas}
+          <div class="buy">{@render achat(repas)}</div>
         {/if}
 
-        {#if libraryVisible(s)}
-          <h3>Tes études</h3>
-          {#each studiesOwned as item (item.id)}
-            {@const prog = studyProgress(s, item)}
+        {#if etudes}
+          <h3>{etudes.title}</h3>
+          {#each etudes.items as item (item.id)}
             <div class="study">
               <p>{item.name}</p>
-              {#if studyDone(s, item.id)}
-                <p class="sub">{item.done}</p>
-              {:else}
+              {#if item.done}<p class="sub">{item.done}</p>{/if}
+              {#if item.progress}
                 <p class="progress">
-                  <span class="bar"><i style="width: {(prog.done / prog.total) * 100}%"></i></span>
-                  <span class="sub">{prog.done} / {prog.total} {item.unit}</span>
+                  <span class="bar"><i style="width: {item.progress.share * 100}%"></i></span>
+                  <span class="sub">{item.progress.text}</span>
                 </p>
-                <button class="bt" disabled={!canStudyStep(s, item.id)} onclick={() => studyStep(s, item.id)}>{studyStepLabel(s, item)}</button>
-                {#each studyStepEffects(s, item) as l}<p class="sub">{l}</p>{/each}
               {/if}
+              {#if item.step}{@render achat(item.step)}{/if}
             </div>
           {/each}
-          {#if nextStudy}
-            <div class="buy">
-              <button class="bt" disabled={!canBuyStudy(s, nextStudy.id)} onclick={() => buyStudy(s, nextStudy.id)}>{nextStudy.cta}</button>
-              <span class="price">{euros(nextStudy.cost)}</span>
-              {#each studyBuyEffects(nextStudy) as l}<p class="sub">{l}</p>{/each}
-            </div>
+          {#if etudes.buy}
+            <div class="buy">{@render achat(etudes.buy)}</div>
           {/if}
-        {:else if isRevealed(s, "teaser")}
-          <p class="sub">{STUDY_TEASER}</p>
+        {/if}
+        {#if teaser}<p class="sub">{teaser}</p>{/if}
+
+        {#if fenetre}
+          <button class="bt window" onclick={fenetre.act}>{fenetre.label}</button>
         {/if}
 
-        {#if canLookOutWindow(s)}
-          <button class="bt window" onclick={() => lookOutWindow(s)}>Regarder par la fenêtre</button>
-        {/if}
-
-        {#if s.souvenirs.length > 0}
-          <h3>Souvenirs</h3>
+        {#if souvenirs}
+          <h3>{souvenirs.title}</h3>
           <ul class="souvenirs">
-            {#each s.souvenirs.slice(0, 5) as m, i (i)}
-              <li class:missed={m.missed}>{m.day} : {souvenirLine(m.text)}</li>
+            {#each souvenirs.items as m, i (i)}
+              <li class:missed={m.missed}>{m.text}</li>
             {/each}
           </ul>
         {/if}

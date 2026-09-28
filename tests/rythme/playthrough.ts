@@ -35,6 +35,7 @@ import type { GameState } from "../../src/engine/state";
 export interface PlaythroughOptions {
   afk?: boolean; // ne clique plus une fois le vieux lave-vaisselle réparé
   refuse?: boolean; // refuse le cycle court
+  onStep?: (s: GameState, t: number) => void; // appelé à chaque pas, avant les actions du joueur
 }
 
 export interface Playthrough {
@@ -70,6 +71,7 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
   let winActs = 0;
   while (t < 3600 && s.job === "plongeur") {
     for (const [k, f] of Object.entries(seen)) if (!reveals.some((r) => r[0] === k) && f()) reveals.push([k, t]);
+    opts.onStep?.(s, t);
     const acts0 = Object.keys(s.plonge.equipment).length + s.plonge.asksDone;
     const w0 = s.plonge.washed;
     const clicking = !(opts.afk && s.plonge.oldRate > 0);

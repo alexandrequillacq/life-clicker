@@ -1,6 +1,6 @@
 import { D, type Decimal } from "../numbers";
 import type { GameState } from "../state";
-import { CYCLE_COURT_MULT, RELAUNCH_SECS, EQUIPMENT_BY_ID, type EquipmentDef } from "../content/plonge";
+import { CYCLE_COURT_MULT, RELAUNCH_SECS, EQUIPMENT_BY_ID, TEXTES, type EquipmentDef } from "../content/plonge";
 import { fmtEuros, fmtRate, markAction, onThePhone } from "./commun";
 import { openDayArrivalRate, openDaysShare } from "./restaurant";
 import { acted, isRevealed } from "./revelations";
@@ -33,15 +33,13 @@ export function autoIncomePerMin(s: GameState): number {
 }
 /** Libellé du revenu automatique (au pluriel une fois le lave-vaisselle pro installé). */
 export function autoIncomeLine(s: GameState): string {
-  const who = s.plonge.proRate > 0 ? "Les lave-vaisselle te rapportent" : "Le lave-vaisselle te rapporte";
-  return `${who} ${fmtEuros(autoIncomePerMin(s))} / min`;
+  return TEXTES.autoIncome(s.plonge.proRate > 0, fmtEuros(autoIncomePerMin(s)));
 }
 function incomeEffects(s: GameState, now: number, after: number, plural = s.plonge.proRate > 0): string[] {
-  const who = plural ? "Les lave-vaisselle te rapportent" : "Il te rapporte";
   const a = autoIncomeFor(s, now);
   const b = autoIncomeFor(s, after);
-  const out = b - a >= 0.005 ? [`${who} : ${fmtEuros(a)} → ${fmtEuros(b)} / min`] : [];
-  if (after >= openDayArrivalRate(s)) out.push("Pas plus : le restaurant ne salit pas plus d'assiettes.");
+  const out = b - a >= 0.005 ? [TEXTES.incomeChange(plural, fmtEuros(a), fmtEuros(b))] : []; // jamais « A → A »
+  if (after >= openDayArrivalRate(s)) out.push(TEXTES.incomeCapped);
   return out;
 }
 /** Revenu hors-ligne au plongeur : les machines seules, limitées par ce que le restaurant salit. */
@@ -78,26 +76,26 @@ export function buyEquipment(s: GameState, id: string): boolean {
 /** Sous-titres chiffrés : la statistique qui change avec cet achat (règle dure : toujours affichée). */
 export function equipmentEffects(s: GameState, def: EquipmentDef): string[] {
   const out: string[] = [];
-  if (def.dishesPerClick !== undefined) out.push(`Par clic : ${s.dishesPerClick} → ${def.dishesPerClick} assiettes`);
-  if (def.watch) out.push("Affiche le jour de la semaine", "Et le coup de feu de midi : la moitié des assiettes du jour");
+  if (def.dishesPerClick !== undefined) out.push(TEXTES.perClick(s.dishesPerClick, def.dishesPerClick));
+  if (def.watch) out.push(...TEXTES.watch);
   const cc = s.plonge.cycleCourt ? CYCLE_COURT_MULT : 1;
   if (def.oldRate !== undefined) {
     const after = def.oldRate * cc;
-    out.push(`Vieux lave-vaisselle : 0 → ${fmtRate(after)} assiettes / s`);
-    out.push(`Il te rapporte ${fmtEuros(autoIncomeFor(s, after))} / min, même sans toi.`);
+    out.push(TEXTES.oldMachine(fmtRate(0), fmtRate(after)));
+    out.push(TEXTES.repairIncome(fmtEuros(autoIncomeFor(s, after))));
   }
   if (def.oldMult !== undefined) {
     const now = oldMachineRate(s) * cc;
     const after = now * def.oldMult;
-    out.push(`Vieux lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`);
+    out.push(TEXTES.oldMachine(fmtRate(now), fmtRate(after)));
     out.push(...incomeEffects(s, machineRate(s), machineRate(s) - now + after));
   }
   if (def.proRate !== undefined) {
     const now = machineRate(s);
     const after = now + def.proRate * cc;
-    out.push(`Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`);
+    out.push(TEXTES.bothMachines(fmtRate(now), fmtRate(after)));
     out.push(...incomeEffects(s, now, after, true));
-    if (s.plonge.cycleCourt) out.push("Plus d'assiettes grasses : il lave bien, même en cycle court.");
+    if (s.plonge.cycleCourt) out.push(TEXTES.proNoGreasy);
   }
   if (def.note) out.push(def.note);
   return out;
@@ -112,9 +110,9 @@ export function cycleCourtEffects(s: GameState): string[] {
   const now = machineRate(s);
   const after = now * CYCLE_COURT_MULT;
   return [
-    `Lave-vaisselle : ${fmtRate(now)} → ${fmtRate(after)} assiettes / s`,
+    TEXTES.bothMachines(fmtRate(now), fmtRate(after)),
     ...incomeEffects(s, now, after),
-    "Certaines assiettes ressortent grasses.",
+    TEXTES.cycleCourtGreasy,
   ];
 }
 export function setCycleCourt(s: GameState): boolean {
