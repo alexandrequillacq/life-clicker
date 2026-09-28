@@ -82,7 +82,7 @@ describe("App P0 (DOM)", () => {
     game.state.plonge.boughtAt["reparer"] = game.state.plonge.day; // la réparation fait paraître le lave-vaisselle
     tick(game.state, 0.016);
     flushSync();
-    expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 8,57 € / min");
+    expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 8,57 € / minute");
     expect(target.textContent).not.toContain("Tes mains");
 
     unmount(component);

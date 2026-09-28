@@ -1,17 +1,23 @@
 import type { GameState } from "../state";
-import { PLATES_PER_COVER, KEEP_UP_SECS, ASK_MIN_GAP, ASK_LATE, LIVRET_RATE, ASKS, SUNDAY_OFFER, DAY_NAMES, TEXTES, type AskDef } from "../content/plonge";
+import { PLATES_PER_COVER, DAY_SECS, BEHIND_LOADS, KEEP_UP_SECS, ASK_MIN_GAP, ASK_LATE, LIVRET_RATE, ASKS, SUNDAY_OFFER, DAY_NAMES, TEXTES, type AskDef } from "../content/plonge";
 import { fmtEuros, onThePhone } from "./commun";
 import { acted, isRevealed, eventAt } from "./revelations";
+import { machineRate, loadUnit } from "./equipement";
 
 // Le chef : les demandes (le joueur réclame lui-même plus de travail, au même tarif), le dimanche,
 // et la banque (le livret A, l'argent qui travaille pour toi).
 
 // --- Les demandes au chef ---
 
-/** La demande suivante, si elle peut déjà se proposer (le deuxième restaurant attend les gants posés). */
+/**
+ * La demande suivante, si elle peut déjà se proposer (les dernières attendent les gants posés). Une fois les gants
+ * posés, jamais plus d'assiettes que les lave-vaisselle ne peuvent en laver : elle attend la machine qu'il faut.
+ */
 export function currentAsk(s: GameState): AskDef | null {
   const ask = ASKS[s.plonge.asksDone];
-  return ask && (!ask.needs || eventAt(s, ask.needs) !== undefined) ? ask : null;
+  if (!ask || (ask.needs && eventAt(s, ask.needs) === undefined)) return null;
+  if (s.manualRetired && (coversAfter(s, ask) * PLATES_PER_COVER) / DAY_SECS > machineRate(s) + 1e-9) return null;
+  return ask;
 }
 /** « Le chef » paraît un moment après les gants. */
 export function chefVisible(s: GameState): boolean {
@@ -27,7 +33,8 @@ export function askReady(s: GameState): boolean {
   if (!chefVisible(s) || currentAsk(s) === null) return false;
   if (p.asksDone === 0) return true;
   const since = p.day - p.lastAskAt;
-  return since >= ASK_MIN_GAP && (p.keptUp >= KEEP_UP_SECS || since >= ASK_LATE);
+  // Au plus tard ASK_LATE s après, pourvu que la pile tienne en deux brassées (sinon, c'est une amélioration qui se propose).
+  return since >= ASK_MIN_GAP && (p.keptUp >= KEEP_UP_SECS || (since >= ASK_LATE && p.pile < BEHIND_LOADS * loadUnit(s)));
 }
 /** La demande est à l'écran (une fois proposée, elle reste) : un clic, et le chef dit oui. */
 export function askVisible(s: GameState): boolean {
@@ -37,11 +44,11 @@ export function canAskChef(s: GameState): boolean {
   return askVisible(s) && !onThePhone(s);
 }
 function coversAfter(s: GameState, def: AskDef): number {
-  return def.doubleCovers ? s.plonge.covers * 2 : s.plonge.covers + (def.covers ?? 0);
+  return s.plonge.covers + (def.covers ?? 0);
 }
 export function askEffects(s: GameState, def: AskDef): string[] {
   const out: string[] = [];
-  if (def.covers || def.doubleCovers) out.push(TEXTES.askCovers(s.plonge.covers, coversAfter(s, def)));
+  if (def.covers) out.push(TEXTES.askCovers(s.plonge.covers, coversAfter(s, def)));
   if (def.covers && s.plonge.asksDone === 0) out.push(TEXTES.coverPlates(PLATES_PER_COVER));
   if (def.sunday) out.push(TEXTES.openDays(DAY_NAMES.length - 1, DAY_NAMES.length));
   if (def.note) out.push(def.note);
@@ -121,7 +128,8 @@ export function payInterest(s: GameState): void {
 export function livretPct(): number {
   return Math.round(LIVRET_RATE * 100);
 }
-export function depositEffects(s: GameState): string[] {
-  const m = s.money.toNumber();
-  return TEXTES.depositEffects(fmtEuros(m), fmtEuros((s.plonge.livretBalance + m) * LIVRET_RATE));
+/** La ligne du livret : le solde, et ce que rapportera un lundi si rien ne bouge d'ici là (la règle tant qu'il est vide). */
+export function livretLine(s: GameState): string {
+  const b = s.plonge.livretBalance;
+  return TEXTES.livret(fmtEuros(b), b > 0 ? TEXTES.livretGain(fmtEuros(b * LIVRET_RATE)) : TEXTES.livretRule(livretPct()));
 }

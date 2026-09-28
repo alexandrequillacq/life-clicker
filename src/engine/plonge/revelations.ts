@@ -1,7 +1,8 @@
 import type { GameState } from "../state";
-import { NOVELTY_GAP, BEHIND_SECS, REVEALS, REVEAL_BY_ID, type RevealDef } from "../content/plonge";
+import { NOVELTY_GAP, BEHIND_SECS, KEEP_UP_SECS, REVEALS, REVEAL_BY_ID, type RevealDef } from "../content/plonge";
 import { callOngoing, markAction } from "./commun";
 import { dayIndex } from "./restaurant";
+import { currentAsk } from "./chef";
 
 // Ce qui est révélé : une information à la fois. Tout est décrit par la table REVEALS du contenu ;
 // ce module ne fait que la lire. Une nouveauté du jeu ou une offre, une fois parue, est notée (avec son heure)
@@ -31,7 +32,8 @@ const CONDITIONS: Record<string, (s: GameState, m: TickMoments) => boolean> = {
   pas_d_appel: (s, m) => !callOngoing(s) && !callStartsNow(s, m),
   demande_acceptee: (s) => s.plonge.asksDone > 0,
   dimanche_ouvert: (s) => s.plonge.sundayOpen,
-  a_la_traine: (s) => s.plonge.behindToday >= BEHIND_SECS, // tu ne suis plus le restaurant aujourd'hui
+  // Tu ne suis plus le restaurant aujourd'hui, ou tu suis mais le chef n'a plus rien à proposer : place à une amélioration.
+  a_la_traine: (s) => s.plonge.behindToday >= BEHIND_SECS || (currentAsk(s) === null && s.plonge.keptUp >= KEEP_UP_SECS),
 };
 export const CONDITION_NAMES = Object.keys(CONDITIONS);
 

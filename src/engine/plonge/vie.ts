@@ -1,5 +1,5 @@
 import { ENERGY_MAX, type GameState } from "../state";
-import { WINDOW_IDLE_SECS, MEAL_ENERGY, MEALS_PER_DAY, WINDOW_LINES, WINDOW_LINES_HOME, TEXTES } from "../content/plonge";
+import { WINDOW_EVERY_DAYS, WINDOW_ENERGY, MEAL_ENERGY, MEALS_PER_DAY, WINDOW_LINES, WINDOW_LINES_HOME, TEXTES } from "../content/plonge";
 import { fmtEuros, markAction, onThePhone } from "./commun";
 import { dayIndex, dayName, arrivalsIn, secsLeftToday } from "./restaurant";
 import { machineOutput } from "./equipement";
@@ -48,20 +48,22 @@ export function answerCall(s: GameState): boolean {
 
 // --- La fenêtre ---
 
+/** La fenêtre revient tous les WINDOW_EVERY_DAYS jours et reste jusqu'au clic (pas pendant un appel de Maman). */
 export function canLookOutWindow(s: GameState): boolean {
-  return (
-    s.job === "plongeur" &&
-    lifeVisible(s) &&
-    !onThePhone(s) &&
-    s.plonge.idle >= WINDOW_IDLE_SECS &&
-    s.plonge.windowDay !== dayIndex(s)
-  );
+  const p = s.plonge;
+  return s.job === "plongeur" && lifeVisible(s) && p.callRing <= 0 && !onThePhone(s) && dayIndex(s) - p.windowDay >= WINDOW_EVERY_DAYS;
+}
+/** Regarder dehors redonne de l'énergie, une fois qu'elle compte (gants posés). */
+export function windowEffects(s: GameState): string[] {
+  if (!s.flags.energyVisible) return [];
+  return [TEXTES.mealEnergy(Math.round(s.energy), Math.min(ENERGY_MAX, Math.round(s.energy + WINDOW_ENERGY)))];
 }
 export function lookOutWindow(s: GameState): boolean {
   if (!canLookOutWindow(s)) return false;
   s.plonge.windowDay = dayIndex(s);
   const lines = s.manualRetired ? WINDOW_LINES_HOME : WINDOW_LINES;
   remember(s, "contemplation", lines[s.plonge.windowCount % lines.length], false);
+  if (s.flags.energyVisible) s.energy = Math.min(ENERGY_MAX, s.energy + WINDOW_ENERGY);
   s.plonge.windowCount += 1;
   markAction(s);
   return true;

@@ -73,8 +73,10 @@
       {#if jour}<p>{jour}</p>{/if}
       {#if pile}
         <p class="pile">{pile[0]}</p>
-        <!-- Place réservée (deux lignes, affichées ou non) : ce qui s'y écrit ne décale jamais le bouton « Laver ». -->
-        <div class="pile-notes">{#each pile.slice(1, 3) as l}<p class="sub">{l}</p>{/each}</div>
+        {#if laver}
+          <!-- Place réservée (deux lignes, affichées ou non) : ce qui s'y écrit ne décale jamais le bouton « Laver ». -->
+          <div class="pile-notes">{#each pile.slice(1, 3) as l}<p class="sub">{l}</p>{/each}</div>
+        {/if}
       {/if}
       {#if couverts}<p class="sub">{couverts}</p>{/if}
 
@@ -109,9 +111,9 @@
       {#if banque}
         <h3>{banque.title}</h3>
         {#each banque.lines as l}<p class="sub">{l}</p>{/each}
-        {#each banque.buttons as b (b.label)}
-          <div class="buy">{@render achat(b)}</div>
-        {/each}
+        <div class="row">
+          {#each banque.buttons as b (b.label)}{@render achat(b)}{/each}
+        </div>
       {/if}
 
       {#if poserGants}

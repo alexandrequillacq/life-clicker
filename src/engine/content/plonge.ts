@@ -27,8 +27,8 @@ export const VALUE_PER_DISH = 0.05; // 5 centimes l'assiette
 export const KEEP_UP_SECS = 6; // moins d'une brassée d'assiettes sales pendant 6 s dans la journée : tu suis, le chef accepte une demande
 export const BEHIND_SECS = 6; // plus de BEHIND_LOADS brassées pendant 6 s dans la journée : tu ne suis plus, une amélioration se propose
 export const BEHIND_LOADS = 2;
-export const ASK_MIN_GAP = 35; // au moins 35 s entre deux demandes au chef (pas de rafale quand les machines devancent le restaurant)
-export const ASK_LATE = 120; // la demande suivante se propose au plus tard 120 s après la précédente, même si tu ne suis pas
+export const ASK_MIN_GAP = 20; // au moins 20 s entre deux demandes au chef (pas de rafale quand les machines devancent le restaurant)
+export const ASK_LATE = 120; // la demande suivante se propose au plus tard 120 s après la précédente, si la pile tient en deux brassées
 
 // --- Les nouveautés : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
 export const NOVELTY_GAP = 35; // au moins 35 s entre une nouveauté et la suivante que le jeu révèle de lui-même
@@ -87,7 +87,7 @@ export const REVEALS: RevealDef[] = [
   { id: "detartrer", kind: "offre", needs: ["panier"], when: ["a_la_traine"], fallback: { panier: LATE } },
   { id: "pro", kind: "offre", needs: ["detartrer"], when: ["a_la_traine"], fallback: { detartrer: LATE } },
   { id: "detartrer_pro", kind: "offre", needs: ["gants_poses"], when: ["a_la_traine"], fallback: { gants_poses: LATE } },
-  { id: "pro2", kind: "offre", needs: ["detartrer_pro", "deuxieme_restaurant"], when: ["a_la_traine"], fallback: { detartrer_pro: LATE } },
+  { id: "pro2", kind: "offre", needs: ["detartrer_pro", "cars"], when: ["a_la_traine"], fallback: { detartrer_pro: LATE } },
   { id: "adoucisseur", kind: "offre", needs: ["pro2"], when: ["a_la_traine"], fallback: { pro2: LATE } },
 
   // Les concessions : gratuites, refusables, de plus en plus grosses (tes mains, puis la machine, puis le client).
@@ -121,7 +121,8 @@ export const ENERGY_REGEN = 0.3; // énergie/s récupérée en continu (le repos
 export const MEAL_ENERGY = 10; // « Se faire à manger »
 export const MEALS_PER_DAY = 2; // deux repas par jour
 // Maman sonne tout le dimanche ; décrocher occupe la journée jusqu'à lundi (tout s'arrête sauf les machines), puis l'énergie est pleine.
-export const WINDOW_IDLE_SECS = 20; // « Regarder par la fenêtre » : après 20 s sans rien faire
+export const WINDOW_EVERY_DAYS = 2; // « Regarder par la fenêtre » revient tous les 2 jours (et reste jusqu'au clic)
+export const WINDOW_ENERGY = 20; // une fois l'énergie visible (gants posés), regarder dehors en redonne
 export const EMPTY_LABEL_SECS = 1.5; // pile vide depuis ce temps : le bouton l'annonce (évite qu'il clignote en cliquant vite)
 export const PLONGE_OFFLINE_CAP = 600; // hors-ligne plafonné à 10 min au plongeur
 
@@ -153,9 +154,9 @@ export const EQUIPMENT: EquipmentDef[] = [
   { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 120, oldMult: 1.5 },
   { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 200, oldMult: 1.5 },
   { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 300, oldMult: 1.5 },
-  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 550, proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
+  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 550, proRate: 60, note: "Le chef paie l'autre moitié.", chef: "investissement" },
   { id: "detartrer_pro", cta: "Détartrer le lave-vaisselle pro", cost: 250, proMult: 1.25 },
-  { id: "pro2", cta: "Payer la moitié d'un deuxième lave-vaisselle pro", cost: 600, proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
+  { id: "pro2", cta: "Payer la moitié d'un deuxième lave-vaisselle pro", cost: 600, proRate: 60, note: "Le chef paie l'autre moitié.", chef: "investissement" },
   { id: "adoucisseur", cta: "Installer un adoucisseur d'eau", cost: 300, machineMult: 1.2 },
 ];
 
@@ -172,8 +173,8 @@ export interface ConcessionDef {
 }
 export const CONCESSIONS: ConcessionDef[] = [
   { id: "approximatif", cta: "Ne passer qu'un coup d'éponge par assiette", clickMult: 1.2, note: "Elles sont un peu moins propres." },
-  { id: "cycle_court", cta: "Programmer le lave-vaisselle en cycle court", cycleCourt: true, note: "Certaines assiettes ressortent grasses. Il les relave." },
-  { id: "sans_relavage", cta: "Ne plus relaver les assiettes grasses", noRelaunch: true, note: "Elles partent en salle comme elles sont." },
+  { id: "cycle_court", cta: "Programmer le lave-vaisselle en cycle court", cycleCourt: true, note: "Certaines assiettes ressortent grasses. Tant pis." },
+  { id: "sans_relavage", cta: "Être moins regardant sur la propreté des assiettes", noRelaunch: true, note: "Elles partent en salle comme elles sont." },
 ];
 export const CONCESSION_BY_ID: Record<string, ConcessionDef> = Object.fromEntries(CONCESSIONS.map((c) => [c.id, c]));
 
@@ -182,7 +183,6 @@ export interface AskDef {
   id: string;
   cta: string;
   covers?: number; // couverts par jour ajoutés
-  doubleCovers?: boolean; // double les couverts (un deuxième restaurant)
   sunday?: boolean; // ouvre le dimanche (Maman appelle alors en plein service)
   note?: string; // précision ajoutée au sous-titre chiffré (le prix de vie, écrit)
   chef?: string; // réplique du chef à l'acceptation
@@ -191,16 +191,18 @@ export interface AskDef {
 
 export const ASKS: AskDef[] = [
   { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 40, chef: "plus_de_monde" },
-  { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 50 },
-  { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 60 },
-  { id: "brunch", cta: "Proposer un brunch le samedi", covers: 70 },
-  { id: "livraison", cta: "Proposer de s'inscrire sur une appli de livraison", covers: 100 },
-  { id: "seminaires", cta: "Proposer de louer la salle pour des séminaires", covers: 130 },
-  { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 160, chef: "meilleure_chose" },
-  { id: "petit_dejeuner", cta: "Proposer de servir le petit-déjeuner", covers: 120 },
-  { id: "cantine", cta: "Proposer de faire la cantine de l'école d'à côté", covers: 140 },
-  { id: "cars", cta: "Proposer d'accueillir les cars de touristes", covers: 160 },
-  { id: "deuxieme_restaurant", cta: "Proposer d'ouvrir un deuxième restaurant juste à côté", doubleCovers: true, needs: "gants_poses", note: "Tu fais la plonge des deux." },
+  { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 60 },
+  { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 80 },
+  { id: "brunch", cta: "Proposer un brunch le samedi", covers: 110 },
+  { id: "livraison", cta: "Proposer de s'inscrire sur une appli de livraison", covers: 140 },
+  { id: "seminaires", cta: "Proposer de louer la salle pour des séminaires", covers: 180 },
+  { id: "mariages", cta: "Proposer de faire traiteur pour des mariages", covers: 210, chef: "meilleure_chose" },
+  { id: "petit_dejeuner", cta: "Proposer de servir le petit-déjeuner", covers: 230 },
+  { id: "cantine", cta: "Proposer de faire la cantine de l'école d'à côté", covers: 300 },
+  // Une fois les gants posés, une demande ne se propose que si les lave-vaisselle peuvent laver ce qu'elle ajoute.
+  { id: "cars", cta: "Proposer d'accueillir les cars de touristes", covers: 200, needs: "gants_poses" },
+  { id: "deuxieme_restaurant", cta: "Proposer d'ouvrir un deuxième restaurant juste à côté", covers: 800, needs: "gants_poses", note: "Tu fais la plonge des deux." },
+  { id: "plateaux", cta: "Proposer de livrer des plateaux-repas aux bureaux de la zone", covers: 600, needs: "gants_poses" },
 ];
 
 /** Hors de la file des demandes : une proposition unique (quand elle paraît : la ligne « dimanche » de REVEALS). */
@@ -228,7 +230,7 @@ export const LIBRARY: StudyItemDef[] = [
   { id: "cours", cta: "S'inscrire au cours du soir de la mairie", cost: 120, name: "Cours du soir de la mairie", step: "Aller au cours du soir", energy: 10, steps: 8, unit: "séances", perStep: 1, done: "Le prof dit que tu as un bon niveau." },
   { id: "js", cta: "Acheter un manuel de JavaScript", cost: 240, name: "Manuel de JavaScript", step: "Lire 10 pages", energy: 5, steps: 12, unit: "pages", perStep: 10, done: "Ton bouton change de couleur quand on clique dessus." },
   { id: "ordi", cta: "Acheter un ordinateur portable reconditionné", cost: 480, name: "Ordinateur portable reconditionné", step: "Faire un exercice", energy: 8, steps: 8, unit: "exercices", perStep: 1, done: "Il chauffe, mais il tient." },
-  { id: "examen", cta: "S'inscrire à l'examen du cours du soir", cost: 960, name: "Examen du cours du soir", step: "Réviser l'examen", lastStep: "Passer l'examen", energy: 8, steps: 4, unit: "étapes", perStep: 1, requiresDone: "cours", done: "Reçu. 16 sur 20." },
+  { id: "examen", cta: "S'inscrire à l'examen du cours du soir", cost: 700, name: "Examen du cours du soir", step: "Réviser l'examen", lastStep: "Passer l'examen", energy: 50, steps: 4, unit: "étapes", perStep: 1, requiresDone: "cours", done: "Reçu. 16 sur 20." },
 ];
 
 export const LIBRARY_BY_ID: Record<string, StudyItemDef> = Object.fromEntries(LIBRARY.map((l) => [l.id, l]));
@@ -250,17 +252,144 @@ export const CHEF_LINES: Record<string, string> = {
 
 // --- Souvenirs (côté vie perso) : ce que le joueur a vécu, ou manqué ---
 // Au restaurant, puis chez soi une fois les gants posés (le parking ne se voit plus d'en haut).
+// Par la fenêtre de la plonge (elles défilent dans l'ordre, une par regard).
 export const WINDOW_LINES = [
   "Tu as regardé la pluie tomber sur le parking.",
   "Tu as regardé le livreur fumer sous l'auvent.",
   "Tu as regardé un pigeon voler une frite.",
+  "Tu as regardé une vieille dame promener un chien plus vieux qu'elle.",
+  "Tu as regardé deux lycéens se partager un sandwich.",
+  "Tu as regardé le camion poubelle faire sa marche arrière.",
+  "Tu as regardé un vélo attaché qui n'avait plus de roue.",
+  "Tu as regardé le ciel devenir orange au-dessus du parking.",
+  "Tu as regardé un homme en costume courir après son bus.",
+  "Tu as regardé une mouette se poser sur le toit du camion.",
+  "Tu as regardé le serveur compter ses pourboires dans la cour.",
+  "Tu as regardé un enfant sauter dans toutes les flaques.",
+  "Tu as regardé les nuages passer au-dessus de l'enseigne.",
+  "Tu as regardé une voiture tourner trois fois pour se garer.",
+  "Tu as regardé le fleuriste d'en face arroser ses seaux.",
+  "Tu as regardé un chat dormir sur le capot d'une voiture.",
+  "Tu as regardé la neige fondre en arrivant sur le trottoir.",
+  "Tu as regardé un couple se disputer puis rire.",
+  "Tu as regardé le vent emporter un parapluie retourné.",
+  "Tu as regardé le boulanger fermer son rideau de fer.",
+  "Tu as regardé un facteur siffler en triant ses lettres.",
+  "Tu as regardé une fourmi traîner une miette sur le rebord.",
+  "Tu as regardé les lampadaires s'allumer un par un.",
+  "Tu as regardé un joggeur s'arrêter pour refaire son lacet.",
+  "Tu as regardé une affiche de concert se décoller doucement.",
+  "Tu as regardé deux moineaux se battre pour une croûte.",
+  "Tu as regardé un taxi attendre moteur allumé.",
+  "Tu as regardé une femme lire en marchant.",
+  "Tu as regardé le soleil taper sur les poubelles jaunes.",
+  "Tu as regardé un livreur de pizzas se tromper de porte.",
+  "Tu as regardé un ballon rouge rester coincé dans un arbre.",
+  "Tu as regardé la fumée de la cuisine monter droit dans le ciel.",
+  "Tu as regardé un grand-père apprendre le vélo à sa petite-fille.",
+  "Tu as regardé une file d'attente devant la pharmacie.",
+  "Tu as regardé l'orage arriver par la gauche.",
+  "Tu as regardé un arc-en-ciel au-dessus du supermarché.",
+  "Tu as regardé un chien attendre son maître devant la boulangerie.",
+  "Tu as regardé les feuilles s'entasser contre le grillage.",
+  "Tu as regardé un homme parler seul à son téléphone.",
+  "Tu as regardé une trottinette abandonnée sur le trottoir.",
+  "Tu as regardé les cuisiniers d'à côté jouer aux cartes sur une caisse.",
+  "Tu as regardé un avion tracer une ligne blanche.",
+  "Tu as regardé des écoliers en rang traverser la rue.",
+  "Tu as regardé la gouttière déborder sur le trottoir.",
+  "Tu as regardé un peintre repeindre la façade d'en face.",
+  "Tu as regardé un pigeon boiter jusqu'à un bout de pain.",
+  "Tu as regardé un marchand de glaces remonter son store.",
+  "Tu as regardé la lune se lever pendant le service.",
+  "Tu as regardé une voisine secouer un tapis par la fenêtre.",
+  "Tu as regardé un camion de déménagement bloquer toute la rue.",
+  "Tu as regardé tes mains fripées sur le rebord de la fenêtre.",
+  "Tu as regardé un inconnu te faire signe, et tu as répondu.",
 ];
+// Par la fenêtre de chez toi, une fois les gants posés.
 export const WINDOW_LINES_HOME = [
   "Tu as regardé le voisin d'en face arroser ses tomates.",
   "Tu as regardé un chat traverser la cour.",
   "Tu as regardé le soleil passer derrière l'immeuble d'en face.",
+  "Tu as regardé la gardienne sortir les poubelles en chantant.",
+  "Tu as regardé un linge sécher sur le balcon du dessous.",
+  "Tu as regardé les enfants de la cour jouer au foot contre le mur.",
+  "Tu as regardé une plante grimper le long de la gouttière.",
+  "Tu as regardé le voisin du troisième fumer à sa fenêtre.",
+  "Tu as regardé la pluie faire des ronds dans une flaque de la cour.",
+  "Tu as regardé un pigeon couver sur le rebord d'en face.",
+  "Tu as regardé la lumière du matin entrer dans la cuisine.",
+  "Tu as regardé un vieux monsieur nourrir les moineaux.",
+  "Tu as regardé les fenêtres d'en face s'éteindre une à une.",
+  "Tu as regardé un livreur monter six étages avec un carton.",
+  "Tu as regardé ta voisine peindre sur son balcon.",
+  "Tu as regardé la neige couvrir les vélos de la cour.",
+  "Tu as regardé le ciel virer au violet derrière les antennes.",
+  "Tu as regardé un couple porter un canapé dans l'escalier.",
+  "Tu as regardé le tilleul de la cour perdre ses feuilles.",
+  "Tu as regardé une fête d'anniversaire dans l'appartement d'en face.",
+  "Tu as regardé le facteur se tromper de boîte aux lettres.",
+  "Tu as regardé les martinets tourner au-dessus des toits.",
+  "Tu as regardé un bébé dormir dans une poussette au soleil.",
+  "Tu as regardé ton reflet dans la vitre, et tu as souri.",
+  "Tu as regardé les étoiles au-dessus de la cour, il y en avait trois.",
 ];
-export const CALL_SOUVENIR = "Maman t'a raconté son jardin.";
+// Ce que Maman te raconte quand tu décroches (dans l'ordre, un par appel).
+export const CALL_SOUVENIRS = [
+  "Maman t'a parlé de son jardin.",
+  "Maman t'a raconté que les tomates ont enfin rougi.",
+  "Maman t'a parlé de la voisine qui a adopté un chat.",
+  "Maman t'a demandé si tu mangeais bien.",
+  "Maman t'a raconté son rendez-vous chez le dentiste.",
+  "Maman t'a parlé de ta tante qui a déménagé.",
+  "Maman t'a lu la recette de sa tarte aux pommes.",
+  "Maman t'a raconté le mariage de ta cousine.",
+  "Maman t'a parlé de la pluie qui a noyé ses salades.",
+  "Maman t'a demandé si tu avais quelqu'un.",
+  "Maman t'a raconté qu'elle a repeint la cuisine en jaune.",
+  "Maman t'a parlé de ton ancienne maîtresse d'école, croisée au marché.",
+  "Maman t'a raconté le film qu'elle a vu à la télé.",
+  "Maman t'a parlé des rosiers qu'elle a taillés.",
+  "Maman t'a demandé quand tu venais la voir.",
+  "Maman t'a raconté que le chien des voisins a encore aboyé toute la nuit.",
+  "Maman t'a parlé de sa nouvelle paire de lunettes.",
+  "Maman t'a raconté un souvenir de toi à six ans.",
+  "Maman t'a parlé du prix des courgettes au marché.",
+  "Maman t'a raconté sa balade au bord du canal.",
+  "Maman t'a parlé de ton père, un peu.",
+  "Maman t'a raconté qu'elle a appris à envoyer des photos.",
+  "Maman t'a parlé des confitures qu'elle a faites pour l'hiver.",
+  "Maman t'a demandé si tu dormais assez.",
+  "Maman t'a raconté la chorale du jeudi.",
+  "Maman t'a parlé du merle qui revient tous les matins.",
+  "Maman t'a raconté que ta chambre n'a pas bougé.",
+  "Maman t'a parlé de la kermesse du village.",
+  "Maman t'a raconté qu'elle a gagné au loto, trois euros.",
+  "Maman t'a parlé des pommes de terre qu'elle a récoltées.",
+  "Maman t'a demandé si ton chef était gentil.",
+  "Maman t'a raconté qu'elle a retrouvé tes cahiers d'école.",
+  "Maman t'a parlé de la tempête qui a couché la haie.",
+  "Maman t'a raconté son cours de gym douce.",
+  "Maman t'a parlé du livre qu'elle lit le soir.",
+  "Maman t'a raconté la naissance du petit de ta cousine.",
+  "Maman t'a parlé des fraises qui ont été mangées par les limaces.",
+  "Maman t'a demandé si tu avais chaud l'hiver.",
+  "Maman t'a raconté le repas des anciens à la mairie.",
+  "Maman t'a parlé de son dos qui la fait souffrir.",
+  "Maman t'a raconté que la boulangerie du village a fermé.",
+  "Maman t'a parlé des hirondelles revenues sous le toit.",
+  "Maman t'a raconté qu'elle a planté un cerisier pour toi.",
+  "Maman t'a parlé de la brocante où elle a trouvé une lampe.",
+  "Maman t'a demandé si tout allait bien pour toi.",
+  "Maman t'a raconté son voyage en car jusqu'à la mer.",
+  "Maman t'a parlé des courges énormes cette année.",
+  "Maman t'a raconté qu'elle garde ta photo sur le frigo.",
+  "Maman t'a parlé de la neige tombée sur le potager.",
+  "Maman t'a raconté qu'elle a rêvé de toi petit.",
+  "Maman t'a parlé du premier lilas du printemps.",
+  "Maman t'a dit qu'elle était fière de toi.",
+];
 export const CALL_MISSED = "Maman a laissé un message vocal.";
 export const AGE_PLONGEUR = 22;
 
@@ -270,15 +399,17 @@ const pl = (n: number, one: string, many: string): string => (n > 1 ? many : one
 export const TEXTES = {
   // En tête
   money: (euros: string) => `Argent : ${euros}`,
-  autoIncome: (plural: boolean, euros: string) => `${plural ? "Les lave-vaisselle te rapportent" : "Le lave-vaisselle te rapporte"} ${euros} / min`,
+  autoIncome: (plural: boolean, euros: string) => `${plural ? "Les lave-vaisselle te rapportent" : "Le lave-vaisselle te rapporte"} ${euros} / minute`,
 
   // Travail
   colWork: "Travail",
   dayClosed: (day: string) => `${day}, restaurant fermé`,
+  dayPart: (day: string, evening: boolean) => `${day} ${evening ? "soir" : "midi"}`,
+  dirtyPerMin: (n: N) => `Assiettes sales : ${n} / minute`,
+  capacityPerMin: (n: N) => `Les lave-vaisselle peuvent en laver ${n} / minute`,
   noPlatesToday: "Pas d'assiette supplémentaire aujourd'hui.",
   pile: (n: N) => `Assiettes sales : ${n}`,
   pileWarn: (cap: N) => `Au-delà de ${cap}, le chef les lave lui-même.`,
-  overflowToday: (n: N) => `Le chef en a lavé ${n} aujourd'hui.`,
   covers: (n: N) => `${n} couverts par jour`,
   wash: (n: number) => (n === 1 ? "Laver une assiette" : `Laver ${n} assiettes`),
   washEmpty: "Aucune assiette sale",
@@ -286,7 +417,7 @@ export const TEXTES = {
 
   // Lave-vaisselle
   machineTitle: "Lave-vaisselle",
-  machineRate: (rate: string) => `${rate} assiettes / s`,
+  machineRate: (rate: string) => `${rate} assiettes / seconde`,
   relaunching: (secs: N) => `Le vieux lave-vaisselle relave une fournée grasse (${secs} s).`,
   free: "gratuit",
 
@@ -295,14 +426,11 @@ export const TEXTES = {
   concessionsTitle: "Pour aller plus vite",
   perClick: (a: N, b: N) => `Par clic : ${a} → ${b} assiettes`,
   watch: ["Pour savoir quel jour on est", "Et quand le restaurant est fermé"],
-  oldMachine: (a: string, b: string) => `Vieux lave-vaisselle : ${a} → ${b} assiettes / s`,
-  proMachines: (a: string, b: string) => `Lave-vaisselle pro : ${a} → ${b} assiettes / s`,
-  bothMachines: (a: string, b: string) => `Lave-vaisselle : ${a} → ${b} assiettes / s`,
-  repairIncome: (euros: string) => `Il te rapporte ${euros} / min, même sans toi.`,
-  incomeChange: (plural: boolean, a: string, b: string) => `${plural ? "Les lave-vaisselle te rapportent" : "Il te rapporte"} : ${a} → ${b} / min`,
-  incomeCapped: "Pas plus : le restaurant ne salit pas plus d'assiettes.",
+  machineChange: (a: string, b: string) => `${a} → ${b} assiettes / seconde`,
+  machineChangeMin: (a: N, b: N) => `${a} → ${b} assiettes / minute`,
+  incomeChange: (a: string, b: string) => `${a} → ${b} / minute`,
   proNoGreasy: "Le pro ne sort pas d'assiettes grasses.",
-  noRelaunch: (a: string, b: string) => `Vieux lave-vaisselle : ${a} → ${b} assiettes / s en moyenne`,
+  noRelaunch: (a: string, b: string) => `${a} → ${b} assiettes / seconde en moyenne`,
 
   // Le chef
   chefTitle: "Le chef",
@@ -314,17 +442,15 @@ export const TEXTES = {
   bankTitle: "La banque",
   livretCta: "Ouvrir un livret A",
   livretOpen: ["Un compte à part, qui rapporte chaque lundi", "Tu y mets ton argent quand tu veux, tu le reprends quand tu veux"],
-  livretBalance: (euros: string) => `Livret A : ${euros}`,
-  livretRule: (pct: N) => `Chaque lundi : +${pct} % du plus petit solde de la semaine`,
-  livretLast: (euros: string) => `Lundi dernier : +${euros}`,
+  livret: (euros: string, monday: string) => `Livret A : ${euros}. Chaque lundi : ${monday}`,
+  livretRule: (pct: N) => `+${pct} % du plus petit solde de la semaine`,
+  livretGain: (euros: string) => `~${euros}`,
   deposit: "Tout mettre sur le livret",
   withdraw: "Tout reprendre",
-  depositEffects: (euros: string, gain: string) => [`Livret A : +${euros}`, `Lundi dans une semaine : +${gain}`],
-  withdrawEffects: (euros: string) => [`Argent : +${euros}`, "Il ne rapporte plus rien"],
 
   // Poser les gants, l'annonce
   poseGantsCta: "Poser les gants",
-  poseGants: (rate: string, dirty: string) => `Les lave-vaisselle suivent seuls : ${rate} assiettes / s pour ${dirty} de vaisselle en moyenne.`,
+  poseGants: (rate: string, dirty: string) => `Les lave-vaisselle suivent seuls : ${rate} assiettes / seconde pour ${dirty} de vaisselle en moyenne.`,
   poseGantsStudies: "Te laisse du temps pour étudier.",
   annonceText: "Boulangerie Duval. Cherche quelqu'un pour faire notre site.",
   annonceCta: "Répondre à l'annonce de Mme Duval",
@@ -344,7 +470,7 @@ export const TEXTES = {
   mealCta: "Se faire à manger",
   mealEnergy: (a: N, b: N) => `Énergie : ${a} → ${b}`,
   mealsPerDay: (n: N) => `${n} repas par jour`,
-  mealDone: "Tu as déjà mangé. Demain.",
+  mealDone: "Attends demain.",
   studiesTitle: "Tes études",
   studyTeaser: "Quand les machines tourneront seules, tu auras le temps d'étudier.",
   studyCost: (energy: N) => `Coûte ${energy} énergie`,

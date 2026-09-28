@@ -285,6 +285,13 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 - **Mesures :** fin 22:22 à 4 clics/s (29:03 à 2, 20:26 à 6, 30:09 en AFK, 24:58 en refusant les concessions) ; plus grand écart 2:44 à 4 clics/s ; à la main, pile vide 2 % du temps, débordement 0 %.
 - **Restent à trancher :** après les gants posés, le deuxième restaurant fait déborder la pile environ 7 min, jusqu'au deuxième pro ; en AFK, 4:19 entre l'annonce des études et « Poser les gants ».
 
+### v5 après le quatrième test d'Alexandre (2026-09-28, 9e challenge)
+- **Couverts plus rapides :** soir +40, formule +60, terrasse +80, brunch +110, livraison +140, séminaires +180, mariages +210, petit-déjeuner +230, cantine +300 (1400 couverts à la main) ; au moins 20 s entre deux demandes ; le repli à 120 s seulement si la pile tient en deux brassées. Pile sous un clic : 4 % du temps à 2 clics/s, 10 % à 4, 18 % à 6.
+- **Gants posés :** plus de compteur de pile ; « Assiettes sales : X / minute » et « Les lave-vaisselle peuvent en laver Y / minute ». Une demande ne se propose que si les machines peuvent laver ce qu'elle ajoute (vérifié sur toute une partie). Pro et deuxième pro : 60/s. Ordre : détartrage du pro, cars +200, deuxième pro, deuxième restaurant +800, adoucisseur, plateaux-repas +600.
+- **Vie :** la fenêtre revient tous les 2 jours et reste jusqu'au clic, +20 d'énergie une fois les gants posés ; 52 phrases pour Maman, 77 pour la fenêtre. Examen : 700 €, 50 d'énergie par étape.
+- **Écran :** « Mercredi midi / soir » une fois le soir ouvert ; deux lignes réservées sous la pile tant que tu laves à la main ; sous-titres sans titre, en « seconde » et « minute » ; le livret sur une ligne (« ~X € » par lundi si rien ne bouge), deux boutons sans sous-titre.
+- **Mesures :** fin 21:00 à 4 clics/s (28:00 à 2, 19:15 à 6, 29:15 en AFK, 22:45 en refusant les concessions) ; plus grand écart 2:15 à 4 clics/s.
+
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 
 ## Ordre de travail

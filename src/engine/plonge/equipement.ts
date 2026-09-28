@@ -55,6 +55,11 @@ export function loadUnit(s: GameState): number {
   return Math.max(1, s.manualRetired ? machineRate(s) : s.dishesPerClick);
 }
 
+/** « a → b assiettes / seconde » ; une fois les gants posés, l'écran compte à la minute. */
+function rateChange(s: GameState, a: number, b: number): string {
+  return s.manualRetired ? TEXTES.machineChangeMin(Math.round(a * 60), Math.round(b * 60)) : TEXTES.machineChange(fmtRate(a), fmtRate(b));
+}
+
 // --- Revenu automatique ---
 
 /** Ce que rapportent des machines de ce débit, sans toi : limité par ce que le restaurant salit. */
@@ -69,12 +74,10 @@ export function autoIncomePerMin(s: GameState): number {
 export function autoIncomeLine(s: GameState): string {
   return TEXTES.autoIncome(s.plonge.proRate > 0, fmtEuros(autoIncomePerMin(s)));
 }
-function incomeEffects(s: GameState, now: number, after: number, plural = s.plonge.proRate > 0): string[] {
+function incomeEffects(s: GameState, now: number, after: number): string[] {
   const a = autoIncomeFor(s, now);
   const b = autoIncomeFor(s, after);
-  const out = b - a >= 0.005 ? [TEXTES.incomeChange(plural, fmtEuros(a), fmtEuros(b))] : []; // jamais « A → A »
-  if (after >= openDayArrivalRate(s)) out.push(TEXTES.incomeCapped);
-  return out;
+  return b - a >= 0.005 ? [TEXTES.incomeChange(fmtEuros(a), fmtEuros(b))] : []; // jamais « A → A »
 }
 /** Revenu hors-ligne au plongeur : les machines seules, limitées par ce que le restaurant salit. */
 export function plongeOfflineIncomePerSec(s: GameState): Decimal {
@@ -133,27 +136,27 @@ export function equipmentEffects(s: GameState, def: EquipmentDef): string[] {
   const now = machineRate(s);
   if (def.oldRate !== undefined) {
     const after = def.oldRate * p.oldMult * p.machineMult * cycleMult(s);
-    out.push(TEXTES.oldMachine(fmtRate(0), fmtRate(after)));
-    out.push(TEXTES.repairIncome(fmtEuros(autoIncomeFor(s, after))));
+    out.push(rateChange(s, 0, after));
+    out.push(TEXTES.incomeChange(fmtEuros(0), fmtEuros(autoIncomeFor(s, after))));
   }
   if (def.oldMult !== undefined) {
     const old = oldMachineRate(s);
-    out.push(TEXTES.oldMachine(fmtRate(old), fmtRate(old * def.oldMult)));
+    out.push(rateChange(s, old, old * def.oldMult));
     out.push(...incomeEffects(s, now, now + old * (def.oldMult - 1)));
   }
   if (def.proRate !== undefined) {
     const after = now + def.proRate * p.machineMult;
-    out.push(TEXTES.bothMachines(fmtRate(now), fmtRate(after)));
-    out.push(...incomeEffects(s, now, after, true));
+    out.push(rateChange(s, now, after));
+    out.push(...incomeEffects(s, now, after));
     if (greasyLoads(s)) out.push(TEXTES.proNoGreasy);
   }
   if (def.proMult !== undefined) {
     const pro = proMachineRate(s);
-    out.push(TEXTES.proMachines(fmtRate(pro), fmtRate(pro * def.proMult)));
+    out.push(rateChange(s, pro, pro * def.proMult));
     out.push(...incomeEffects(s, now, now + pro * (def.proMult - 1)));
   }
   if (def.machineMult !== undefined) {
-    out.push(TEXTES.bothMachines(fmtRate(now), fmtRate(now * def.machineMult)));
+    out.push(rateChange(s, now, now * def.machineMult));
     out.push(...incomeEffects(s, now, now * def.machineMult));
   }
   if (def.note) out.push(def.note);
@@ -176,7 +179,7 @@ export function concessionEffects(s: GameState, id: string): string[] {
   if (def.cycleCourt) {
     const now = machineRate(s);
     const old = oldMachineRate(s);
-    out.push(TEXTES.oldMachine(fmtRate(old), fmtRate(old * CYCLE_COURT_MULT)));
+    out.push(rateChange(s, old, old * CYCLE_COURT_MULT));
     out.push(...incomeEffects(s, now, now + old * (CYCLE_COURT_MULT - 1)));
   }
   if (def.noRelaunch) {

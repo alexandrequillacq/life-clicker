@@ -6,7 +6,7 @@ import {
   RELAUNCH_SECS,
   BEHIND_LOADS,
   ENERGY_REGEN,
-  CALL_SOUVENIR,
+  CALL_SOUVENIRS,
   CALL_MISSED,
   PILE_WARN_SHARE,
 } from "../content/plonge";
@@ -53,7 +53,7 @@ export function tickPlonge(s: GameState, t: number): void {
     if (p.callTalk <= 0) {
       p.callTalk = 0;
       s.energy = ENERGY_MAX; // parler à Maman recharge complètement
-      remember(s, "lien", CALL_SOUVENIR, false, p.callDay);
+      remember(s, "lien", CALL_SOUVENIRS[(p.callsAnswered - 1) % CALL_SOUVENIRS.length], false, p.callDay);
     }
   }
 

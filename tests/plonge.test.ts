@@ -16,7 +16,9 @@ import {
   RELAUNCH_SECS,
   LOAD_SECS,
   GREASY_EVERY,
-  WINDOW_IDLE_SECS,
+  CALL_SOUVENIRS,
+  WINDOW_LINES,
+  WINDOW_LINES_HOME,
   KEEP_UP_SECS,
   LIVRET_RATE,
   EQUIPMENT,
@@ -28,6 +30,7 @@ import {
 } from "../src/engine/content/plonge";
 import {
   arrivalRate,
+  openDayArrivalRate,
   pileCap,
   dayName,
   clickPlates,
@@ -79,8 +82,10 @@ import {
   mealEffects,
   vueJour,
   vuePile,
+  vueLaveVaisselle,
   vueAmelioration,
   vueChef,
+  vueFenetre,
   vueBanque,
   vueEtudes,
   vueRepas,
@@ -351,10 +356,10 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     };
     expect(at("reparer")).toBeCloseTo(10);
     expect(at("detartrer")).toBeCloseTo(10 * 1.5 ** 3);
-    expect(at("pro")).toBeCloseTo(10 * 1.5 ** 3 + 40);
-    expect(at("detartrer_pro")).toBeCloseTo(10 * 1.5 ** 3 + 40 * 1.25);
-    expect(at("pro2")).toBeCloseTo(10 * 1.5 ** 3 + 40 * 1.25 + 40); // le neuf n'a pas été détartré
-    expect(at("adoucisseur")).toBeCloseTo((10 * 1.5 ** 3 + 40 * 1.25 + 40) * 1.2); // l'eau adoucie sert à toutes les machines
+    expect(at("pro")).toBeCloseTo(10 * 1.5 ** 3 + 60);
+    expect(at("detartrer_pro")).toBeCloseTo(10 * 1.5 ** 3 + 60 * 1.25);
+    expect(at("pro2")).toBeCloseTo(10 * 1.5 ** 3 + 60 * 1.25 + 60); // le neuf n'a pas été détartré
+    expect(at("adoucisseur")).toBeCloseTo((10 * 1.5 ** 3 + 60 * 1.25 + 60) * 1.2); // l'eau adoucie sert à toutes les machines
   });
 
   it("le revenu automatique : les machines seules, hors clic, limitées par ce que le restaurant salit", () => {
@@ -388,7 +393,7 @@ describe("Plongeur : les concessions (gratuites, de plus en plus grosses)", () =
     s.plonge.covers = 100000;
     const before = machineRate(s);
     s.plonge.revealed["cycle_court"] = 0;
-    expect(concessionEffects(s, "cycle_court").join(" ")).toMatch(/Il te rapporte/);
+    expect(concessionEffects(s, "cycle_court").join(" ")).toMatch(/€ → .* € \/ minute/);
     takeConcession(s, "cycle_court");
     expect(machineRate(s)).toBeCloseTo(before * 1.3);
     s.plonge.pile = 1e6;
@@ -435,7 +440,7 @@ describe("Plongeur : les concessions (gratuites, de plus en plus grosses)", () =
     equipUpTo(s, "pro");
     s.plonge.revealed["cycle_court"] = 0;
     takeConcession(s, "cycle_court");
-    expect(machineRate(s)).toBeCloseTo(10 * 1.5 ** 3 * 1.3 + 40); // le cycle court est un programme du vieux
+    expect(machineRate(s)).toBeCloseTo(10 * 1.5 ** 3 * 1.3 + 60); // le cycle court est un programme du vieux
     s.plonge.pile = 1e6;
     run(s, 120);
     expect(s.plonge.relaunchLeft).toBe(0);
@@ -486,15 +491,32 @@ describe("Plongeur : les demandes au chef (un clic, il dit oui ; la suivante vie
     expect(canAskChef(s)).toBe(true);
   });
 
-  it("sans jamais suivre, la suivante se propose quand même 120 s après la précédente", () => {
+  it("sans jamais suivre, la suivante se propose 120 s après la précédente, si la pile tient en deux brassées", () => {
     const s = justAsked();
-    s.plonge.pile = 50;
-    s.dishesPerClick = 2;
-    run(s, ASK_LATE - 1);
-    expect(s.plonge.keptUp).toBe(0);
+    s.dishesPerClick = 30;
+    s.plonge.pile = 100; // plus de deux clics sales : c'est une amélioration qu'il te faut, pas plus de couverts
+    run(s, ASK_LATE + 1);
     expect(canAskChef(s)).toBe(false);
-    run(s, 1.5);
+    s.plonge.pile = 40; // entre un et deux clics
+    run(s, 0.1);
+    expect(s.plonge.keptUp).toBe(0);
     expect(canAskChef(s)).toBe(true);
+  });
+
+  it("les gants posés, une demande n'arrive que si les lave-vaisselle peuvent laver ce qu'elle ajoute", () => {
+    const s = readyToAsk();
+    equipUpTo(s, "pro");
+    poseGants(s);
+    s.plonge.asksDone = ASKS.findIndex((a) => a.id === "deuxieme_restaurant");
+    s.plonge.covers = 1600;
+    expect(machineRate(s)).toBeLessThan((1600 + 800) / DAY_SECS);
+    expect(currentAsk(s)).toBeNull(); // 2400 couverts : 160 assiettes / seconde, trop pour les machines
+    s.plonge.proRate = 200;
+    expect(askEffects(s, currentAsk(s)!)).toContain("Couverts par jour : 1600 → 2400");
+    s.plonge.askShown = true;
+    askChef(s);
+    expect(s.plonge.covers).toBe(2400);
+    expect(s.plonge.boughtAt["deuxieme_restaurant"]).toBeDefined();
   });
 
   it("suivre ne compte que les jours ouverts (le dimanche fermé vide la pile de lui-même)", () => {
@@ -504,17 +526,6 @@ describe("Plongeur : les demandes au chef (un clic, il dit oui ; la suivante vie
     expect(s.plonge.keptUp).toBe(0);
   });
 
-  it("le deuxième restaurant double les couverts", () => {
-    const s = readyToAsk();
-    s.plonge.asksDone = ASKS.findIndex((a) => a.id === "deuxieme_restaurant");
-    expect(currentAsk(s)).toBeNull(); // il attend les gants posés
-    s.plonge.boughtAt["gants_poses"] = 0;
-    s.plonge.covers = 1000;
-    expect(askEffects(s, currentAsk(s)!)).toContain("Couverts par jour : 1000 → 2000");
-    askChef(s);
-    expect(s.plonge.covers).toBe(2000);
-    expect(s.plonge.boughtAt["deuxieme_restaurant"]).toBeDefined();
-  });
 
   it("ouvrir le dimanche : proposé après le 3e appel décroché ; le sous-titre dit le prix de vie", () => {
     const s = fresh();
@@ -598,21 +609,35 @@ describe("Plongeur : Maman (le dimanche), la fenêtre, les souvenirs", () => {
     expect(s.plonge.overflow).toBeGreaterThan(overflow);
   });
 
-  it("« Regarder par la fenêtre » : après 20 s sans rien faire, une fois par jour, une fois « Ta vie » ouverte", () => {
+  it("« Regarder par la fenêtre » : tous les 2 jours, sans condition, une fois « Ta vie » ouverte ; +20 d'énergie une fois les gants posés", () => {
     const s = fresh();
-    run(s, WINDOW_IDLE_SECS + 1);
-    expect(canLookOutWindow(s)).toBe(false);
+    run(s, DAY_SECS * 3);
+    expect(canLookOutWindow(s)).toBe(false); // « Ta vie » n'est pas encore née
     toSunday(s);
+    expect(canLookOutWindow(s)).toBe(false); // pas pendant que Maman sonne
     run(s, DAY_SECS); // appel manqué : « Ta vie » est née
-    s.plonge.idle = WINDOW_IDLE_SECS;
-    s.plonge.windowDay = -1;
     expect(canLookOutWindow(s)).toBe(true);
+    expect(vueFenetre(s)!.lines).toEqual([]); // l'énergie ne se voit pas encore
     lookOutWindow(s);
     expect(s.souvenirs[0].kind).toBe("contemplation");
-    s.plonge.idle = WINDOW_IDLE_SECS + 1;
+    run(s, DAY_SECS);
     expect(canLookOutWindow(s)).toBe(false);
     run(s, DAY_SECS);
     expect(canLookOutWindow(s)).toBe(true);
+    s.flags.energyVisible = true;
+    s.energy = 50;
+    expect(vueFenetre(s)!.lines).toEqual(["Énergie : 50 → 70"]);
+    lookOutWindow(s);
+    expect(s.energy).toBe(70);
+  });
+
+  it("Maman et la fenêtre ont chacune au moins 50 phrases, toutes différentes", () => {
+    expect(new Set(CALL_SOUVENIRS).size).toBe(CALL_SOUVENIRS.length);
+    expect(CALL_SOUVENIRS.length).toBeGreaterThanOrEqual(50);
+    expect(CALL_SOUVENIRS[0]).toBe("Maman t'a parlé de son jardin.");
+    const window = [...WINDOW_LINES, ...WINDOW_LINES_HOME];
+    expect(new Set(window).size).toBe(window.length);
+    expect(window.length).toBeGreaterThanOrEqual(50);
   });
 });
 
@@ -673,6 +698,8 @@ describe("Plongeur : poser les gants, les études, le livret A", () => {
     depositLivret(s);
     expect(s.money.toNumber()).toBe(0);
     expect(s.plonge.livretBalance).toBe(1000);
+    expect(vueBanque(s)!.lines).toEqual(["Livret A : 1000,00 €. Chaque lundi : ~10,00 €"]);
+    expect(vueBanque(s)!.buttons.map((b) => b.lines)).toEqual([[], []]);
     s.plonge.livretLow = 1000; // resté toute la semaine
     s.plonge.day = dayStart(dayIdx(s) - (dayIdx(s) % 7) + 7) - 0.01; // la veille d'un lundi, minuit moins une
     tick(s, 0.02);
@@ -719,6 +746,47 @@ describe("Plongeur : poser les gants, les études, le livret A", () => {
 });
 
 describe("Plongeur : l'écran (engine/plonge/vue.ts)", () => {
+  it("le jour dit midi ou soir, une fois le soir ouvert", () => {
+    const s = fresh();
+    s.plonge.boughtAt["montre"] = 0;
+    s.plonge.day = dayStart(2) + 1;
+    expect(vueJour(s)).toBe("Mercredi");
+    s.plonge.boughtAt["soir"] = 0;
+    expect(vueJour(s)).toBe("Mercredi midi");
+    s.plonge.day = dayStart(2) + DAY_SECS / 2 + 0.1;
+    expect(vueJour(s)).toBe("Mercredi soir");
+    s.plonge.day = dayStart(6) + 1;
+    expect(vueJour(s)).toBe("Dimanche, restaurant fermé");
+  });
+
+  it("les gants posés, l'écran compte à la minute : ce qui arrive, ce que les lave-vaisselle peuvent laver", () => {
+    const s = fresh();
+    equipUpTo(s, "pro");
+    poseGants(s);
+    s.plonge.day = dayStart(7) + 1;
+    s.plonge.pile = 300;
+    expect(vuePile(s)).toEqual([`Assiettes sales : ${Math.round((START_COVERS / DAY_SECS) * 60)} / minute`]);
+    expect(vueLaveVaisselle(s)!.status).toBe(`Les lave-vaisselle peuvent en laver ${Math.round(machineRate(s) * 60)} / minute`);
+    const det = EQUIPMENT.find((e) => e.id === "detartrer_pro")!;
+    expect(equipmentEffects(s, det)[0]).toMatch(/^\d+ → \d+ assiettes \/ minute$/);
+  });
+
+  it("sur toute une partie, une fois les gants posés, jamais plus d'assiettes que les lave-vaisselle ne peuvent en laver", () => {
+    for (const cps of [2, 4, 6]) {
+      let worst = Infinity;
+      playthrough(cps, {
+        onStep: (s) => {
+          if (s.manualRetired) worst = Math.min(worst, machineRate(s) - openDayArrivalRate(s));
+        },
+      });
+      expect(worst, `${cps} clics/s`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("l'examen coûte 50 d'énergie par étape", () => {
+    expect(LIBRARY.find((l) => l.id === "examen")!.energy).toBe(50);
+  });
+
   it("sur toute une partie, chaque achat affiché porte un sous-titre, et aucun ne dit « A → A »", () => {
     const seen = new Set<string>();
     playthrough(4, {
@@ -726,7 +794,7 @@ describe("Plongeur : l'écran (engine/plonge/vue.ts)", () => {
         const buys = [
           vueAmelioration(s)?.buy,
           ...(vueChef(s)?.offers ?? []),
-          ...(vueBanque(s)?.buttons ?? []),
+          ...(vueBanque(s)?.buttons.filter((b) => b.lines.length > 0) ?? []), // déposer et reprendre : la ligne du livret suffit (choix d'Alexandre)
           vueEtudes(s)?.buy,
           ...(vueEtudes(s)?.items.map((i) => i.step) ?? []),
           vueRepas(s),

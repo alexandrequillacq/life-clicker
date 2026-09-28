@@ -8,10 +8,11 @@ import {
   AGE_PLONGEUR,
   PILE_WARN_SHARE,
   TEXTES,
+  DAY_SECS,
 } from "../content/plonge";
 import { fmtEuros, fmtRate, onThePhone } from "./commun";
-import { dayName, openToday, pileCap, noDirtyPlates, washClick } from "./restaurant";
-import { isRevealed, dayVisible, coversVisible, lifeVisible } from "./revelations";
+import { dayName, openToday, pileCap, noDirtyPlates, washClick, arrivalRate, secsIntoDay } from "./restaurant";
+import { isRevealed, eventAt, dayVisible, coversVisible, lifeVisible } from "./revelations";
 import {
   machineRate,
   autoIncomeLine,
@@ -34,10 +35,9 @@ import {
   openLivret,
   depositLivret,
   withdrawLivret,
-  depositEffects,
-  livretPct,
+  livretLine,
 } from "./chef";
-import { canAnswerCall, answerCall, callEffects, canLookOutWindow, lookOutWindow, mealVisible, canEat, eat, mealEffects } from "./vie";
+import { canAnswerCall, answerCall, callEffects, canLookOutWindow, lookOutWindow, windowEffects, mealVisible, canEat, eat, mealEffects } from "./vie";
 import {
   canPoseGants,
   retireHands,
@@ -102,16 +102,19 @@ export function vueTelephone(s: GameState): boolean {
 export function vueJour(s: GameState): string | null {
   if (!dayVisible(s)) return null;
   const day = dayName(s);
-  return openToday(s) ? day : TEXTES.dayClosed(day);
+  if (!openToday(s)) return TEXTES.dayClosed(day);
+  // Midi ou soir, une fois le soir ouvert (avant, le restaurant ne sert que le midi).
+  return eventAt(s, "soir") !== undefined ? TEXTES.dayPart(day, secsIntoDay(s) >= DAY_SECS / 2) : day;
 }
 
 export function vuePile(s: GameState): string[] | null {
   if (!isRevealed(s, "pile")) return null;
+  // Les gants posés, on ne compte plus la pile : ce qui arrive, à la minute (les machines suivent toujours).
+  if (s.manualRetired) return [TEXTES.dirtyPerMin(Math.round(arrivalRate(s) * 60))];
   const p = s.plonge;
   const out = [TEXTES.pile(Math.floor(p.pile))];
   if (!openToday(s) && !dayVisible(s)) out.push(TEXTES.noPlatesToday); // avant la montre, sans explication
   if (p.pile > pileCap(s) * PILE_WARN_SHARE) out.push(TEXTES.pileWarn(pileCap(s)));
-  if (p.overflowToday >= 1) out.push(TEXTES.overflowToday(Math.floor(p.overflowToday)));
   return out;
 }
 
@@ -136,7 +139,11 @@ export function vueLaveVaisselle(s: GameState): VueLaveVaisselle | null {
   if (!isRevealed(s, "machine")) return null;
   const p = s.plonge;
   const status =
-    p.relaunchLeft > 0 ? TEXTES.relaunching(Math.ceil(p.relaunchLeft)) : TEXTES.machineRate(fmtRate(machineRate(s)));
+    p.relaunchLeft > 0
+      ? TEXTES.relaunching(Math.ceil(p.relaunchLeft))
+      : s.manualRetired
+        ? TEXTES.capacityPerMin(Math.round(machineRate(s) * 60))
+        : TEXTES.machineRate(fmtRate(machineRate(s)));
   return { title: TEXTES.machineTitle, status };
 }
 
@@ -173,15 +180,13 @@ export function vueBanque(s: GameState): { title: string; lines: string[]; butto
     return { title: TEXTES.bankTitle, lines: [], buttons: [bouton(TEXTES.livretCta, TEXTES.livretOpen, () => openLivret(s), false, TEXTES.free)] };
   }
   if (!p.livret || s.job !== "plongeur") return null;
-  const lines = [TEXTES.livretBalance(fmtEuros(p.livretBalance)), TEXTES.livretRule(livretPct())];
-  if (p.lastInterest > 0) lines.push(TEXTES.livretLast(fmtEuros(p.lastInterest)));
   const phone = onThePhone(s);
   return {
     title: TEXTES.bankTitle,
-    lines,
+    lines: [livretLine(s)],
     buttons: [
-      bouton(TEXTES.deposit, depositEffects(s), () => depositLivret(s), phone || s.money.lte(0)),
-      bouton(TEXTES.withdraw, TEXTES.withdrawEffects(fmtEuros(p.livretBalance)), () => withdrawLivret(s), phone || p.livretBalance <= 0),
+      bouton(TEXTES.deposit, [], () => depositLivret(s), phone || s.money.lte(0)),
+      bouton(TEXTES.withdraw, [], () => withdrawLivret(s), phone || p.livretBalance <= 0),
     ],
   };
 }
@@ -263,7 +268,7 @@ export function vueTeaserEtudes(s: GameState): string | null {
 }
 
 export function vueFenetre(s: GameState): Bouton | null {
-  return canLookOutWindow(s) ? bouton(TEXTES.windowCta, [], () => lookOutWindow(s)) : null;
+  return canLookOutWindow(s) ? bouton(TEXTES.windowCta, windowEffects(s), () => lookOutWindow(s)) : null;
 }
 
 export function vueSouvenirs(s: GameState): { title: string; items: { text: string; missed: boolean }[] } | null {

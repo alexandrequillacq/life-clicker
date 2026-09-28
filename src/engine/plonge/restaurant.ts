@@ -16,9 +16,13 @@ function dayOfWeekAt(day: number): number {
 export function dayName(s: GameState): string {
   return DAY_NAMES[dayOfWeekAt(s.plonge.day)];
 }
+/** Secondes écoulées depuis le début du jour. */
+export function secsIntoDay(s: GameState): number {
+  return s.plonge.day - dayIndex(s) * DAY_SECS;
+}
 /** Secondes qui restent avant minuit. */
 export function secsLeftToday(s: GameState): number {
-  return DAY_SECS - (s.plonge.day - dayIndex(s) * DAY_SECS);
+  return DAY_SECS - secsIntoDay(s);
 }
 function openAt(s: GameState, day: number): boolean {
   return dayOfWeekAt(day) !== SUNDAY || s.plonge.sundayOpen;
