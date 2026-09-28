@@ -9,11 +9,9 @@ import {
   START_COVERS,
   START_PILE,
   PILE_BASE_CAP,
-  PILE_VISIBLE_AT,
-  CHEF_REVEAL_DELAY,
-  SUNDAY_OFFER_DELAY,
-  LIVRET_DELAY,
   NOVELTY_GAP,
+  REVEALS,
+  REVEAL_BY_ID,
   MEAL_ENERGY,
   RELAUNCH_SECS,
   CALL_RING_SECS,
@@ -63,6 +61,7 @@ import {
   lifeVisible,
   dayVisible,
   isRevealed,
+  CONDITION_NAMES,
   canPoseGants,
   poseGantsEffects,
   libraryVisible,
@@ -92,11 +91,17 @@ function run(s: GameState, secs: number, dt = 0.05): void {
   for (let t = 0; t < secs - 1e-9; t += dt) tick(s, dt);
 }
 
+/** Rend l'offre d'un équipement prête (son heure est passée, la nouveauté qui l'annonce est révélée). */
+function offerReady(s: GameState, id: string): void {
+  const row = REVEAL_BY_ID[id];
+  s.plonge.day = Math.max(s.plonge.day, row.at ?? 0);
+  for (const k of Object.keys(row.after ?? {})) if (REVEAL_BY_ID[k]?.kind === "jeu") s.plonge.revealed[k] = s.plonge.day;
+}
+
 /** Donne tout l'équipement jusqu'à (inclus) l'id demandé, sans passer par la caisse ni attendre les révélations. */
 function equipUpTo(s: GameState, id: string): void {
   for (const e of EQUIPMENT) {
-    if (e.revealAt !== undefined) s.plonge.day = Math.max(s.plonge.day, e.revealAt);
-    if (e.reveal) s.plonge.revealed[e.reveal] = s.plonge.day;
+    offerReady(s, e.id);
     s.money = s.money.add(e.cost);
     expect(buyEquipment(s, e.id)).toBe(true);
     s.plonge.boughtAt[e.id] = -1e6; // les révélations différées sont déjà passées
@@ -104,7 +109,6 @@ function equipUpTo(s: GameState, id: string): void {
   }
   // Ce qui se serait déjà révélé en chemin : la file des nouveautés est libre pour le test.
   for (const k of ["pile", "chef", "grasses", "livret", "offre_pro"]) s.plonge.revealed[k] ??= 0;
-  s.plonge.pileVisible = true;
   s.plonge.lastNovelty = -1e6;
 }
 
@@ -172,7 +176,7 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     expect(s.plonge.overflow).toBeGreaterThan(0);
     expect(s.plonge.chef).toBe("debut"); // le chef ne parle pas d'une pile que tu ne vois pas encore
     run(s, 2 * DAY_SECS + 8); // un samedi
-    expect(s.plonge.pileVisible).toBe(true);
+    expect(isRevealed(s, "pile")).toBe(true);
     expect(s.plonge.chef).toBe("debordement");
     expect(s.plonge.overflowToday).toBeGreaterThan(0);
     s.plonge.pile = 0;
@@ -184,14 +188,14 @@ describe("Plongeur : le restaurant (calendrier, pile finie, affluence)", () => {
     const s = fresh();
     s.plonge.pile = 0;
     tick(s, 0.05);
-    expect(s.plonge.pileVisible).toBe(false); // trop tôt : une information à la fois
-    s.plonge.day = PILE_VISIBLE_AT;
+    expect(isRevealed(s, "pile")).toBe(false); // trop tôt : une information à la fois
+    s.plonge.day = REVEAL_BY_ID.pile.at!;
     s.plonge.pile = 5;
     tick(s, 0.05);
-    expect(s.plonge.pileVisible).toBe(false);
+    expect(isRevealed(s, "pile")).toBe(false);
     s.plonge.pile = 0;
     tick(s, 0.01);
-    expect(s.plonge.pileVisible).toBe(true);
+    expect(isRevealed(s, "pile")).toBe(true);
   });
 
   it("le restaurant est fermé le dimanche au départ", () => {
@@ -209,8 +213,7 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
       const lines = equipmentEffects(s, e);
       expect(lines.length).toBeGreaterThan(0);
       for (const l of lines) expect(l).not.toMatch(/(\d+,\d\d €) → \1/); // jamais « A → A »
-      if (e.reveal) s.plonge.revealed[e.reveal] = s.plonge.day;
-      s.plonge.day = Math.max(s.plonge.day, e.revealAt ?? 0);
+      offerReady(s, e.id);
       s.money = s.money.add(e.cost);
       buyEquipment(s, e.id);
       s.plonge.boughtAt[e.id] = -1e6;
@@ -220,7 +223,7 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
   it("les équipements se révèlent en chaîne et ne s'achètent qu'une fois", () => {
     const s = fresh();
     expect(equipmentVisible(s, EQUIPMENT[0])).toBe(false); // au début : le bouton et l'argent, rien d'autre
-    s.plonge.day = EQUIPMENT[0].revealAt!;
+    s.plonge.day = REVEAL_BY_ID.gants.at!;
     expect(equipmentVisible(s, EQUIPMENT[0])).toBe(true);
     expect(equipmentVisible(s, EQUIPMENT[1])).toBe(false);
     s.money = D(10);
@@ -249,7 +252,7 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     s.plonge.boughtAt["eponge"] = s.plonge.day;
     const montre = EQUIPMENT.find((e) => e.id === "montre")!;
     expect(equipmentVisible(s, montre)).toBe(false);
-    s.plonge.day += montre.revealDelay!;
+    s.plonge.day += REVEAL_BY_ID.montre.after!.eponge;
     expect(equipmentVisible(s, montre)).toBe(true);
     expect(dayVisible(s)).toBe(false);
     s.money = D(montre.cost);
@@ -332,7 +335,7 @@ describe("Plongeur : l'équipement (objets uniques, statistique toujours affich�
     s.plonge.serviceCall = true;
     s.plonge.boughtAt["service_call"] = s.plonge.day;
     delete s.plonge.revealed["livret"];
-    run(s, LIVRET_DELAY - 1);
+    run(s, REVEAL_BY_ID.livret.after!.service_call - 1);
     expect(canOpenLivret(s)).toBe(false);
     run(s, 2);
     expect(canOpenLivret(s)).toBe(true);
@@ -441,7 +444,7 @@ describe("Plongeur : les demandes au chef (la réponse quand tu rattrapes le res
     delete s.plonge.revealed["chef"];
     s.plonge.boughtAt["reparer"] = s.plonge.day;
     s.plonge.pile = 0;
-    run(s, CHEF_REVEAL_DELAY - 1);
+    run(s, REVEAL_BY_ID.chef.after!.reparer - 1);
     expect(chefVisible(s)).toBe(false);
     run(s, 2);
     expect(chefVisible(s)).toBe(true);
@@ -488,7 +491,7 @@ describe("Plongeur : les demandes au chef (la réponse quand tu rattrapes le res
     const s = fresh();
     equipUpTo(s, "panier");
     s.plonge.boughtAt["panier"] = s.plonge.day;
-    run(s, SUNDAY_OFFER_DELAY + 1);
+    run(s, REVEAL_BY_ID.dimanche.after!.panier + 1);
     expect(canOfferSunday(s)).toBe(false); // Maman n'a pas encore appelé
     s.plonge.revealed["maman"] = s.plonge.day;
     s.plonge.lastNovelty = -1e6;
@@ -695,6 +698,36 @@ describe("Plongeur : poser les gants, la bibliothèque et l'énergie", () => {
   it("isRevealed garde la trace de chaque nouveauté", () => {
     const s = fresh();
     expect(isRevealed(s, "chef")).toBe(false);
+  });
+});
+
+describe("Plongeur : la table des nouveautés", () => {
+  it("chaque équipement a sa ligne d'offre, et chaque offre est un équipement", () => {
+    const offers = REVEALS.filter((r) => r.kind === "offre").map((r) => r.id);
+    expect(offers.sort()).toEqual(EQUIPMENT.map((e) => e.id).sort());
+  });
+
+  it("une ligne ne cite que des conditions et des événements connus", () => {
+    const events = new Set([...REVEALS.map((r) => r.id), "gants_poses", "service_call"]);
+    for (const r of REVEALS) {
+      for (const c of r.when ?? []) expect(CONDITION_NAMES).toContain(c);
+      for (const k of [...Object.keys(r.after ?? {}), ...(r.needs ?? [])]) expect(events.has(k), `${r.id} → ${k}`).toBe(true);
+    }
+    expect(new Set(REVEALS.map((r) => r.id)).size).toBe(REVEALS.length); // une ligne par nouveauté
+  });
+
+  it("un geste paraît à l'instant de l'action (sans délai), et repousse la nouveauté suivante du jeu", () => {
+    for (const r of REVEALS.filter((x) => x.kind === "geste")) {
+      expect(r.at).toBeUndefined();
+      for (const d of Object.values(r.after ?? {})) expect(d).toBe(0);
+    }
+    const s = fresh();
+    equipUpTo(s, "eponge");
+    s.plonge.day = 500;
+    s.money = D(1000);
+    expect(buyEquipment(s, "montre")).toBe(true);
+    expect(s.plonge.lastNovelty).toBe(500); // le jour s'affiche : la file attend
+    expect(isRevealed(s, "jour")).toBe(true);
   });
 });
 

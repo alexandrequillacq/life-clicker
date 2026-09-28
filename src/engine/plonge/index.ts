@@ -3,7 +3,7 @@
 // les machines prennent le relais et ne se fatiguent pas. Chaque information se révèle seule, à son heure.
 // Automatiser son travail libère du temps et de l'énergie pour sa vie (la bibliothèque).
 // Tout le réglage (chiffres, textes, ordre des nouveautés) vit dans ../content/plonge.ts.
-export { fmtEuros, isRevealed, onThePhone } from "./commun";
+export { fmtEuros, onThePhone } from "./commun";
 export * from "./restaurant";
 export * from "./revelations";
 export * from "./equipement";

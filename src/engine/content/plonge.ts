@@ -19,16 +19,74 @@ export const SUNDAY = 6;
 export const VALUE_PER_DISH = 0.05; // 5 centimes l'assiette
 // Seul le clic lave à la main : une tâche manuelle ne s'automatise pas, c'est le lave-vaisselle qui prend le relais.
 
-// --- Révélation : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
-export const PILE_VISIBLE_AT = 80; // le compteur d'assiettes apparaît quand la pile se vide (ou déborde) pour la première fois après ce temps
-export const CHEF_REVEAL_DELAY = 35; // « Le chef » paraît 35 s après la réparation du vieux lave-vaisselle
+// --- Les nouveautés : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
+export const NOVELTY_GAP = 35; // au moins 35 s entre une nouveauté et la suivante que le jeu révèle de lui-même
+
+/**
+ * Comment une nouveauté paraît :
+ * - « jeu » : le jeu la révèle de lui-même ; elle attend son tour dans la file (NOVELTY_GAP après la
+ *   nouveauté précédente) puis repousse la suivante. L'ordre de la table départage deux nouveautés prêtes ensemble.
+ * - « geste » : la conséquence immédiate d'une action du joueur (un achat qui change l'écran) ; elle ne
+ *   l'attend pas, mais repousse la nouveauté suivante du jeu.
+ * - « offre » : un achat qui se propose dès qu'il est prêt, sans rien repousser.
+ */
+export type RevealKind = "jeu" | "geste" | "offre";
+
+export interface RevealDef {
+  id: string; // clé de la nouveauté (pour une offre : l'id de l'équipement)
+  kind: RevealKind;
+  at?: number; // pas avant ce temps de calendrier (secondes depuis le premier lundi)
+  after?: Record<string, number>; // au moins N s après l'UN de ces événements (le premier arrivé suffit)
+  needs?: string[]; // ces événements ont TOUS eu lieu
+  when?: string[]; // conditions nommées, évaluées par le moteur (voir CONDITIONS dans engine/plonge/revelations.ts)
+}
+// Événements datés : un achat d'équipement (son id), une nouveauté du jeu (son id), « gants_poses »
+// (le joueur pose les gants) et « service_call » (le premier appel de Maman en plein service).
+
+const days = (n: number): number => n * DAY_SECS;
+
+/** La file des nouveautés : une ligne par chose qui paraît à l'écran. */
+export const REVEALS: RevealDef[] = [
+  // Ce que le jeu révèle de lui-même. L'ordre départage deux nouveautés prêtes au même instant : d'abord les
+  // moments qui ne durent qu'un tick (dimanche midi, une fournée qui sort), sinon ils seraient perdus jusqu'au
+  // prochain ; puis les conditions qui tiendront encore au tick suivant.
+  { id: "maman", kind: "jeu", at: days(27), when: ["dimanche_midi"] }, // Maman appelle à partir du 4e dimanche
+  { id: "service", kind: "jeu", needs: ["maman"], when: ["dimanche_midi", "en_service"] }, // le premier appel en plein service
+  { id: "grasses", kind: "jeu", when: ["fournee_grasse"] }, // la première fournée grasse
+  { id: "pile", kind: "jeu", at: 80, when: ["pile_vide_ou_deborde"] }, // le compteur d'assiettes sales
+  { id: "chef", kind: "jeu", after: { reparer: 35 } }, // « Le chef » et ses demandes
+  { id: "dimanche", kind: "jeu", after: { panier: 35 }, needs: ["maman"], when: ["pas_d_appel"] }, // « Proposer d'ouvrir le dimanche »
+  { id: "livret", kind: "jeu", after: { service_call: 60, panier: 240 }, when: ["pas_d_appel"] }, // le livret A
+  { id: "offre_pro", kind: "jeu", after: { detartrer: 180 } }, // le lave-vaisselle pro se propose
+  { id: "repas", kind: "jeu", after: { gants_poses: 35 } }, // « Se faire à manger »
+
+  // Les achats, dans l'ordre où ils se proposent.
+  { id: "gants", kind: "offre", at: 45 },
+  { id: "eponge", kind: "offre", after: { gants: 0 } },
+  { id: "montre", kind: "offre", after: { eponge: 75 } },
+  { id: "reparer", kind: "offre", after: { montre: 45 } },
+  { id: "gants_pro", kind: "offre", after: { reparer: 45 } },
+  { id: "joint", kind: "offre", after: { gants_pro: 30 } },
+  { id: "panier", kind: "offre", after: { joint: 0 } },
+  { id: "douchette", kind: "offre", after: { panier: 30 } },
+  { id: "detartrer", kind: "offre", after: { douchette: 0 } },
+  { id: "pro", kind: "offre", after: { offre_pro: 0 } },
+
+  // Ce qu'un geste du joueur fait paraître aussitôt.
+  { id: "jour", kind: "geste", after: { montre: 0 } }, // la montre donne le jour et le coup de feu
+  { id: "machine", kind: "geste", after: { reparer: 0 } }, // le vieux lave-vaisselle et ce qu'il rapporte
+  { id: "cycle_court", kind: "geste", after: { joint: 0 } }, // le compromis se propose
+  { id: "teaser", kind: "geste", after: { detartrer: 0 } }, // « Quand les machines tourneront seules… »
+  { id: "poser_gants", kind: "geste", after: { pro: 0 } }, // « Poser les gants »
+  { id: "etudes", kind: "geste", after: { gants_poses: 0 } }, // « Tes études » et l'énergie
+  { id: "couverts", kind: "geste", when: ["demande_acceptee"] }, // les couverts, avec la première demande
+  { id: "jours_ouverts", kind: "geste", when: ["dimanche_ouvert"] }, // le restaurant ouvre le dimanche
+];
+
+export const REVEAL_BY_ID: Record<string, RevealDef> = Object.fromEntries(REVEALS.map((r) => [r.id, r]));
+
+// --- Le chef et la banque ---
 export const ASK_GAP_DAYS = 1; // au plus une demande par jour
-export const FIRST_CALL_WEEK = 3; // Maman appelle à partir du 4e dimanche
-export const SUNDAY_OFFER_DELAY = 35; // « Proposer d'ouvrir le dimanche » : 35 s après le panier, une fois que Maman a appelé
-export const NOVELTY_GAP = 35; // au moins 35 s entre deux nouveautés que le jeu révèle de lui-même
-export const LIVRET_WITHOUT_SUNDAY = 240; // sans travailler le dimanche, le livret se propose quand même, 240 s après le panier (jamais bloquant)
-export const PRO_OFFER_DELAY = 180; // le lave-vaisselle pro se propose 180 s après le détartrage
-export const LIVRET_DELAY = 60; // le livret A se propose 60 s après le premier appel de Maman en plein service
 export const LIVRET_RATE = 0.05; // intérêts versés chaque lundi, en part de l'argent
 
 // --- Le compromis : le cycle court ---
@@ -41,7 +99,6 @@ export const RELAUNCH_SECS = 8; // relancer un cycle : la machine relave pendant
 export const ENERGY_REGEN = 0.3; // énergie/s récupérée en continu (le repos, lent : on la regagne surtout en vivant)
 export const MEAL_ENERGY = 10; // « Se faire à manger »
 export const MEALS_PER_DAY = 2; // deux repas par jour
-export const MEAL_REVEAL_DELAY = 35; // le geste paraît 35 s après avoir posé les gants
 export const CALL_RING_SECS = 30; // l'appel de Maman sonne 30 s
 export const CALL_TALK_SECS = 20; // au téléphone, tout s'arrête 20 s ; en raccrochant, l'énergie est pleine
 export const WINDOW_IDLE_SECS = 20; // « Regarder par la fenêtre » : après 20 s sans rien faire
@@ -50,15 +107,11 @@ export const ASK_EMPTY_SECS = 6; // moins d'une brassée d'assiettes sales 6 s d
 export const PLONGE_OFFLINE_CAP = 600; // hors-ligne plafonné à 10 min au plongeur
 
 // --- Équipement : objets uniques, chacun avec la statistique qu'il change ---
+// Quand chacun se propose : voir REVEALS (les offres).
 export interface EquipmentDef {
   id: string;
   cta: string;
   cost: number;
-  requires?: string; // équipement prérequis (révélation en chaîne)
-  revealAt?: number; // n'apparaît pas avant ce temps de calendrier
-  revealDelay?: number; // n'apparaît que ce nombre de secondes après l'achat du prérequis
-  reveal?: string; // n'apparaît qu'une fois cette nouveauté révélée (file des nouveautés)
-  novelty?: boolean; // l'achat change l'écran : les révélations suivantes attendent
   dishesPerClick?: number; // fixe les assiettes lavées par clic
   oldRate?: number; // répare la vieille machine (assiettes/s)
   oldMult?: number; // multiplie la vieille machine seule (joint, panier, détartrage)
@@ -69,16 +122,16 @@ export interface EquipmentDef {
 }
 
 export const EQUIPMENT: EquipmentDef[] = [
-  { id: "gants", cta: "Mettre des gants de plonge", cost: 3, revealAt: 45, dishesPerClick: 2 },
-  { id: "eponge", cta: "Acheter une vraie éponge", cost: 6, requires: "gants", dishesPerClick: 3 },
-  { id: "montre", cta: "S'acheter une montre", cost: 65, requires: "eponge", revealDelay: 75, watch: true, novelty: true },
-  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 45, requires: "montre", revealDelay: 45, oldRate: 6, chef: "reparer", novelty: true },
-  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 80, requires: "reparer", revealDelay: 45, dishesPerClick: 4 },
-  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 50, requires: "gants_pro", revealDelay: 30, oldMult: 1.5, novelty: true },
-  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 160, requires: "joint", oldMult: 1.5 },
-  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 200, requires: "panier", revealDelay: 30, dishesPerClick: 5 },
-  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 260, requires: "douchette", oldMult: 1.5, novelty: true },
-  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 720, requires: "detartrer", reveal: "offre_pro", proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement", novelty: true },
+  { id: "gants", cta: "Mettre des gants de plonge", cost: 3, dishesPerClick: 2 },
+  { id: "eponge", cta: "Acheter une vraie éponge", cost: 6, dishesPerClick: 3 },
+  { id: "montre", cta: "S'acheter une montre", cost: 65, watch: true },
+  { id: "reparer", cta: "Réparer le vieux lave-vaisselle de la réserve", cost: 45, oldRate: 6, chef: "reparer" },
+  { id: "gants_pro", cta: "Enfiler des gants pro", cost: 80, dishesPerClick: 4 },
+  { id: "joint", cta: "Changer le joint du vieux lave-vaisselle", cost: 50, oldMult: 1.5 },
+  { id: "panier", cta: "Acheter un deuxième panier à vaisselle", cost: 160, oldMult: 1.5 },
+  { id: "douchette", cta: "Installer une douchette de prélavage", cost: 200, dishesPerClick: 5 },
+  { id: "detartrer", cta: "Détartrer le vieux lave-vaisselle", cost: 260, oldMult: 1.5 },
+  { id: "pro", cta: "Payer la moitié du lave-vaisselle pro", cost: 720, proRate: 40, note: "Le chef paie l'autre moitié.", chef: "investissement" },
 ];
 
 export const EQUIPMENT_BY_ID: Record<string, EquipmentDef> = Object.fromEntries(EQUIPMENT.map((e) => [e.id, e]));

@@ -20,12 +20,3 @@ export function callOngoing(s: GameState): boolean {
 export function handsBusy(s: GameState): boolean {
   return s.manualRetired || s.plonge.callTalk > 0;
 }
-
-export function isRevealed(s: GameState, key: string): boolean {
-  return s.plonge.revealed[key] !== undefined;
-}
-/** Secondes de calendrier depuis un événement daté (achat, geste), -Infinity s'il n'a pas eu lieu. */
-export function since(s: GameState, id: string): number {
-  const at = s.plonge.boughtAt[id];
-  return at === undefined ? -Infinity : s.plonge.day - at;
-}

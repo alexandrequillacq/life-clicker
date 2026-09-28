@@ -1,7 +1,6 @@
 import { ENERGY_MAX, type GameState } from "../state";
 import {
   SUNDAY,
-  FIRST_CALL_WEEK,
   LIVRET_RATE,
   LOAD_SECS,
   GREASY_EVERY,
@@ -10,10 +9,9 @@ import {
   CALL_SOUVENIR,
   CALL_MISSED,
 } from "../content/plonge";
-import { isRevealed } from "./commun";
 import { dayIndex, arrivalRate, pileCap, openToday, pay } from "./restaurant";
 import { machineRate, machineRunning } from "./equipement";
-import { tryReveal, revealQueue } from "./revelations";
+import { revealQueue, isRevealed, callStartsNow, type TickMoments } from "./revelations";
 import { remember } from "./vie";
 
 // Le temps qui passe au restaurant : le calendrier, la pile, Maman, les machines, le débordement, l'énergie.
@@ -23,6 +21,7 @@ export function tickPlonge(s: GameState, t: number): void {
   const prevDay = dayIndex(s);
   p.day += t;
   const today = dayIndex(s);
+  const moments: TickMoments = {};
   if (today !== prevDay) {
     p.emptyToday = 0;
     p.overflowToday = 0;
@@ -32,21 +31,8 @@ export function tickPlonge(s: GameState, t: number): void {
       p.complaint = false;
       p.chef = "plainte";
     }
-    // Maman appelle le dimanche à midi, une fois par semaine, à partir du 3e dimanche.
-    const week = Math.floor(today / 7);
-    const sunday = today % 7 === SUNDAY;
-    const firstCall = sunday && !isRevealed(s, "maman") && week >= FIRST_CALL_WEEK && tryReveal(s, "maman", true);
-    // Le premier appel en plein service est une nouveauté : il attend son tour (Maman rappellera dimanche prochain).
-    const service = p.sundayOpen && !s.manualRetired;
-    const callOk = sunday && (isRevealed(s, "maman") || firstCall) && p.callWeek !== week;
-    if (callOk && (!service || p.serviceCall || tryReveal(s, "service", true))) {
-      p.callWeek = week;
-      p.callRing = CALL_RING_SECS;
-      if (p.sundayOpen && !s.manualRetired && !p.serviceCall) {
-        p.serviceCall = true;
-        p.boughtAt["service_call"] = p.day;
-      }
-    }
+    // Maman appelle le dimanche à midi (quand, et à partir de quand : voir REVEALS).
+    moments.sundayStart = today % 7 === SUNDAY;
     // Le livret A verse ses intérêts chaque lundi.
     if (today % 7 === 0 && p.livret) {
       const interest = s.money.toNumber() * LIVRET_RATE;
@@ -88,8 +74,8 @@ export function tickPlonge(s: GameState, t: number): void {
       if (p.loadClock >= LOAD_SECS) {
         p.loadClock -= LOAD_SECS;
         p.loads += 1;
-        // La première fournée grasse attend son tour dans la file des nouveautés.
-        if (p.loads % GREASY_EVERY === 0 && p.proRate === 0 && tryReveal(s, "grasses", true)) p.greasy = true;
+        // Une fournée sur GREASY_EVERY ressort grasse (la première attend son tour dans la file des nouveautés).
+        if (p.loads % GREASY_EVERY === 0 && p.proRate === 0) moments.greasyDue = true;
       }
     }
   }
@@ -108,7 +94,7 @@ export function tickPlonge(s: GameState, t: number): void {
   if (lost > 0) {
     p.overflow += lost;
     p.overflowToday += lost;
-    if (p.pileVisible && p.overflowDay !== today) {
+    if (isRevealed(s, "pile") && p.overflowDay !== today) {
       p.overflowDay = today;
       if (p.chef !== "debordement") p.chefBefore = p.chef;
       p.chef = "debordement";
@@ -117,8 +103,17 @@ export function tickPlonge(s: GameState, t: number): void {
   // La réplique du débordement s'efface quand la pile redescend.
   if (p.chef === "debordement" && p.pile < pileCap(s) * 0.7) p.chef = p.chefBefore;
 
-  // Le compteur d'assiettes se révèle quand la pile se vide (ou déborde) pour la première fois.
-  revealQueue(s);
+  // La file des nouveautés, puis ce qu'elle autorise à ce tick : l'appel de Maman, la fournée grasse.
+  revealQueue(s, moments);
+  if (callStartsNow(s, moments)) {
+    p.callWeek = Math.floor(today / 7);
+    p.callRing = CALL_RING_SECS;
+    if (p.sundayOpen && !s.manualRetired && !p.serviceCall) {
+      p.serviceCall = true;
+      p.boughtAt["service_call"] = p.day;
+    }
+  }
+  if (moments.greasyDue && isRevealed(s, "grasses")) p.greasy = true;
 
   // Énergie : le repos continu (elle ne se dépense qu'en études).
   s.energy = Math.min(ENERGY_MAX, s.energy + ENERGY_REGEN * t);

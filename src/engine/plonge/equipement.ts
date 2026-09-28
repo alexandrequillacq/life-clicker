@@ -1,9 +1,9 @@
 import { D, type Decimal } from "../numbers";
 import type { GameState } from "../state";
 import { CYCLE_COURT_MULT, RELAUNCH_SECS, EQUIPMENT_BY_ID, type EquipmentDef } from "../content/plonge";
-import { fmtEuros, fmtRate, markAction, onThePhone, isRevealed } from "./commun";
+import { fmtEuros, fmtRate, markAction, onThePhone } from "./commun";
 import { openDayArrivalRate, openDaysShare } from "./restaurant";
-import { novelty } from "./revelations";
+import { acted, isRevealed } from "./revelations";
 
 // L'équipement (objets uniques) et les machines, qui prennent le relais du clic et ne se fatiguent pas.
 
@@ -52,13 +52,7 @@ export function plongeOfflineIncomePerSec(s: GameState): Decimal {
 // --- Équipement ---
 
 export function equipmentVisible(s: GameState, def: EquipmentDef): boolean {
-  const p = s.plonge;
-  if (s.job !== "plongeur" || p.equipment[def.id]) return false;
-  if (def.revealAt !== undefined && p.day < def.revealAt) return false;
-  if (def.reveal && !isRevealed(s, def.reveal)) return false;
-  if (!def.requires) return true;
-  if (!p.equipment[def.requires]) return false;
-  return def.revealDelay === undefined || p.day >= (p.boughtAt[def.requires] ?? 0) + def.revealDelay;
+  return s.job === "plongeur" && !s.plonge.equipment[def.id] && isRevealed(s, def.id);
 }
 export function canBuyEquipment(s: GameState, id: string): boolean {
   const def = EQUIPMENT_BY_ID[id];
@@ -78,8 +72,7 @@ export function buyEquipment(s: GameState, id: string): boolean {
     s.plonge.greasy = false; // le lave-vaisselle pro ne sort pas d'assiettes grasses
   }
   if (def.chef) s.plonge.chef = def.chef;
-  if (def.novelty) novelty(s);
-  markAction(s);
+  acted(s);
   return true;
 }
 /** Sous-titres chiffrés : la statistique qui change avec cet achat (règle dure : toujours affichée). */
@@ -113,7 +106,7 @@ export function equipmentEffects(s: GameState, def: EquipmentDef): string[] {
 // --- Le compromis : le cycle court ---
 
 export function cycleCourtAvailable(s: GameState): boolean {
-  return s.job === "plongeur" && !s.plonge.cycleCourt && !!s.plonge.equipment["joint"];
+  return s.job === "plongeur" && !s.plonge.cycleCourt && isRevealed(s, "cycle_court");
 }
 export function cycleCourtEffects(s: GameState): string[] {
   const now = machineRate(s);

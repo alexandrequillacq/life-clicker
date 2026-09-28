@@ -1,16 +1,16 @@
 import type { GameState } from "../state";
 import { LIBRARY, LIBRARY_BY_ID, type StudyItemDef } from "../content/plonge";
-import { fmtRate, markAction, onThePhone } from "./commun";
+import { fmtRate, onThePhone } from "./commun";
 import { openDayArrivalRate } from "./restaurant";
 import { machineRate } from "./equipement";
-import { novelty } from "./revelations";
+import { acted, isRevealed } from "./revelations";
 
 // Poser les gants, la bibliothèque (le temps libre gagné en automatisant son travail), l'annonce.
 
 // --- Poser les gants ---
 
 export function canPoseGants(s: GameState): boolean {
-  return s.job === "plongeur" && !s.manualRetired && !!s.plonge.equipment["pro"];
+  return s.job === "plongeur" && !s.manualRetired && isRevealed(s, "poser_gants");
 }
 export function poseGantsEffects(s: GameState): string[] {
   return [
@@ -23,15 +23,14 @@ export function retireHands(s: GameState): void {
   s.manualRetired = true;
   s.flags.energyVisible = true;
   s.plonge.boughtAt["gants_poses"] = s.plonge.day;
-  novelty(s);
   s.plonge.chef = "gants_poses";
-  markAction(s);
+  acted(s);
 }
 
 // --- La bibliothèque ---
 
 export function libraryVisible(s: GameState): boolean {
-  return s.job === "plongeur" && s.manualRetired;
+  return s.job === "plongeur" && isRevealed(s, "etudes");
 }
 function studyIndex(id: string): number {
   return LIBRARY.findIndex((l) => l.id === id);

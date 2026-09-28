@@ -27,6 +27,7 @@
     fmtEuros,
     autoIncomeLine,
     dayVisible,
+    isRevealed,
     coversVisible,
     lifeVisible,
     canOpenLivret,
@@ -124,7 +125,7 @@
     <section class="col travail" aria-label="Travail">
       {#if vie}<h2>Travail</h2>{/if}
       {#if dayVisible(s)}<p>{dayLine}</p>{/if}
-      {#if p.pileVisible}
+      {#if isRevealed(s, "pile")}
         <p>Assiettes sales : {Math.floor(p.pile)}</p>
         {#if p.pile > pileCap(s) * 0.7}
           <p class="sub">Au-delà de {pileCap(s)}, le chef les lave lui-même.</p>
@@ -268,7 +269,7 @@
               {#each studyBuyEffects(nextStudy) as l}<p class="sub">{l}</p>{/each}
             </div>
           {/if}
-        {:else if p.equipment["detartrer"]}
+        {:else if isRevealed(s, "teaser")}
           <p class="sub">{STUDY_TEASER}</p>
         {/if}
 

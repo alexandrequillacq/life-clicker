@@ -1,8 +1,8 @@
 import type { GameState } from "../state";
 import { PLATES_PER_COVER, ASK_GAP_DAYS, ASK_EMPTY_SECS, LIVRET_RATE, ASKS, SUNDAY_OFFER, type AskDef } from "../content/plonge";
-import { fmtEuros, markAction, onThePhone, isRevealed } from "./commun";
+import { fmtEuros, onThePhone } from "./commun";
 import { dayIndex } from "./restaurant";
-import { novelty } from "./revelations";
+import { acted, isRevealed } from "./revelations";
 
 // Le chef : les demandes (le joueur réclame lui-même plus de travail, au même tarif), le dimanche,
 // et la banque (le livret A, l'argent qui travaille pour toi).
@@ -54,14 +54,13 @@ function applyAsk(s: GameState, def: AskDef): void {
   if (def.covers) s.plonge.covers += def.covers;
   if (def.sunday) s.plonge.sundayOpen = true;
   if (def.chef) s.plonge.chef = def.chef;
-  markAction(s);
 }
 export function askChef(s: GameState): boolean {
   if (!canAskChef(s)) return false;
   applyAsk(s, currentAsk(s)!);
-  if (s.plonge.asksDone === 0) novelty(s); // les couverts s'affichent
   s.plonge.asksDone += 1;
   s.plonge.lastAskDay = dayIndex(s);
+  acted(s);
   return true;
 }
 /** Ouvrir le dimanche : une proposition unique, un moment après le panier, une fois que Maman a appelé. */
@@ -72,7 +71,7 @@ export function canOfferSunday(s: GameState): boolean {
 export function offerSunday(s: GameState): boolean {
   if (!canOfferSunday(s) || onThePhone(s)) return false;
   applyAsk(s, SUNDAY_OFFER);
-  novelty(s);
+  acted(s);
   return true;
 }
 
@@ -93,7 +92,7 @@ export function openLivret(s: GameState): boolean {
   if (!canOpenLivret(s) || onThePhone(s)) return false;
   s.plonge.livret = true;
   s.plonge.chef = "banque";
-  markAction(s);
+  acted(s);
   return true;
 }
 export function livretLine(s: GameState): string {

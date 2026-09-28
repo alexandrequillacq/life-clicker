@@ -4,9 +4,8 @@
 import { createInitialState } from "../../src/engine/state";
 import { tick } from "../../src/engine/loop";
 import { work, poseGants } from "../../src/engine/actions";
-import { EQUIPMENT, LIBRARY, MEAL_ENERGY } from "../../src/engine/content/plonge";
+import { EQUIPMENT, LIBRARY, MEAL_ENERGY, REVEALS } from "../../src/engine/content/plonge";
 import {
-  equipmentVisible,
   canBuyEquipment,
   buyEquipment,
   canOpenLivret,
@@ -30,7 +29,6 @@ import {
   canAnswerAnnonce,
   answerAnnonce,
   isRevealed,
-  mealVisible,
 } from "../../src/engine/plonge";
 import type { GameState } from "../../src/engine/state";
 
@@ -47,32 +45,10 @@ export interface Playthrough {
   deadMax: number; // plus long temps mort d'affilée
 }
 
-/** Ce que le joueur voit paraître, une information à la fois (clé → c'est à l'écran). */
+/** Ce que le joueur voit paraître : le premier clic (l'argent), puis chaque ligne de la table des nouveautés. */
 function seenChecks(s: GameState): Record<string, () => boolean> {
-  const eq = (id: string) => () => !!s.plonge.equipment[id] || equipmentVisible(s, EQUIPMENT.find((e) => e.id === id)!);
-  const owned = (id: string) => () => !!s.plonge.equipment[id];
-  const rev = (id: string) => () => isRevealed(s, id);
   const checks: Record<string, () => boolean> = { argent: () => s.totalClicks > 0 };
-  for (const e of EQUIPMENT) checks[e.id] = eq(e.id);
-  Object.assign(checks, {
-    jour: owned("montre"),
-    machine: owned("reparer"),
-    cycle_court: owned("joint"),
-    teaser: owned("detartrer"),
-    poser_gants: owned("pro"),
-    etudes: () => s.manualRetired,
-    couverts: () => s.plonge.asksDone > 0,
-    jours_ouverts: () => s.plonge.sundayOpen,
-    maman: rev("maman"),
-    service: rev("service"),
-    grasses: rev("grasses"),
-    pile: rev("pile"),
-    chef: rev("chef"),
-    dimanche: rev("dimanche"),
-    livret: rev("livret"),
-    offre_pro: rev("offre_pro"),
-    repas: () => mealVisible(s),
-  });
+  for (const r of REVEALS) checks[r.id] = () => isRevealed(s, r.id);
   return checks;
 }
 

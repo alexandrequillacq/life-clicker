@@ -7,10 +7,10 @@ import {
   WINDOW_LINES,
   WINDOW_LINES_HOME,
 } from "../content/plonge";
-import { fmtEuros, markAction, onThePhone, isRevealed } from "./commun";
+import { fmtEuros, markAction, onThePhone } from "./commun";
 import { dayIndex, dayName, arrivalsIn } from "./restaurant";
 import { machineRate, machineRunning } from "./equipement";
-import { lifeVisible } from "./revelations";
+import { lifeVisible, isRevealed } from "./revelations";
 import { libraryVisible } from "./etudes";
 
 // La vie perso : Maman au téléphone, la fenêtre, le repas, les souvenirs.

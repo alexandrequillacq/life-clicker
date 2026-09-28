@@ -63,7 +63,6 @@ export interface PlongeState {
   overflowDay: number; // dernier jour où le débordement a été signalé
   washed: number; // assiettes lavées au total
   earned: number; // € gagnés au total à la plonge
-  pileVisible: boolean; // le compteur d'assiettes sales est révélé
   equipment: Record<string, boolean>; // objets uniques achetés
   boughtAt: Record<string, number>; // temps de calendrier de chaque achat (révélations différées)
   oldRate: number; // vieille machine réparée (assiettes/s, 0 si en panne)
@@ -108,7 +107,6 @@ export function createPlongeState(): PlongeState {
     overflowDay: -1,
     washed: 0,
     earned: 0,
-    pileVisible: false,
     equipment: {},
     boughtAt: {},
     oldRate: 0,
