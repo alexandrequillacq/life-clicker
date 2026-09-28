@@ -3,14 +3,14 @@ import {
   EQUIPMENT,
   LIBRARY,
   CHEF_LINES,
+  CONCESSIONS,
   SUNDAY_OFFER,
   AGE_PLONGEUR,
-  RELAUNCH_SECS,
   PILE_WARN_SHARE,
   TEXTES,
 } from "../content/plonge";
 import { fmtEuros, fmtRate, onThePhone } from "./commun";
-import { dayName, isPeak, openToday, pileCap, noDirtyPlates, washClick } from "./restaurant";
+import { dayName, openToday, pileCap, noDirtyPlates, washClick } from "./restaurant";
 import { isRevealed, dayVisible, coversVisible, lifeVisible } from "./revelations";
 import {
   machineRate,
@@ -19,11 +19,9 @@ import {
   canBuyEquipment,
   buyEquipment,
   equipmentEffects,
-  cycleCourtAvailable,
-  cycleCourtEffects,
-  setCycleCourt,
-  relaunchCycle,
-  shelveGreasy,
+  concessionVisible,
+  concessionEffects,
+  takeConcession,
 } from "./equipement";
 import {
   chefVisible,
@@ -36,8 +34,10 @@ import {
   offerSunday,
   canOpenLivret,
   openLivret,
-  livretEffects,
-  livretLine,
+  depositLivret,
+  withdrawLivret,
+  depositEffects,
+  livretPct,
 } from "./chef";
 import { canAnswerCall, answerCall, callEffects, canLookOutWindow, lookOutWindow, mealVisible, canEat, eat, mealEffects } from "./vie";
 import {
@@ -85,14 +85,12 @@ export interface VueEntete {
   chef: string;
   money: string | null;
   auto: string | null;
-  livret: string | null;
 }
 export function vueEntete(s: GameState): VueEntete {
   return {
     chef: CHEF_LINES[s.plonge.chef],
     money: s.flags.moneyVisible ? TEXTES.money(fmtEuros(s.money.toNumber())) : null,
     auto: isRevealed(s, "machine") ? autoIncomeLine(s) : null,
-    livret: s.plonge.livret ? livretLine(s) : null,
   };
 }
 
@@ -106,13 +104,14 @@ export function vueTelephone(s: GameState): boolean {
 export function vueJour(s: GameState): string | null {
   if (!dayVisible(s)) return null;
   const day = dayName(s);
-  return !openToday(s) ? TEXTES.dayClosed(day) : isPeak(s) ? TEXTES.dayPeak(day) : day;
+  return openToday(s) ? day : TEXTES.dayClosed(day);
 }
 
 export function vuePile(s: GameState): string[] | null {
   if (!isRevealed(s, "pile")) return null;
   const p = s.plonge;
   const out = [TEXTES.pile(Math.floor(p.pile))];
+  if (!openToday(s) && !dayVisible(s)) out.push(TEXTES.noPlatesToday); // avant la montre, sans explication
   if (p.pile > pileCap(s) * PILE_WARN_SHARE) out.push(TEXTES.pileWarn(pileCap(s)));
   if (p.overflowToday >= 1) out.push(TEXTES.overflowToday(Math.floor(p.overflowToday)));
   return out;
@@ -133,32 +132,22 @@ export function vueLaver(s: GameState): Bouton | null {
 
 export interface VueLaveVaisselle {
   title: string;
-  status: string; // débit, fournée grasse ou relavage en cours
-  greasy: { relaunch: Bouton; shelve: Bouton; note: string } | null;
-  cycleCourt: Bouton | null;
+  status: string; // débit, ou relavage d'une fournée grasse en cours
 }
 export function vueLaveVaisselle(s: GameState): VueLaveVaisselle | null {
   if (!isRevealed(s, "machine")) return null;
   const p = s.plonge;
-  const status = p.greasy
-    ? TEXTES.greasy
-    : p.relaunchLeft > 0
-      ? TEXTES.relaunching(Math.ceil(p.relaunchLeft))
-      : TEXTES.machineRate(fmtRate(machineRate(s)));
-  return {
-    title: TEXTES.machineTitle,
-    status,
-    greasy: p.greasy
-      ? {
-          relaunch: bouton(TEXTES.relaunch, [], () => relaunchCycle(s)),
-          shelve: bouton(TEXTES.shelve, [], () => shelveGreasy(s)),
-          note: TEXTES.greasyChoice(RELAUNCH_SECS),
-        }
-      : null,
-    cycleCourt: cycleCourtAvailable(s)
-      ? bouton(TEXTES.cycleCourtCta, cycleCourtEffects(s), () => setCycleCourt(s), false, TEXTES.free)
-      : null,
-  };
+  const status =
+    p.relaunchLeft > 0 ? TEXTES.relaunching(Math.ceil(p.relaunchLeft)) : TEXTES.machineRate(fmtRate(machineRate(s)));
+  return { title: TEXTES.machineTitle, status };
+}
+
+/** Les concessions : gratuites, on lave un peu moins bien pour aller plus vite. */
+export function vueConcessions(s: GameState): { title: string; offers: Bouton[] } | null {
+  const offers = CONCESSIONS.filter((c) => concessionVisible(s, c.id)).map((c) =>
+    bouton(c.cta, concessionEffects(s, c.id), () => takeConcession(s, c.id), false, TEXTES.free),
+  );
+  return offers.length > 0 ? { title: TEXTES.concessionsTitle, offers } : null;
 }
 
 /** Le prochain équipement proposé (un seul à la fois). */
@@ -182,9 +171,24 @@ export function vueChef(s: GameState): { title: string; offers: Bouton[] } | nul
   return offers.length > 0 ? { title: TEXTES.chefTitle, offers } : null;
 }
 
-export function vueBanque(s: GameState): { title: string; buy: Bouton } | null {
-  if (!canOpenLivret(s)) return null;
-  return { title: TEXTES.bankTitle, buy: bouton(TEXTES.livretCta, livretEffects(s), () => openLivret(s), false, TEXTES.free) };
+/** La banque : ouvrir le livret A, puis y mettre ou reprendre son argent. */
+export function vueBanque(s: GameState): { title: string; lines: string[]; buttons: Bouton[] } | null {
+  const p = s.plonge;
+  if (canOpenLivret(s)) {
+    return { title: TEXTES.bankTitle, lines: [], buttons: [bouton(TEXTES.livretCta, TEXTES.livretOpen, () => openLivret(s), false, TEXTES.free)] };
+  }
+  if (!p.livret || s.job !== "plongeur") return null;
+  const lines = [TEXTES.livretBalance(fmtEuros(p.livretBalance)), TEXTES.livretRule(livretPct())];
+  if (p.lastInterest > 0) lines.push(TEXTES.livretLast(fmtEuros(p.lastInterest)));
+  const phone = onThePhone(s);
+  return {
+    title: TEXTES.bankTitle,
+    lines,
+    buttons: [
+      bouton(TEXTES.deposit, depositEffects(s), () => depositLivret(s), phone || s.money.lte(0)),
+      bouton(TEXTES.withdraw, TEXTES.withdrawEffects(fmtEuros(p.livretBalance)), () => withdrawLivret(s), phone || p.livretBalance <= 0),
+    ],
+  };
 }
 
 export function vuePoserGants(s: GameState): Bouton | null {

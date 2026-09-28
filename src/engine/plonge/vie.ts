@@ -1,23 +1,16 @@
 import { ENERGY_MAX, type GameState } from "../state";
-import {
-  CALL_TALK_SECS,
-  WINDOW_IDLE_SECS,
-  MEAL_ENERGY,
-  MEALS_PER_DAY,
-  WINDOW_LINES,
-  WINDOW_LINES_HOME,
-  TEXTES,
-} from "../content/plonge";
+import { WINDOW_IDLE_SECS, MEAL_ENERGY, MEALS_PER_DAY, WINDOW_LINES, WINDOW_LINES_HOME, TEXTES } from "../content/plonge";
 import { fmtEuros, markAction, onThePhone } from "./commun";
-import { dayIndex, dayName, arrivalsIn } from "./restaurant";
-import { machineRate, machineRunning } from "./equipement";
+import { dayIndex, dayName, arrivalsIn, secsLeftToday } from "./restaurant";
+import { machineOutput } from "./equipement";
 import { lifeVisible, isRevealed } from "./revelations";
 import { libraryVisible } from "./etudes";
 
 // La vie perso : Maman au téléphone, la fenêtre, le repas, les souvenirs.
 
-export function remember(s: GameState, kind: "lien" | "contemplation", text: string, missed: boolean): void {
-  s.souvenirs.unshift({ day: dayName(s), kind, text, missed });
+/** Un souvenir, daté du jour où il a eu lieu (un appel est daté du dimanche, même fini le lundi). */
+export function remember(s: GameState, kind: "lien" | "contemplation", text: string, missed: boolean, day = dayName(s)): void {
+  s.souvenirs.unshift({ day, kind, text, missed });
   s.vieVecueTicks += missed ? 0 : 1;
   if (!missed) s.secsSinceLife = 0;
 }
@@ -27,24 +20,29 @@ export function remember(s: GameState, kind: "lien" | "contemplation", text: str
 export function canAnswerCall(s: GameState): boolean {
   return s.plonge.callRing > 0;
 }
-/** Ce que coûte de décrocher : pendant l'appel, le chef lave ce que la machine ne suit pas. */
+/** Ce que coûte de décrocher : jusqu'à lundi, le chef lave ce que les machines ne suivent pas. */
 function callLoss(s: GameState): number {
   if (s.manualRetired) return 0;
-  const lost = arrivalsIn(s, CALL_TALK_SECS) - (machineRunning(s) ? machineRate(s) : 0) * CALL_TALK_SECS;
+  const secs = secsLeftToday(s);
+  const lost = arrivalsIn(s, secs) - machineOutput(s) * secs;
   return Math.max(0, lost) * s.valuePerDish.toNumber();
 }
 export function callEffects(s: GameState): string[] {
-  const out = [TEXTES.callTalk(CALL_TALK_SECS)];
+  const out = [TEXTES.callTalk];
   if (s.flags.energyVisible) out.push(TEXTES.callEnergy(Math.round(s.energy), ENERGY_MAX));
   const loss = callLoss(s);
   if (loss >= 0.01) out.push(TEXTES.callLoss(fmtEuros(loss)));
   return out;
 }
-/** Décrocher : les mains (et les études) s'arrêtent le temps de l'appel. */
+/** Décrocher : les mains (et les études) s'arrêtent jusqu'à lundi ; les machines, elles, tournent. */
 export function answerCall(s: GameState): boolean {
   if (!canAnswerCall(s)) return false;
-  s.plonge.callRing = 0;
-  s.plonge.callTalk = CALL_TALK_SECS;
+  const p = s.plonge;
+  p.callRing = 0;
+  p.callTalk = secsLeftToday(s);
+  p.callsAnswered += 1;
+  p.boughtAt[`appel_${p.callsAnswered}`] = p.day;
+  markAction(s);
   return true;
 }
 

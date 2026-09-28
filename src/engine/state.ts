@@ -3,7 +3,7 @@ import { MISSION_PERIOD } from "./content/missions";
 import { BADBUZZ_OFFSET } from "./content/audience";
 import { START_COVERS, START_PILE } from "./content/plonge";
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** Constantes d'énergie (tunables au playtest). */
 export const ENERGY_MAX = 100;
@@ -51,7 +51,8 @@ export interface PlongeState {
   sundayOpen: boolean; // le restaurant ouvre-t-il le dimanche ?
   asksDone: number; // demandes au chef acceptées (index de la prochaine)
   lastAskDay: number; // jour de la dernière demande (au plus une par jour)
-  emptyToday: number; // secondes de pile vide aujourd'hui (le joueur va plus vite que le restaurant)
+  emptyToday: number; // secondes, un jour ouvert, où tu suis le restaurant (moins d'une brassée d'assiettes sales)
+  behindToday: number; // secondes, un jour ouvert, où tu ne suis plus (plus de BEHIND_LOADS brassées)
   overflowToday: number; // assiettes lavées par le chef aujourd'hui
   chefBefore: string; // réplique à retrouver quand le débordement se résorbe
   serviceCall: boolean; // Maman a appelé un dimanche ouvert (en plein service)
@@ -67,19 +68,24 @@ export interface PlongeState {
   boughtAt: Record<string, number>; // temps de calendrier de chaque achat (révélations différées)
   oldRate: number; // vieille machine réparée (assiettes/s, 0 si en panne)
   oldMult: number; // réglages de la vieille machine (joint, panier, détartrage)
-  proRate: number; // lave-vaisselle pro (assiettes/s)
-  livret: boolean; // livret A ouvert : intérêts chaque lundi
+  proRate: number; // lave-vaisselle pro, un ou deux (assiettes/s)
+  machineMult: number; // réglages de toutes les machines (l'adoucisseur)
+  clickBase: number; // assiettes par clic données par l'équipement (avant la concession « approximative »)
+  concessions: Record<string, boolean>; // concessions acceptées (approximatif, cycle court, sans relavage)
+  livret: boolean; // livret A ouvert
+  livretBalance: number; // € sur le livret
+  livretLow: number; // plus petit solde du livret depuis lundi (c'est lui qui rapporte)
   lastInterest: number; // € versés au dernier lundi
-  cycleCourt: boolean; // compromis : programme court (+30 %, certaines assiettes ressortent grasses)
-  loadClock: number; // secondes de machine dans la fournée courante
+  loadClock: number; // secondes de vieux lave-vaisselle dans la fournée courante
   loads: number; // fournées terminées en cycle court
-  greasy: boolean; // fournée grasse : la machine est à l'arrêt en attendant une décision
-  relaunchLeft: number; // secondes restantes du cycle relancé (la machine relave, rien ne sort)
-  shelved: number; // fournées grasses rangées quand même
+  relaunchLeft: number; // secondes restantes du relavage d'une fournée grasse (le vieux ne sort rien)
   complaint: boolean; // une plainte de client arrivera au service suivant
   callRing: number; // secondes restantes où Maman sonne (0 = pas d'appel)
-  callTalk: number; // secondes restantes au téléphone (les mains s'arrêtent)
+  callTalk: number; // secondes restantes au téléphone (les mains s'arrêtent, pas les machines)
   callWeek: number; // dernière semaine où Maman a appelé
+  callDay: string; // jour de l'appel en cours (le souvenir garde ce jour, même si l'appel finit à minuit)
+  callsAnswered: number; // appels de Maman décrochés
+  rings: number; // dimanches où Maman a appelé
   idle: number; // secondes sans aucune action du joueur
   windowDay: number; // dernier jour où l'on a regardé par la fenêtre
   windowCount: number; // nombre de fois (fait tourner les lignes)
@@ -96,9 +102,10 @@ export function createPlongeState(): PlongeState {
     asksDone: 0,
     lastAskDay: -1,
     emptyToday: 0,
+    behindToday: 0,
     emptyFor: 0,
     revealed: {},
-    lastNovelty: 0,
+    lastNovelty: -1000, // la première nouveauté n'attend personne
     overflowToday: 0,
     chefBefore: "debut",
     serviceCall: false,
@@ -112,18 +119,23 @@ export function createPlongeState(): PlongeState {
     oldRate: 0,
     oldMult: 1,
     proRate: 0,
+    machineMult: 1,
+    clickBase: 1,
+    concessions: {},
     livret: false,
+    livretBalance: 0,
+    livretLow: 0,
     lastInterest: 0,
-    cycleCourt: false,
     loadClock: 0,
     loads: 0,
-    greasy: false,
     relaunchLeft: 0,
-    shelved: 0,
     complaint: false,
     callRing: 0,
     callTalk: 0,
     callWeek: -1,
+    callDay: "",
+    callsAnswered: 0,
+    rings: 0,
     idle: 0,
     windowDay: -1,
     windowCount: 0,

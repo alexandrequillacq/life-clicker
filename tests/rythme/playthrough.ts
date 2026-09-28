@@ -4,7 +4,7 @@
 import { createInitialState } from "../../src/engine/state";
 import { tick } from "../../src/engine/loop";
 import { work, poseGants } from "../../src/engine/actions";
-import { EQUIPMENT, LIBRARY, MEAL_ENERGY, REVEALS, REVEAL_BY_ID } from "../../src/engine/content/plonge";
+import { EQUIPMENT, CONCESSIONS, LIBRARY, MEAL_ENERGY, REVEALS, REVEAL_BY_ID } from "../../src/engine/content/plonge";
 import {
   canBuyEquipment,
   buyEquipment,
@@ -14,13 +14,14 @@ import {
   askChef,
   canOfferSunday,
   offerSunday,
-  cycleCourtAvailable,
-  setCycleCourt,
-  shelveGreasy,
+  concessionVisible,
+  takeConcession,
+  openToday,
   canAnswerCall,
   answerCall,
   canPoseGants,
   canBuyStudy,
+  studyBuyVisible,
   buyStudy,
   canStudyStep,
   studyStep,
@@ -34,7 +35,7 @@ import type { GameState } from "../../src/engine/state";
 
 export interface PlaythroughOptions {
   afk?: boolean; // ne clique plus une fois le vieux lave-vaisselle réparé
-  refuse?: boolean; // refuse le cycle court
+  refuse?: boolean; // refuse les concessions (laver moins bien pour aller plus vite)
   onStep?: (s: GameState, t: number) => void; // appelé à chaque pas, avant les actions du joueur
 }
 
@@ -45,12 +46,15 @@ export interface Playthrough {
   maxGap: number; // plus grand écart entre deux nouveautés consécutives de la frise
   dead: number; // temps mort total (fenêtres de 10 s où le clic ne sert presque à rien et rien ne s'achète)
   deadMax: number; // plus long temps mort d'affilée
+  emptyShare: number; // part du temps à la main, jours ouverts, où la pile est vide (le clic ne sert à rien)
+  overflowShare: number; // part du même temps où la pile déborde (le chef lave à ta place)
 }
 
-/** Ce que le joueur voit paraître : le premier clic (l'argent), puis chaque ligne de la table des nouveautés. */
+/** Ce que le joueur voit paraître : le premier clic (l'argent), puis chaque ligne de la table des nouveautés, et chaque étude proposée. */
 function seenChecks(s: GameState): Record<string, () => boolean> {
   const checks: Record<string, () => boolean> = { argent: () => s.totalClicks > 0 };
   for (const r of REVEALS) checks[r.id] = () => isRevealed(s, r.id);
+  for (const l of LIBRARY) checks[l.id] = () => l.id in s.plonge.library || studyBuyVisible(s, l.id); // chaque nouveau livre ou cours proposé
   return checks;
 }
 
@@ -71,6 +75,9 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
   let winWashed = 0;
   let winClicks = 0;
   let winActs = 0;
+  let manualOpen = 0;
+  let manualEmpty = 0;
+  let manualOverflow = 0;
   while (t < 3600 && s.job === "plongeur") {
     for (const [k, f] of Object.entries(seen)) if (!reveals.some((r) => r[0] === k) && f()) reveals.push([k, t]);
     opts.onStep?.(s, t);
@@ -86,8 +93,7 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
     if (canOpenLivret(s)) openLivret(s);
     if (canAskChef(s)) askChef(s);
     if (canOfferSunday(s)) offerSunday(s);
-    if (!opts.refuse && cycleCourtAvailable(s)) setCycleCourt(s);
-    if (s.plonge.greasy) shelveGreasy(s);
+    if (!opts.refuse) for (const c of CONCESSIONS) if (concessionVisible(s, c.id)) takeConcession(s, c.id);
     if (canAnswerCall(s)) answerCall(s);
     if (canPoseGants(s)) poseGants(s);
     for (const l of LIBRARY) {
@@ -98,9 +104,15 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
     if (canAnswerAnnonce(s)) answerAnnonce(s);
     const clicksNow = s.dishesPerClick;
     const washedByHand = s.plonge.washed - w0;
+    const overflow0 = s.plonge.overflow;
     tick(s, dt);
     t += dt;
     if (!s.manualRetired) {
+      if (openToday(s) && s.plonge.callTalk <= 0) {
+        manualOpen += dt;
+        if (s.plonge.pile < 1) manualEmpty += dt;
+        if (s.plonge.overflow > overflow0) manualOverflow += dt;
+      }
       winClock += dt;
       winWashed += Math.max(0, washedByHand);
       winClicks += (clicking ? cps * dt : 0) * clicksNow;
@@ -120,7 +132,9 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
   reveals.sort((a, b) => a[1] - b[1]);
   let maxGap = 0;
   for (let i = 1; i < reveals.length; i++) maxGap = Math.max(maxGap, reveals[i][1] - reveals[i - 1][1]);
-  return { secs: t, maxGap, reveals, purchases, dead, deadMax };
+  const emptyShare = manualEmpty / Math.max(1, manualOpen);
+  const overflowShare = manualOverflow / Math.max(1, manualOpen);
+  return { secs: t, maxGap, reveals, purchases, dead, deadMax, emptyShare, overflowShare };
 }
 
 /**
@@ -140,5 +154,5 @@ export const SCENARIOS: { name: string; cps: number; opts?: PlaythroughOptions }
   { name: "4 clics/s", cps: 4 },
   { name: "6 clics/s", cps: 6 },
   { name: "4 clics/s, AFK après la réparation", cps: 4, opts: { afk: true } },
-  { name: "4 clics/s, refuse le cycle court", cps: 4, opts: { refuse: true } },
+  { name: "4 clics/s, refuse les concessions", cps: 4, opts: { refuse: true } },
 ];

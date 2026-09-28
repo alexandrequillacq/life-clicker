@@ -47,7 +47,7 @@ describe("App P0 (DOM)", () => {
     const { target, component } = mountApp();
     const wash = target.querySelector("button.wash") as HTMLButtonElement;
     const gants = (): HTMLButtonElement | undefined =>
-      [...target.querySelectorAll("button")].find((b) => b.textContent === "Mettre des gants de plonge");
+      [...target.querySelectorAll("button")].find((b) => b.textContent === "Acheter des gants de plonge");
     for (let i = 0; i < 19; i++) wash.click();
     flushSync();
     expect(gants()).toBeUndefined(); // 0,95 €
@@ -62,7 +62,7 @@ describe("App P0 (DOM)", () => {
     gants()!.click();
     flushSync();
     expect(wash.textContent).toBe("Laver 2 assiettes");
-    expect(target.textContent).toContain("Acheter une vraie éponge");
+    expect(target.textContent).not.toContain("Acheter une vraie éponge"); // l'éponge attend que tu ne suives plus
     unmount(component);
   });
 
@@ -74,7 +74,7 @@ describe("App P0 (DOM)", () => {
     const { target, component } = mountApp();
 
     // Le premier achat proposé (les gants) dit ce qu'il change.
-    expect(target.textContent).toContain("Mettre des gants de plonge");
+    expect(target.textContent).toContain("Acheter des gants de plonge");
     expect(target.textContent).toContain("Par clic : 1 → 2 assiettes");
 
     // Le vieux lave-vaisselle réparé : l'argent qui tombe tout seul, par minute, hors clic.
@@ -82,7 +82,7 @@ describe("App P0 (DOM)", () => {
     game.state.plonge.boughtAt["reparer"] = game.state.plonge.day; // la réparation fait paraître le lave-vaisselle
     tick(game.state, 0.016);
     flushSync();
-    expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 10,29 € / min");
+    expect(target.querySelector(".auto")!.textContent).toBe("Le lave-vaisselle te rapporte 8,57 € / min");
     expect(target.textContent).not.toContain("Tes mains");
 
     unmount(component);
@@ -94,7 +94,7 @@ describe("App P0 (DOM)", () => {
     const { target, component } = mountApp();
     expect((target.querySelector("fieldset.cols") as HTMLFieldSetElement).disabled).toBe(true);
     expect(target.textContent).toContain("Tu es au téléphone avec Maman.");
-    expect(target.textContent).toContain("Encore 10 s");
+    expect(target.textContent).toContain("Jusqu'à lundi : encore 10 s");
     expect((target.querySelector("button.wash") as HTMLButtonElement).textContent).toBe("Tu es au téléphone");
     unmount(component);
   });

@@ -14,6 +14,7 @@
     vueCouverts,
     vueLaver,
     vueLaveVaisselle,
+    vueConcessions,
     vueAmelioration,
     vueChef,
     vueBanque,
@@ -37,6 +38,7 @@
   const couverts = $derived(vueCouverts(s));
   const laver = $derived(vueLaver(s));
   const machine = $derived(vueLaveVaisselle(s));
+  const concessions = $derived(vueConcessions(s));
   const amelioration = $derived(vueAmelioration(s));
   const chef = $derived(vueChef(s));
   const banque = $derived(vueBanque(s));
@@ -62,7 +64,6 @@
     <p class="chef">{entete.chef}</p>
     {#if entete.money}<p class="money">{entete.money}</p>{/if}
     {#if entete.auto}<p class="sub auto">{entete.auto}</p>{/if}
-    {#if entete.livret}<p class="sub">{entete.livret}</p>{/if}
   </header>
 
   <!-- Au téléphone avec Maman, tout s'arrête : chaque bouton est grisé le temps de l'appel. -->
@@ -83,21 +84,18 @@
       {#if machine}
         <h3>{machine.title}</h3>
         <p>{machine.status}</p>
-        {#if machine.greasy}
-          <div class="row">
-            <button class="bt" onclick={machine.greasy.relaunch.act}>{machine.greasy.relaunch.label}</button>
-            <button class="bt" onclick={machine.greasy.shelve.act}>{machine.greasy.shelve.label}</button>
-          </div>
-          <p class="sub">{machine.greasy.note}</p>
-        {/if}
-        {#if machine.cycleCourt}
-          <div class="buy">{@render achat(machine.cycleCourt)}</div>
-        {/if}
       {/if}
 
       {#if amelioration}
         <h3>{amelioration.title}</h3>
         <div class="buy">{@render achat(amelioration.buy)}</div>
+      {/if}
+
+      {#if concessions}
+        <h3>{concessions.title}</h3>
+        {#each concessions.offers as o (o.label)}
+          <div class="buy">{@render achat(o)}</div>
+        {/each}
       {/if}
 
       {#if chef}
@@ -109,7 +107,10 @@
 
       {#if banque}
         <h3>{banque.title}</h3>
-        <div class="buy">{@render achat(banque.buy)}</div>
+        {#each banque.lines as l}<p class="sub">{l}</p>{/each}
+        {#each banque.buttons as b (b.label)}
+          <div class="buy">{@render achat(b)}</div>
+        {/each}
       {/if}
 
       {#if poserGants}

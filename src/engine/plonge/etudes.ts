@@ -57,6 +57,7 @@ export function buyStudy(s: GameState, id: string): boolean {
   if (!canBuyStudy(s, id)) return false;
   s.money = s.money.sub(LIBRARY_BY_ID[id].cost);
   s.plonge.library[id] = 0;
+  s.plonge.boughtAt[id] = s.plonge.day;
   return true;
 }
 export function canStudyStep(s: GameState, id: string): boolean {

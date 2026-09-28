@@ -274,6 +274,17 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 - **Mesures :** à 4 clics/s, gants 0:04 (achat 0:14), éponge 0:15 (0:29), compteur 1:04, montre 1:45 (2:18), réparation 3:03 (3:33), chef 4:08, gants pro 4:43 ; fin 19:29 (29:03 à 2 clics/s, 16:10 à 6, 34:30 en AFK, 21:36 en refusant le cycle court).
 - **Restent à trancher :** à 2 clics/s la montre reste grisée 142 s (prix) ; la douchette tombe à moins de 30 s de Maman ou du dimanche ; le souvenir de Maman est daté du lundi (l'appel de 20 s déborde sur le jour suivant).
 
+### v4 après le troisième test d'Alexandre (2026-09-28, 7e et 8e challenges)
+- **Restaurant :** 50 couverts, 1 assiette par couvert, arrivées régulières (plus de coup de feu du midi, qui pourra revenir en amélioration). Dimanche fermé dès le début : avant la montre, la pile dit seulement « Pas d'assiette supplémentaire aujourd'hui. ».
+- **Achats :** verbe « Acheter ». Gants au premier euro, puis chaque amélioration se propose quand tu ne suis plus (plus de 2 brassées sales pendant 6 s d'un jour ouvert), ou au plus tard 120 s après la précédente. La montre d'occasion (15 €) vient 30 s après l'éponge et donne le jour. Clic : gants 2, éponge 3, gants pro 4, éponge pro 5, douchette 6. Vieux lave-vaisselle : réparé 10/s, puis joint, panier, détartrage (×1,5 chacun). Pro : +40/s, puis « Poser les gants », puis pendant les études : détartrage du pro (×1,25, les pro déjà installés), deuxième pro (+40/s), adoucisseur (×1,2 sur toutes les machines).
+- **Concessions (gratuites) :** « Ne passer qu'un coup d'éponge par assiette » (+20 % par clic), « Programmer le lave-vaisselle en cycle court » (+30 % sur le vieux seulement ; une fournée sur 4 ressort grasse et se relave seule, 6 s sans rien sortir), « Ne plus relaver les assiettes grasses » (plus de relavage ; le client se plaint au service suivant). Plus aucune interruption.
+- **Demandes au chef :** soir +40, formule +50, terrasse +60, brunch +70, livraison +100, séminaires +130, mariages +160, petit-déjeuner +120, cantine +140, cars +160, puis, une fois les gants posés, le deuxième restaurant (×2). « Groupes » supprimé. Ouvrir le dimanche se propose après le 3e appel décroché (ou la 5e sonnerie).
+- **Maman :** sonne tout le dimanche ; décrocher bloque tout jusqu'à lundi, sauf les machines, et recharge l'énergie. Le souvenir est daté du dimanche.
+- **Livret A :** après le premier livre, dépôt et retrait libres ; chaque lundi, 1 % du plus petit solde de la semaine (déposer le dimanche ne rapporte rien).
+- **Études :** 60, 120, 240, 480, 960 € (prix doublés à chaque étape).
+- **Mesures :** fin 22:22 à 4 clics/s (29:03 à 2, 20:26 à 6, 30:09 en AFK, 24:58 en refusant les concessions) ; plus grand écart 2:44 à 4 clics/s ; à la main, pile vide 2 % du temps, débordement 0 %.
+- **Restent à trancher :** après les gants posés, le deuxième restaurant fait déborder la pile environ 7 min, jusqu'au deuxième pro ; en AFK, 4:19 entre l'annonce des études et « Poser les gants ».
+
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
 
 ## Ordre de travail

@@ -1,18 +1,9 @@
 import type { GameState } from "../state";
-import {
-  DAY_SECS,
-  PEAK_SECS,
-  PEAK_SHARE,
-  PLATES_PER_COVER,
-  PILE_BASE_CAP,
-  DAY_NAMES,
-  SUNDAY,
-  EMPTY_LABEL_SECS,
-} from "../content/plonge";
+import { DAY_SECS, PLATES_PER_COVER, PILE_BASE_CAP, DAY_NAMES, SUNDAY, EMPTY_LABEL_SECS } from "../content/plonge";
 import { handsBusy, markAction } from "./commun";
 
 // Le restaurant : le calendrier, l'affluence, la pile finie, le clic et la paie.
-// Le restaurant salit des assiettes au rythme de ses couverts ; on lave ce qui arrive (jamais plus).
+// Le restaurant salit des assiettes au rythme de ses couverts, régulièrement ; on lave ce qui arrive (jamais plus).
 
 // --- Calendrier ---
 
@@ -25,18 +16,15 @@ function dayOfWeekAt(day: number): number {
 export function dayName(s: GameState): string {
   return DAY_NAMES[dayOfWeekAt(s.plonge.day)];
 }
+/** Secondes qui restent avant minuit. */
+export function secsLeftToday(s: GameState): number {
+  return DAY_SECS - (s.plonge.day - dayIndex(s) * DAY_SECS);
+}
 function openAt(s: GameState, day: number): boolean {
   return dayOfWeekAt(day) !== SUNDAY || s.plonge.sundayOpen;
 }
 export function openToday(s: GameState): boolean {
   return openAt(s, s.plonge.day);
-}
-function peakAt(s: GameState, day: number): boolean {
-  return openAt(s, day) && day - Math.floor(day / DAY_SECS) * DAY_SECS < PEAK_SECS;
-}
-/** Le coup de feu de midi : les premières secondes de chaque jour ouvert. */
-export function isPeak(s: GameState): boolean {
-  return peakAt(s, s.plonge.day);
 }
 
 // --- Affluence et pile ---
@@ -44,10 +32,12 @@ export function isPeak(s: GameState): boolean {
 export function pileCap(s: GameState): number {
   return PILE_BASE_CAP + s.plonge.covers;
 }
+/** Assiettes par seconde en moyenne sur un jour ouvert (elles arrivent régulièrement). */
+export function openDayArrivalRate(s: GameState): number {
+  return (s.plonge.covers * PLATES_PER_COVER) / DAY_SECS;
+}
 function arrivalRateAt(s: GameState, day: number): number {
-  if (!openAt(s, day)) return 0;
-  const plates = s.plonge.covers * PLATES_PER_COVER;
-  return peakAt(s, day) ? (plates * PEAK_SHARE) / PEAK_SECS : (plates * (1 - PEAK_SHARE)) / (DAY_SECS - PEAK_SECS);
+  return openAt(s, day) ? openDayArrivalRate(s) : 0;
 }
 /** Assiettes sales/s qui arrivent en ce moment. */
 export function arrivalRate(s: GameState): number {
@@ -60,12 +50,8 @@ export function arrivalsIn(s: GameState, secs: number): number {
   for (let t = 0; t < secs; t += step) total += arrivalRateAt(s, s.plonge.day + t) * Math.min(step, secs - t);
   return total;
 }
-/** Assiettes par seconde en moyenne sur un jour ouvert. */
-export function openDayArrivalRate(s: GameState): number {
-  return (s.plonge.covers * PLATES_PER_COVER) / DAY_SECS;
-}
 export function openDaysShare(s: GameState): number {
-  return (s.plonge.sundayOpen ? 7 : 6) / 7;
+  return (s.plonge.sundayOpen ? DAY_NAMES.length : DAY_NAMES.length - 1) / DAY_NAMES.length;
 }
 
 // --- La paie ---
