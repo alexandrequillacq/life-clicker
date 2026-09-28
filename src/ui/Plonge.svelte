@@ -72,8 +72,9 @@
       {#if titreTravail}<h2>{titreTravail}</h2>{/if}
       {#if jour}<p>{jour}</p>{/if}
       {#if pile}
-        <!-- Une seule ligne : ce qui s'ajoute à la pile ne décale pas le bouton « Laver ». -->
-        <p class="pile">{pile[0]}{#each pile.slice(1) as l}<span class="sub">{" " + l}</span>{/each}</p>
+        <p class="pile">{pile[0]}</p>
+        <!-- Place réservée (deux lignes, affichées ou non) : ce qui s'y écrit ne décale jamais le bouton « Laver ». -->
+        <div class="pile-notes">{#each pile.slice(1, 3) as l}<p class="sub">{l}</p>{/each}</div>
       {/if}
       {#if couverts}<p class="sub">{couverts}</p>{/if}
 
@@ -250,6 +251,16 @@
   .sub {
     color: var(--muted);
     font-size: 14px;
+  }
+  .pile-notes {
+    height: 2.6em;
+    font-size: 14px;
+  }
+  .pile-notes p {
+    line-height: 1.3em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .bt {
     font-family: inherit;

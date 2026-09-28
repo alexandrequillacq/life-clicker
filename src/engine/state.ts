@@ -50,8 +50,9 @@ export interface PlongeState {
   covers: number; // couverts par jour
   sundayOpen: boolean; // le restaurant ouvre-t-il le dimanche ?
   asksDone: number; // demandes au chef acceptées (index de la prochaine)
-  lastAskDay: number; // jour de la dernière demande (au plus une par jour)
-  emptyToday: number; // secondes, un jour ouvert, où tu suis le restaurant (moins d'une brassée d'assiettes sales)
+  lastAskAt: number; // heure de la dernière demande acceptée
+  keptUp: number; // secondes de jours ouverts, depuis la dernière demande, où tu suis (moins d'une brassée d'assiettes sales)
+  askShown: boolean; // la demande suivante est proposée (elle reste jusqu'au clic)
   behindToday: number; // secondes, un jour ouvert, où tu ne suis plus (plus de BEHIND_LOADS brassées)
   overflowToday: number; // assiettes lavées par le chef aujourd'hui
   chefBefore: string; // réplique à retrouver quand le débordement se résorbe
@@ -91,7 +92,6 @@ export interface PlongeState {
   windowCount: number; // nombre de fois (fait tourner les lignes)
   library: Record<string, number>; // études achetées → étapes faites
   chef: string; // id de la dernière réplique du chef (CHEF_LINES)
-  chefReply: string | null; // la réponse du chef à une demande refusée (passagère, voir CHEF_REPLIES)
 }
 
 export function createPlongeState(): PlongeState {
@@ -101,8 +101,9 @@ export function createPlongeState(): PlongeState {
     covers: START_COVERS,
     sundayOpen: false,
     asksDone: 0,
-    lastAskDay: -1,
-    emptyToday: 0,
+    lastAskAt: -1e6,
+    keptUp: 0,
+    askShown: false,
     behindToday: 0,
     emptyFor: 0,
     revealed: {},
@@ -142,7 +143,6 @@ export function createPlongeState(): PlongeState {
     windowCount: 0,
     library: {},
     chef: "debut",
-    chefReply: null,
   };
 }
 

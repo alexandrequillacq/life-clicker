@@ -1,8 +1,6 @@
 import type { GameState } from "../state";
-import { PLATES_PER_COVER, ASK_GAP_DAYS, KEEP_UP_SECS, LIVRET_RATE, ASKS, SUNDAY_OFFER, DAY_NAMES, TEXTES, type AskDef } from "../content/plonge";
+import { PLATES_PER_COVER, KEEP_UP_SECS, ASK_MIN_GAP, ASK_LATE, LIVRET_RATE, ASKS, SUNDAY_OFFER, DAY_NAMES, TEXTES, type AskDef } from "../content/plonge";
 import { fmtEuros, onThePhone } from "./commun";
-import { dayIndex } from "./restaurant";
-import { loadUnit } from "./equipement";
 import { acted, isRevealed, eventAt } from "./revelations";
 
 // Le chef : les demandes (le joueur réclame lui-même plus de travail, au même tarif), le dimanche,
@@ -19,19 +17,24 @@ export function currentAsk(s: GameState): AskDef | null {
 export function chefVisible(s: GameState): boolean {
   return s.job === "plongeur" && isRevealed(s, "chef");
 }
-function askedToday(s: GameState): boolean {
-  return dayIndex(s) - s.plonge.lastAskDay < ASK_GAP_DAYS;
-}
 /**
- * Le chef veut bien grandir si tu suis : moins d'une brassée d'assiettes sales (ce que lave un clic,
- * ou une seconde de machines) pendant KEEP_UP_SECS d'un jour ouvert. Au plus une demande par jour.
+ * La demande suivante se propose quand tu suis le restaurant : moins d'une brassée d'assiettes sales (ce que lave
+ * un clic, ou une seconde de machines) pendant KEEP_UP_SECS de jours ouverts depuis la précédente. Jamais moins de
+ * ASK_MIN_GAP s après elle, au plus tard ASK_LATE s après (pas de blocage). La première vient avec le chef.
  */
-export function canAskChef(s: GameState): boolean {
-  return askOffered(s) && s.plonge.emptyToday >= KEEP_UP_SECS && !askedToday(s) && !onThePhone(s);
+export function askReady(s: GameState): boolean {
+  const p = s.plonge;
+  if (!chefVisible(s) || currentAsk(s) === null) return false;
+  if (p.asksDone === 0) return true;
+  const since = p.day - p.lastAskAt;
+  return since >= ASK_MIN_GAP && (p.keptUp >= KEEP_UP_SECS || since >= ASK_LATE);
 }
-/** Le bouton de la demande n'est jamais grisé : on peut toujours proposer (sauf au téléphone, où tout s'arrête). */
-export function askOffered(s: GameState): boolean {
-  return chefVisible(s) && currentAsk(s) !== null;
+/** La demande est à l'écran (une fois proposée, elle reste) : un clic, et le chef dit oui. */
+export function askVisible(s: GameState): boolean {
+  return s.plonge.askShown && chefVisible(s) && currentAsk(s) !== null;
+}
+export function canAskChef(s: GameState): boolean {
+  return askVisible(s) && !onThePhone(s);
 }
 function coversAfter(s: GameState, def: AskDef): number {
   return def.doubleCovers ? s.plonge.covers * 2 : s.plonge.covers + (def.covers ?? 0);
@@ -50,25 +53,15 @@ function applyAsk(s: GameState, def: AskDef): void {
   if (def.chef) s.plonge.chef = def.chef;
   s.plonge.boughtAt[def.id] = s.plonge.day;
 }
-/** Ce que le chef répond quand il dit non : c'est lui qui dit ce que « suivre » veut dire. */
-function refusal(s: GameState): string {
-  if (askedToday(s)) return "demain";
-  return s.plonge.pile >= loadUnit(s) ? "pile" : "pas_encore";
-}
-/**
- * Proposer au chef : oui si tu suis (voir canAskChef), sinon il le dit, sans rien changer d'autre.
- * Un refus n'est pas une action : il ne repousse aucune nouveauté.
- */
+/** Proposer au chef : il dit oui, les couverts augmentent tout de suite. La suivante attendra que tu suives. */
 export function askChef(s: GameState): boolean {
-  if (!askOffered(s) || onThePhone(s)) return false;
-  if (!canAskChef(s)) {
-    s.plonge.chefReply = refusal(s);
-    return false;
-  }
-  s.plonge.chefReply = null;
+  if (!canAskChef(s)) return false;
+  const p = s.plonge;
   applyAsk(s, currentAsk(s)!);
-  s.plonge.asksDone += 1;
-  s.plonge.lastAskDay = dayIndex(s);
+  p.asksDone += 1;
+  p.lastAskAt = p.day;
+  p.keptUp = 0;
+  p.askShown = false;
   acted(s);
   return true;
 }

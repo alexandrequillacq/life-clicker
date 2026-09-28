@@ -27,7 +27,8 @@ export const VALUE_PER_DISH = 0.05; // 5 centimes l'assiette
 export const KEEP_UP_SECS = 6; // moins d'une brassée d'assiettes sales pendant 6 s dans la journée : tu suis, le chef accepte une demande
 export const BEHIND_SECS = 6; // plus de BEHIND_LOADS brassées pendant 6 s dans la journée : tu ne suis plus, une amélioration se propose
 export const BEHIND_LOADS = 2;
-export const ASK_GAP_DAYS = 1; // au plus une demande par jour
+export const ASK_MIN_GAP = 35; // au moins 35 s entre deux demandes au chef (pas de rafale quand les machines devancent le restaurant)
+export const ASK_LATE = 120; // la demande suivante se propose au plus tard 120 s après la précédente, même si tu ne suis pas
 
 // --- Les nouveautés : une information à la fois (secondes de calendrier, qui ne tournent pas hors-ligne) ---
 export const NOVELTY_GAP = 35; // au moins 35 s entre une nouveauté et la suivante que le jeu révèle de lui-même
@@ -189,7 +190,7 @@ export interface AskDef {
 }
 
 export const ASKS: AskDef[] = [
-  { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 40, chef: "si_tu_suis" },
+  { id: "soir", cta: "Proposer au chef d'ouvrir le soir", covers: 40, chef: "plus_de_monde" },
   { id: "formule", cta: "Proposer une formule du midi à 12 €", covers: 50 },
   { id: "terrasse", cta: "Proposer d'installer une terrasse", covers: 60 },
   { id: "brunch", cta: "Proposer un brunch le samedi", covers: 70 },
@@ -237,7 +238,7 @@ export const CHEF_LINES: Record<string, string> = {
   debut: "5 centimes l'assiette. En liquide.",
   banque: "Tu vides tes poches au guichet.",
   reparer: "Il marche ? Il reste au restaurant.",
-  si_tu_suis: "Tu suis. Alors on ouvre le soir.",
+  plus_de_monde: "Plus de monde, plus d'assiettes. Toujours 5 centimes l'assiette.",
   ta_mere: "Ta mère comprendra.",
   debordement: "Le chef a fait la plonge lui-même.",
   plainte: "Un client s'est plaint de la propreté de son assiette. Le chef l'a essuyée et l'a resservie.",
@@ -245,13 +246,6 @@ export const CHEF_LINES: Record<string, string> = {
   gants_poses: "Tu la lances le matin et tu rentres. Toujours 5 centimes l'assiette.",
   meilleure_chose: "Tu es la meilleure chose qui soit arrivée à ce restaurant. Toujours 5 centimes l'assiette.",
   annonce: "Tes moitiés de machine ? Je les garde. Un investissement, on avait dit.",
-};
-
-// Ce que le chef répond quand il dit non (passager : la ligne s'efface dès que tu peux redemander).
-export const CHEF_REPLIES: Record<string, string> = {
-  pile: "Pas tant qu'il reste des assiettes sales.",
-  pas_encore: "Pas encore. Tiens ta pile vide un moment, je regarde.",
-  demain: "Une chose à la fois. On en reparle demain.",
 };
 
 // --- Souvenirs (côté vie perso) : ce que le joueur a vécu, ou manqué ---
@@ -284,7 +278,7 @@ export const TEXTES = {
   noPlatesToday: "Pas d'assiette supplémentaire aujourd'hui.",
   pile: (n: N) => `Assiettes sales : ${n}`,
   pileWarn: (cap: N) => `Au-delà de ${cap}, le chef les lave lui-même.`,
-  overflowToday: (n: N) => `Aujourd'hui, il en a lavé ${n}.`,
+  overflowToday: (n: N) => `Le chef en a lavé ${n} aujourd'hui.`,
   covers: (n: N) => `${n} couverts par jour`,
   wash: (n: number) => (n === 1 ? "Laver une assiette" : `Laver ${n} assiettes`),
   washEmpty: "Aucune assiette sale",
@@ -312,7 +306,6 @@ export const TEXTES = {
 
   // Le chef
   chefTitle: "Le chef",
-  askRule: "Le chef dit oui si tu suis.",
   askCovers: (a: N, b: N) => `Couverts par jour : ${a} → ${b}`,
   coverPlates: (n: number) => `1 couvert = ${n} ${pl(n, "assiette sale", "assiettes sales")}`,
   openDays: (a: N, b: N) => `Jours ouverts par semaine : ${a} → ${b}`,

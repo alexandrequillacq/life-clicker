@@ -7,6 +7,8 @@ import { applyOffline } from "../src/engine/offline";
 import {
   DAY_SECS,
   START_COVERS,
+  ASK_MIN_GAP,
+  ASK_LATE,
   START_PILE,
   PILE_BASE_CAP,
   NOVELTY_GAP,
@@ -43,7 +45,6 @@ import {
   canAskChef,
   askChef,
   askEffects,
-  vueEntete,
   chefVisible,
   coversVisible,
   canOfferSunday,
@@ -441,79 +442,66 @@ describe("Plongeur : les concessions (gratuites, de plus en plus grosses)", () =
   });
 });
 
-describe("Plongeur : les demandes au chef (quand tu suis le restaurant)", () => {
+describe("Plongeur : les demandes au chef (un clic, il dit oui ; la suivante vient quand tu suis)", () => {
+  /** Le chef vient de paraître : la première demande est là. */
   function readyToAsk(): GameState {
     const s = fresh();
     s.plonge.revealed["chef"] = 0;
     s.plonge.day = dayStart(10) + 1;
-    s.plonge.emptyToday = KEEP_UP_SECS;
+    tick(s, 0.01);
+    return s;
+  }
+  /** Juste après une demande acceptée, dans un restaurant vide (la pile ne se remplit que si le test le veut). */
+  function justAsked(): GameState {
+    const s = readyToAsk();
+    expect(askChef(s)).toBe(true);
+    s.plonge.covers = 0;
+    s.plonge.pile = 0;
     return s;
   }
 
-  it("le bouton n'est jamais grisé ; il dit seulement « Le chef dit oui si tu suis. »", () => {
+  it("la première demande vient avec le chef ; un clic, sans condition, et les couverts augmentent", () => {
+    expect(ASKS.some((a) => a.id === "groupes")).toBe(false);
     const s = readyToAsk();
-    s.plonge.emptyToday = 2;
-    expect(canAskChef(s)).toBe(false);
+    s.plonge.pile = 50; // même si tu ne suis pas
     const offer = vueChef(s)!.offers[0];
     expect(offer.disabled).toBe(false);
-    expect(offer.lines).toContain("Le chef dit oui si tu suis.");
-    expect(offer.lines.join(" ")).not.toMatch(/Aujourd'hui|pendant/);
+    expect(offer.lines).toEqual(["Couverts par jour : 50 → 90", "1 couvert = 1 assiette sale"]);
+    expect(coversVisible(s)).toBe(false);
+    offer.act();
+    expect(s.plonge.covers).toBe(90);
+    expect(coversVisible(s)).toBe(true);
+    expect(vueChef(s)).toBeNull(); // la suivante attend
   });
 
-  it("tant que tu ne suis pas, le chef refuse, sans effacer ce qu'il avait dit ni compter comme une action", () => {
-    const s = readyToAsk();
-    s.plonge.chef = "meilleure_chose";
-    s.plonge.idle = 12;
-    s.plonge.emptyToday = 0;
-    s.plonge.pile = 30;
-    s.dishesPerClick = 4;
-    expect(askChef(s)).toBe(false);
-    expect(s.plonge.covers).toBe(START_COVERS);
-    expect(vueEntete(s).chef).toBe("Pas tant qu'il reste des assiettes sales.");
-    expect(s.plonge.chef).toBe("meilleure_chose");
-    expect(s.plonge.idle).toBe(12);
-    s.plonge.pile = 0; // la pile est vide, mais pas encore assez longtemps
-    askChef(s);
-    expect(vueEntete(s).chef).toBe("Pas encore. Tiens ta pile vide un moment, je regarde.");
-    s.plonge.emptyToday = KEEP_UP_SECS; // dès que tu suis, la réponse s'efface : tu peux demander
-    tick(s, 0.01);
-    expect(vueEntete(s).chef).toBe(CHEF_LINES.meilleure_chose);
+  it("la suivante se propose quand tu suis (6 s de pile vide), jamais moins de 35 s après ; une fois proposée, elle reste", () => {
+    const s = justAsked();
+    run(s, 10);
+    expect(s.plonge.keptUp).toBeGreaterThanOrEqual(KEEP_UP_SECS);
+    expect(canAskChef(s)).toBe(false); // trop tôt
+    run(s, ASK_MIN_GAP - 10 + 0.1);
+    expect(canAskChef(s)).toBe(true);
+    s.plonge.pile = 50;
+    run(s, 20);
+    expect(canAskChef(s)).toBe(true);
   });
 
-  it("déjà un oui aujourd'hui : « On en reparle demain », et la réponse s'efface le lendemain", () => {
-    const s = readyToAsk();
-    expect(askChef(s)).toBe(true);
-    s.plonge.emptyToday = 20;
-    expect(vueChef(s)!.offers[0].disabled).toBe(false);
-    expect(askChef(s)).toBe(false);
-    expect(vueEntete(s).chef).toBe("Une chose à la fois. On en reparle demain.");
-    s.plonge.day = dayStart(dayIdx(s) + 1) - 0.01;
-    tick(s, 0.02);
-    expect(vueEntete(s).chef).not.toBe("Une chose à la fois. On en reparle demain.");
+  it("sans jamais suivre, la suivante se propose quand même 120 s après la précédente", () => {
+    const s = justAsked();
+    s.plonge.pile = 50;
+    s.dishesPerClick = 2;
+    run(s, ASK_LATE - 1);
+    expect(s.plonge.keptUp).toBe(0);
+    expect(canAskChef(s)).toBe(false);
+    run(s, 1.5);
+    expect(canAskChef(s)).toBe(true);
   });
 
   it("suivre ne compte que les jours ouverts (le dimanche fermé vide la pile de lui-même)", () => {
-    const s = fresh();
-    s.plonge.revealed["chef"] = 0;
-    s.plonge.day = dayStart(6) + 0.5;
-    s.plonge.pile = 0;
+    const s = justAsked();
+    s.plonge.day = dayStart(13) + 0.5; // un dimanche
     run(s, 10);
-    expect(s.plonge.emptyToday).toBe(0);
-  });
-
-  it("une demande : +couverts ; au plus une par jour ; « groupes » n'existe plus", () => {
-    expect(ASKS.some((a) => a.id === "groupes")).toBe(false);
-    const s = readyToAsk();
-    expect(coversVisible(s)).toBe(false);
-    expect(askEffects(s, currentAsk(s)!)).toContain("Couverts par jour : 50 → 90");
-    expect(askEffects(s, currentAsk(s)!)).toContain("1 couvert = 1 assiette sale");
-    expect(askChef(s)).toBe(true);
-    expect(s.plonge.covers).toBe(90);
-    expect(coversVisible(s)).toBe(true);
-    s.plonge.emptyToday = 20;
-    expect(canAskChef(s)).toBe(false);
-    s.plonge.day += DAY_SECS;
-    expect(canAskChef(s)).toBe(true);
+    expect(s.plonge.keptUp).toBe(0);
   });
 
   it("le deuxième restaurant double les couverts", () => {

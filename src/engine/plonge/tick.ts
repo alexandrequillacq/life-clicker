@@ -12,7 +12,7 @@ import {
 } from "../content/plonge";
 import { dayIndex, dayName, arrivalRate, pileCap, openToday, pay, secsLeftToday } from "./restaurant";
 import { oldMachineRate, machineOutput, greasyLoads, loadUnit } from "./equipement";
-import { payInterest, canAskChef } from "./chef";
+import { payInterest, askReady } from "./chef";
 import { revealQueue, isRevealed, callStartsNow, type TickMoments } from "./revelations";
 import { remember } from "./vie";
 
@@ -25,11 +25,9 @@ export function tickPlonge(s: GameState, t: number): void {
   const today = dayIndex(s);
   const moments: TickMoments = {};
   if (today !== prevDay) {
-    p.emptyToday = 0;
     p.behindToday = 0;
     p.overflowToday = 0;
     p.mealsToday = 0;
-    p.chefReply = null; // une réponse du chef ne vaut que pour la journée
     // Maman appelle le dimanche (quand, et à partir de quand : voir REVEALS).
     moments.sundayStart = today % 7 === SUNDAY;
     // Le livret A verse ses intérêts chaque lundi.
@@ -130,12 +128,12 @@ export function tickPlonge(s: GameState, t: number): void {
   // Tu suis le restaurant (ou non) : ce qui reste sale, en brassées, un jour ouvert.
   if (openToday(s)) {
     const unit = loadUnit(s);
-    if (p.pile < unit) p.emptyToday += t;
+    if (p.pile < unit && !p.askShown) p.keptUp += t; // figé tant qu'une demande attend ton clic
     if (p.pile >= BEHIND_LOADS * unit) p.behindToday += t;
   }
   p.emptyFor = p.pile < 1 ? p.emptyFor + t : 0;
-  // Dès que tu peux redemander, le refus du chef s'efface (c'est le signal).
-  if (p.chefReply && p.chefReply !== "demain" && canAskChef(s)) p.chefReply = null;
+  // La demande suivante au chef se propose (et reste jusqu'au clic).
+  if (!p.askShown && askReady(s)) p.askShown = true;
 
   // Inactivité (la fenêtre) : le téléphone ne compte pas comme du temps libre.
   if (p.callTalk <= 0) p.idle += t;

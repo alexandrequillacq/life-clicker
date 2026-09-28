@@ -88,15 +88,21 @@ describe("App P0 (DOM)", () => {
     unmount(component);
   });
 
-  it("plongeur : ce qui s'ajoute à la pile reste sur sa ligne, sans décaler le bouton « Laver »", () => {
+  it("plongeur : ce qui s'écrit sous la pile a sa place réservée, vide ou non, et ne décale pas le bouton « Laver »", () => {
     game.state = createInitialState(Date.now());
     game.state.plonge.revealed["pile"] = 0;
-    game.state.plonge.day = 6 * 15 + 1; // un dimanche, avant la montre
+    game.state.plonge.day = 1; // un lundi : rien à dire sous la pile
     game.state.plonge.pile = 0;
     const { target, component } = mountApp();
-    const line = target.querySelector("p.pile") as HTMLElement;
-    expect(line.textContent).toBe("Assiettes sales : 0 Pas d'assiette supplémentaire aujourd'hui.");
-    expect(target.querySelectorAll("p.pile").length).toBe(1);
+    const notes = (): HTMLElement => target.querySelector(".pile-notes") as HTMLElement;
+    expect(notes()).not.toBeNull(); // la place est déjà là
+    expect(notes().textContent).toBe("");
+    expect(notes().nextElementSibling?.matches("button.wash")).toBe(true);
+    game.state.plonge.day = 6 * 15 + 1; // un dimanche, avant la montre
+    tick(game.state, 0.01);
+    flushSync();
+    expect((target.querySelector("p.pile") as HTMLElement).textContent).toBe("Assiettes sales : 0");
+    expect(notes().textContent).toBe("Pas d'assiette supplémentaire aujourd'hui.");
     unmount(component);
   });
 

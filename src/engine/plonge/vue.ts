@@ -3,7 +3,6 @@ import {
   EQUIPMENT,
   LIBRARY,
   CHEF_LINES,
-  CHEF_REPLIES,
   CONCESSIONS,
   SUNDAY_OFFER,
   AGE_PLONGEUR,
@@ -28,7 +27,7 @@ import {
   currentAsk,
   askChef,
   askEffects,
-  askOffered,
+  askVisible,
   canOfferSunday,
   offerSunday,
   canOpenLivret,
@@ -87,7 +86,7 @@ export interface VueEntete {
 }
 export function vueEntete(s: GameState): VueEntete {
   return {
-    chef: s.plonge.chefReply ? CHEF_REPLIES[s.plonge.chefReply] : CHEF_LINES[s.plonge.chef],
+    chef: CHEF_LINES[s.plonge.chef],
     money: s.flags.moneyVisible ? TEXTES.money(fmtEuros(s.money.toNumber())) : null,
     auto: isRevealed(s, "machine") ? autoIncomeLine(s) : null,
   };
@@ -162,8 +161,8 @@ export function vueAmelioration(s: GameState): { title: string; buy: Bouton } | 
 export function vueChef(s: GameState): { title: string; offers: Bouton[] } | null {
   const offers: Bouton[] = [];
   if (canOfferSunday(s)) offers.push(bouton(SUNDAY_OFFER.cta, askEffects(s, SUNDAY_OFFER), () => offerSunday(s)));
-  const ask = askOffered(s) ? currentAsk(s) : null;
-  if (ask) offers.push(bouton(ask.cta, [...askEffects(s, ask), TEXTES.askRule], () => askChef(s))); // jamais grisé : le chef répond
+  const ask = askVisible(s) ? currentAsk(s) : null;
+  if (ask) offers.push(bouton(ask.cta, askEffects(s, ask), () => askChef(s))); // jamais grisé : le chef dit oui
   return offers.length > 0 ? { title: TEXTES.chefTitle, offers } : null;
 }
 
