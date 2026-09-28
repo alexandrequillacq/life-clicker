@@ -4,7 +4,7 @@
 import { createInitialState } from "../../src/engine/state";
 import { tick } from "../../src/engine/loop";
 import { work, poseGants } from "../../src/engine/actions";
-import { EQUIPMENT, LIBRARY, MEAL_ENERGY, REVEALS } from "../../src/engine/content/plonge";
+import { EQUIPMENT, LIBRARY, MEAL_ENERGY, REVEALS, REVEAL_BY_ID } from "../../src/engine/content/plonge";
 import {
   canBuyEquipment,
   buyEquipment,
@@ -41,6 +41,7 @@ export interface PlaythroughOptions {
 export interface Playthrough {
   secs: number; // durée du chapitre (jusqu'à l'annonce)
   reveals: [string, number][]; // frise : chaque nouveauté et l'instant où elle paraît, triées
+  purchases: [string, number][]; // chaque achat d'équipement et son instant (le bouton s'est dégrisé juste avant)
   maxGap: number; // plus grand écart entre deux nouveautés consécutives de la frise
   dead: number; // temps mort total (fenêtres de 10 s où le clic ne sert presque à rien et rien ne s'achète)
   deadMax: number; // plus long temps mort d'affilée
@@ -59,6 +60,7 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
   let clickAcc = 0;
   let t = 0;
   const reveals: [string, number][] = [];
+  const purchases: [string, number][] = [];
   const seen = seenChecks(s);
   // Temps mort : par fenêtre de 10 s avant les gants posés, le clic lave moins de 40 % de ce qu'il pourrait
   // et rien ne s'achète ni ne se demande.
@@ -80,7 +82,7 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
       work(s);
       clickAcc -= 1;
     }
-    for (const e of EQUIPMENT) if (canBuyEquipment(s, e.id)) buyEquipment(s, e.id);
+    for (const e of EQUIPMENT) if (canBuyEquipment(s, e.id) && buyEquipment(s, e.id)) purchases.push([e.id, t]);
     if (canOpenLivret(s)) openLivret(s);
     if (canAskChef(s)) askChef(s);
     if (canOfferSunday(s)) offerSunday(s);
@@ -118,7 +120,18 @@ export function playthrough(cps: number, opts: PlaythroughOptions = {}): Playthr
   reveals.sort((a, b) => a[1] - b[1]);
   let maxGap = 0;
   for (let i = 1; i < reveals.length; i++) maxGap = Math.max(maxGap, reveals[i][1] - reveals[i - 1][1]);
-  return { secs: t, maxGap, reveals, dead, deadMax };
+  return { secs: t, maxGap, reveals, purchases, dead, deadMax };
+}
+
+/**
+ * Ce qui paraît de soi-même, sans être la conséquence immédiate d'un clic d'achat : les nouveautés du jeu,
+ * et les offres qui attendent une heure ou un délai. Deux d'entre elles ne devraient jamais tomber dans la même demi-minute.
+ */
+export function showsByItself(id: string): boolean {
+  const r = REVEAL_BY_ID[id];
+  if (!r) return false;
+  if (r.kind === "jeu") return true;
+  return r.kind === "offre" && (r.at !== undefined || Object.values(r.after ?? {}).some((d) => d > 0));
 }
 
 /** Les parties de référence : 2, 4 et 6 clics/s, en AFK après la réparation, et en refusant le cycle court. */
