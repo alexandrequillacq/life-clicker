@@ -27,15 +27,11 @@ function askedToday(s: GameState): boolean {
  * ou une seconde de machines) pendant KEEP_UP_SECS d'un jour ouvert. Au plus une demande par jour.
  */
 export function canAskChef(s: GameState): boolean {
-  return chefVisible(s) && currentAsk(s) !== null && s.plonge.emptyToday >= KEEP_UP_SECS && !askedToday(s) && !onThePhone(s);
+  return askOffered(s) && s.plonge.emptyToday >= KEEP_UP_SECS && !askedToday(s) && !onThePhone(s);
 }
-/** Ce que le chef attend pour dire oui, et où tu en es aujourd'hui (le bouton grisé donne la cible). */
-export function askStatus(s: GameState): string[] {
-  if (askedToday(s)) return [TEXTES.askedToday];
-  return [
-    TEXTES.askTarget(Math.round(loadUnit(s)), KEEP_UP_SECS),
-    TEXTES.askProgress(Math.min(KEEP_UP_SECS, Math.floor(s.plonge.emptyToday)), KEEP_UP_SECS),
-  ];
+/** Le bouton de la demande n'est jamais grisé : on peut toujours proposer (sauf au téléphone, où tout s'arrête). */
+export function askOffered(s: GameState): boolean {
+  return chefVisible(s) && currentAsk(s) !== null;
 }
 function coversAfter(s: GameState, def: AskDef): number {
   return def.doubleCovers ? s.plonge.covers * 2 : s.plonge.covers + (def.covers ?? 0);
@@ -54,8 +50,22 @@ function applyAsk(s: GameState, def: AskDef): void {
   if (def.chef) s.plonge.chef = def.chef;
   s.plonge.boughtAt[def.id] = s.plonge.day;
 }
+/** Ce que le chef répond quand il dit non : c'est lui qui dit ce que « suivre » veut dire. */
+function refusal(s: GameState): string {
+  if (askedToday(s)) return "demain";
+  return s.plonge.pile >= loadUnit(s) ? "pile" : "pas_encore";
+}
+/**
+ * Proposer au chef : oui si tu suis (voir canAskChef), sinon il le dit, sans rien changer d'autre.
+ * Un refus n'est pas une action : il ne repousse aucune nouveauté.
+ */
 export function askChef(s: GameState): boolean {
-  if (!canAskChef(s)) return false;
+  if (!askOffered(s) || onThePhone(s)) return false;
+  if (!canAskChef(s)) {
+    s.plonge.chefReply = refusal(s);
+    return false;
+  }
+  s.plonge.chefReply = null;
   applyAsk(s, currentAsk(s)!);
   s.plonge.asksDone += 1;
   s.plonge.lastAskDay = dayIndex(s);

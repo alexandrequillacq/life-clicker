@@ -88,6 +88,18 @@ describe("App P0 (DOM)", () => {
     unmount(component);
   });
 
+  it("plongeur : ce qui s'ajoute à la pile reste sur sa ligne, sans décaler le bouton « Laver »", () => {
+    game.state = createInitialState(Date.now());
+    game.state.plonge.revealed["pile"] = 0;
+    game.state.plonge.day = 6 * 15 + 1; // un dimanche, avant la montre
+    game.state.plonge.pile = 0;
+    const { target, component } = mountApp();
+    const line = target.querySelector("p.pile") as HTMLElement;
+    expect(line.textContent).toBe("Assiettes sales : 0 Pas d'assiette supplémentaire aujourd'hui.");
+    expect(target.querySelectorAll("p.pile").length).toBe(1);
+    unmount(component);
+  });
+
   it("plongeur : au téléphone avec Maman, tout s'arrête (chaque bouton est grisé)", () => {
     game.state = createInitialState(Date.now());
     game.state.plonge.callTalk = 10;

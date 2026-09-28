@@ -72,8 +72,8 @@
       {#if titreTravail}<h2>{titreTravail}</h2>{/if}
       {#if jour}<p>{jour}</p>{/if}
       {#if pile}
-        <p>{pile[0]}</p>
-        {#each pile.slice(1) as l}<p class="sub">{l}</p>{/each}
+        <!-- Une seule ligne : ce qui s'ajoute à la pile ne décale pas le bouton « Laver ». -->
+        <p class="pile">{pile[0]}{#each pile.slice(1) as l}<span class="sub">{" " + l}</span>{/each}</p>
       {/if}
       {#if couverts}<p class="sub">{couverts}</p>{/if}
 

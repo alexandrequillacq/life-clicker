@@ -237,7 +237,7 @@ export const CHEF_LINES: Record<string, string> = {
   debut: "5 centimes l'assiette. En liquide.",
   banque: "Tu vides tes poches au guichet.",
   reparer: "Il marche ? Il reste au restaurant.",
-  si_tu_suis: "Si tu suis, moi je veux bien.",
+  si_tu_suis: "Tu suis. Alors on ouvre le soir.",
   ta_mere: "Ta mère comprendra.",
   debordement: "Le chef a fait la plonge lui-même.",
   plainte: "Un client s'est plaint de la propreté de son assiette. Le chef l'a essuyée et l'a resservie.",
@@ -245,6 +245,13 @@ export const CHEF_LINES: Record<string, string> = {
   gants_poses: "Tu la lances le matin et tu rentres. Toujours 5 centimes l'assiette.",
   meilleure_chose: "Tu es la meilleure chose qui soit arrivée à ce restaurant. Toujours 5 centimes l'assiette.",
   annonce: "Tes moitiés de machine ? Je les garde. Un investissement, on avait dit.",
+};
+
+// Ce que le chef répond quand il dit non (passager : la ligne s'efface dès que tu peux redemander).
+export const CHEF_REPLIES: Record<string, string> = {
+  pile: "Pas tant qu'il reste des assiettes sales.",
+  pas_encore: "Pas encore. Tiens ta pile vide un moment, je regarde.",
+  demain: "Une chose à la fois. On en reparle demain.",
 };
 
 // --- Souvenirs (côté vie perso) : ce que le joueur a vécu, ou manqué ---
@@ -305,9 +312,7 @@ export const TEXTES = {
 
   // Le chef
   chefTitle: "Le chef",
-  askedToday: "Tu as déjà proposé aujourd'hui. Le chef répondra demain.",
-  askTarget: (n: number, secs: N) => `Le chef dit oui si tu suis : moins de ${n} ${pl(n, "assiette sale", "assiettes sales")} pendant ${secs} s dans la journée`,
-  askProgress: (done: N, secs: N) => `Aujourd'hui : ${done} s sur ${secs}`,
+  askRule: "Le chef dit oui si tu suis.",
   askCovers: (a: N, b: N) => `Couverts par jour : ${a} → ${b}`,
   coverPlates: (n: number) => `1 couvert = ${n} ${pl(n, "assiette sale", "assiettes sales")}`,
   openDays: (a: N, b: N) => `Jours ouverts par semaine : ${a} → ${b}`,

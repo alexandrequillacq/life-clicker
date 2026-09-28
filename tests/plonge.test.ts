@@ -43,7 +43,7 @@ import {
   canAskChef,
   askChef,
   askEffects,
-  askStatus,
+  vueEntete,
   chefVisible,
   coversVisible,
   canOfferSunday,
@@ -450,15 +450,46 @@ describe("Plongeur : les demandes au chef (quand tu suis le restaurant)", () => 
     return s;
   }
 
-  it("pas de demande tant que tu ne suis pas ; le bouton grisé dit la cible", () => {
+  it("le bouton n'est jamais grisé ; il dit seulement « Le chef dit oui si tu suis. »", () => {
     const s = readyToAsk();
     s.plonge.emptyToday = 2;
     expect(canAskChef(s)).toBe(false);
+    const offer = vueChef(s)!.offers[0];
+    expect(offer.disabled).toBe(false);
+    expect(offer.lines).toContain("Le chef dit oui si tu suis.");
+    expect(offer.lines.join(" ")).not.toMatch(/Aujourd'hui|pendant/);
+  });
+
+  it("tant que tu ne suis pas, le chef refuse, sans effacer ce qu'il avait dit ni compter comme une action", () => {
+    const s = readyToAsk();
+    s.plonge.chef = "meilleure_chose";
+    s.plonge.idle = 12;
+    s.plonge.emptyToday = 0;
+    s.plonge.pile = 30;
     s.dishesPerClick = 4;
-    expect(askStatus(s)).toEqual([
-      "Le chef dit oui si tu suis : moins de 4 assiettes sales pendant 6 s dans la journée",
-      "Aujourd'hui : 2 s sur 6",
-    ]);
+    expect(askChef(s)).toBe(false);
+    expect(s.plonge.covers).toBe(START_COVERS);
+    expect(vueEntete(s).chef).toBe("Pas tant qu'il reste des assiettes sales.");
+    expect(s.plonge.chef).toBe("meilleure_chose");
+    expect(s.plonge.idle).toBe(12);
+    s.plonge.pile = 0; // la pile est vide, mais pas encore assez longtemps
+    askChef(s);
+    expect(vueEntete(s).chef).toBe("Pas encore. Tiens ta pile vide un moment, je regarde.");
+    s.plonge.emptyToday = KEEP_UP_SECS; // dès que tu suis, la réponse s'efface : tu peux demander
+    tick(s, 0.01);
+    expect(vueEntete(s).chef).toBe(CHEF_LINES.meilleure_chose);
+  });
+
+  it("déjà un oui aujourd'hui : « On en reparle demain », et la réponse s'efface le lendemain", () => {
+    const s = readyToAsk();
+    expect(askChef(s)).toBe(true);
+    s.plonge.emptyToday = 20;
+    expect(vueChef(s)!.offers[0].disabled).toBe(false);
+    expect(askChef(s)).toBe(false);
+    expect(vueEntete(s).chef).toBe("Une chose à la fois. On en reparle demain.");
+    s.plonge.day = dayStart(dayIdx(s) + 1) - 0.01;
+    tick(s, 0.02);
+    expect(vueEntete(s).chef).not.toBe("Une chose à la fois. On en reparle demain.");
   });
 
   it("suivre ne compte que les jours ouverts (le dimanche fermé vide la pile de lui-même)", () => {

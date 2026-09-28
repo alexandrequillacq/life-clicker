@@ -12,7 +12,7 @@ import {
 } from "../content/plonge";
 import { dayIndex, dayName, arrivalRate, pileCap, openToday, pay, secsLeftToday } from "./restaurant";
 import { oldMachineRate, machineOutput, greasyLoads, loadUnit } from "./equipement";
-import { payInterest } from "./chef";
+import { payInterest, canAskChef } from "./chef";
 import { revealQueue, isRevealed, callStartsNow, type TickMoments } from "./revelations";
 import { remember } from "./vie";
 
@@ -29,6 +29,7 @@ export function tickPlonge(s: GameState, t: number): void {
     p.behindToday = 0;
     p.overflowToday = 0;
     p.mealsToday = 0;
+    p.chefReply = null; // une réponse du chef ne vaut que pour la journée
     // Maman appelle le dimanche (quand, et à partir de quand : voir REVEALS).
     moments.sundayStart = today % 7 === SUNDAY;
     // Le livret A verse ses intérêts chaque lundi.
@@ -133,6 +134,8 @@ export function tickPlonge(s: GameState, t: number): void {
     if (p.pile >= BEHIND_LOADS * unit) p.behindToday += t;
   }
   p.emptyFor = p.pile < 1 ? p.emptyFor + t : 0;
+  // Dès que tu peux redemander, le refus du chef s'efface (c'est le signal).
+  if (p.chefReply && p.chefReply !== "demain" && canAskChef(s)) p.chefReply = null;
 
   // Inactivité (la fenêtre) : le téléphone ne compte pas comme du temps libre.
   if (p.callTalk <= 0) p.idle += t;

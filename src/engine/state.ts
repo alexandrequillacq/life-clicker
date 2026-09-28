@@ -91,6 +91,7 @@ export interface PlongeState {
   windowCount: number; // nombre de fois (fait tourner les lignes)
   library: Record<string, number>; // études achetées → étapes faites
   chef: string; // id de la dernière réplique du chef (CHEF_LINES)
+  chefReply: string | null; // la réponse du chef à une demande refusée (passagère, voir CHEF_REPLIES)
 }
 
 export function createPlongeState(): PlongeState {
@@ -141,6 +142,7 @@ export function createPlongeState(): PlongeState {
     windowCount: 0,
     library: {},
     chef: "debut",
+    chefReply: null,
   };
 }
 
