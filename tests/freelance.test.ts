@@ -8,6 +8,8 @@ import { D } from "../src/engine/numbers";
 import { tickFreelance, startFreelance, FL_REVEALS, isRevealed, revealQueue, acted, fmtEur, dayName, weekNumber } from "../src/engine/freelance";
 import { currentTask, workClick, canWork, clickLines, aiWrite, addOrder, pendingLines, waitingValue } from "../src/engine/freelance";
 import { CLICK_ENERGY, TIRED_BELOW, BUG_CLICKS } from "../src/engine/content/freelance";
+import { sanitizeCompanyName, createCompany, canCreateCompany, companyInitial } from "../src/engine/freelance";
+import { COMPANY_DEFAULT_NAME, COMPANY_NAME_MAX, LOGO_COUNT } from "../src/engine/content/freelance";
 import { FL_NOVELTY_GAP, FL_DAY_SECS, FL_OFFLINE_CAP } from "../src/engine/content/freelance";
 
 /** Un état neuf au premier lundi du chapitre 2. */
@@ -177,5 +179,48 @@ describe("chapitre 2 : le carnet", () => {
     addOrder(s, "appli");
     expect(pendingLines(s)).toBe(KINDS.vitrine.lines + KINDS.appli.lines);
     expect(waitingValue(s)).toBe(KINDS.vitrine.price + KINDS.appli.price);
+  });
+});
+
+describe("chapitre 2 : la micro-entreprise", () => {
+  function delivered(): GameState {
+    const s = fresh();
+    s.freelance.orders[0].done = s.freelance.orders[0].lines - 1;
+    workClick(s);
+    return s;
+  }
+
+  it("nettoie le nom : bords, espaces doublés, caractères de contrôle, tirets longs, longueur", () => {
+    expect(sanitizeCompanyName("  Pixel   & Co ")).toBe("Pixel & Co");
+    expect(sanitizeCompanyName("A\u0007B")).toBe("AB");
+    expect(sanitizeCompanyName("Web — Studio")).toBe("Web - Studio");
+    expect(sanitizeCompanyName("x".repeat(40))).toHaveLength(COMPANY_NAME_MAX);
+    expect(sanitizeCompanyName("   ")).toBe(COMPANY_DEFAULT_NAME);
+  });
+
+  it("ne se crée qu'une fois le site de Mme Duval prêt, et paie ses 600 €", () => {
+    const s0 = fresh();
+    expect(canCreateCompany(s0)).toBe(false);
+    const s = delivered();
+    expect(createCompany(s, "Pixel & Co", 2)).toBe(true);
+    expect(s.freelance.company).toEqual({ name: "Pixel & Co", logo: 2 });
+    expect(s.freelance.pendingInvoice).toBe(false);
+    expect(s.money.toNumber()).toBe(600);
+    expect(s.souvenirs[0].text).toBe("Première facture de Pixel & Co : 600 €, Mme Duval.");
+    expect(s.freelance.quote).toBe("facture");
+    expect(createCompany(s, "Autre", 0)).toBe(false);
+  });
+
+  it("borne le logo et garde le texte tel quel (jamais du HTML)", () => {
+    const s = delivered();
+    createCompany(s, "<img onerror=x>", 99);
+    expect(s.freelance.company!.logo).toBe(LOGO_COUNT - 1);
+    expect(s.freelance.company!.name).toBe("<img onerror=x>");
+  });
+
+  it("l'initiale du logo suit le nom, émojis compris", () => {
+    expect(companyInitial("pixel")).toBe("P");
+    expect(companyInitial("🍞 Pain")).toBe("🍞");
+    expect(companyInitial("")).toBe("A");
   });
 });
