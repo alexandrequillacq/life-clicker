@@ -27,7 +27,7 @@
 ### R1. Vie : l'âge, la frise, les prénoms
 - Un **âge** avance avec les métiers (22 ans au plongeur, 52 au chef d'État, sans objet à l'empereur). Une simple étiquette, jamais commentée.
 - Une **frise de vie** discrète enregistre les gestes. Elle **remplace l'affichage chiffré du Sens** (le nombre reste interne ; frise ET jauge serait YAGNI). Tant que le Sens est caché, elle est jolie et neutre ; à sa révélation (célébrité), elle reçoit sa légende ; à l'épilogue, elle est le seul bilan, sans texte.
-- **La vie garde ses prénoms pendant que le travail perd les siens** (C inversé). Camille, Maman, Lou restent nommés jusqu'au bout. Une délégation de LIEN remplace le prénom sur la frise par un nom de service (« Maman » devient « VoixIA »).
+- **La vie garde ses prénoms pendant que le travail perd les siens** (C inversé). Camille, Maman, Lou restent nommés jusqu'au bout. Une délégation de LIEN remplace le prénom sur la frise par un nom de service (« Maman » devient « Répondeur IA », voir le chapitre 2 v2). Un lien peut aussi se perdre par négligence (les amis qui n'invitent plus) : même effet sur le Sens, sans nom de service.
 - **Corvées et liens.** Déléguer une corvée (courses, ménage) pose un point neutre et ne creuse pas le Sens. Déléguer un lien (l'anniversaire, l'appel du dimanche, la fête d'école) pose un segment gris et creuse le Sens.
 - Calibrage Sens : **7 par lien délégué** (au lieu de 12), plafond de gestes vécus relevé de 5 à **12**, pour que le Sens ne tombe pas au plancher dès la politique.
 
@@ -395,6 +395,74 @@ La même page que le plongeur : les colonnes « Travail » et « Ta vie », une 
 - Les chiffres de l'énergie (coût du clic, seuil de fatigue, recharges, repas livrés, prix des repas) et le calendrier des sorties, à simuler avec la vie.
 - Le texte de la sortie (qui est la première personne embauchée, et sous quel prénom).
 - Le vrai gain du compromis (voir « À reprendre au TDD »).
+
+### v2 après la maquette de fin (2026-09-29, 3 challenges)
+Retours d'Alexandre sur la maquette de l'écran de fin : « le générateur de code, ça n'existait pas avant l'IA » ; les amis doivent devenir pénibles puis cesser d'inviter ; Maman répondue par une IA en fin de chapitre ; la maison doit évoluer par des loyers ; plus de stats de vie et de banque. Ce qui suit remplace les sections ci-dessus quand elles se contredisent. La séquence et ses mesures sont à resimuler avec ces changements.
+
+**Les outils, dans l'ordre réel.** Avant l'IA, rien n'écrit du code sans toi : la seule chose qui travaille seule au chapitre 2 est une IA. Elle écrit ici des pages neuves ; au chapitre 5, elle remplacera les gens.
+
+| Bouton | Sous-titre | Prix | Axe |
+|---|---|---|---|
+| « Acheter un deuxième écran » | Par clic : 5 → 8 lignes | 150 € | lignes par clic (demande un bureau : pas sur le canapé de Sam) |
+| « Acheter la licence d'un vrai éditeur de code » | Par clic : 8 → 12 lignes | 400 € | lignes par clic |
+| « Activer l'autocomplétion par IA » | Par clic : 12 → 20 lignes | 600 € | lignes par clic (elle complète la ligne, elle ne trouve pas les bugs) |
+| « Laisser une IA écrire les pages neuves » | 20 lignes / s, même sans toi. Les bugs restent à toi. | 1 200 € | lignes par seconde sans toi |
+| « Acheter un thème pro pour tous tes clients » | Sites vitrines et boutiques : 30 % de lignes en moins, même prix | 2 000 € | lignes par commande |
+| « Suivre une formation aux tests automatiques » | Bugs : deux fois moins par site et par semaine | 3 000 € | bugs |
+| « Prendre l'abonnement pro de l'IA » | L'IA : 20 → 60 lignes / s | 6 000 € | lignes par seconde sans toi |
+| « Brancher une IA sur ta boîte mail » | Elle répond aux clients le soir : environ +4 000 € par semaine | 4 800 € | demande |
+
+- Le « générateur de pages » disparaît partout, y compris la règle « il écrit pendant que tu corriges » : c'est désormais l'IA qui écrit pendant que tu corriges.
+- Libellés revus : « Ajouter les boutiques en ligne à ton profil », « Reprendre les clients d'un freelance qui arrête ». La sortie a un prénom : « Embaucher Nora pour corriger les bugs » (prénom à confirmer), et elle est **gratuite** (elle reste possible en négatif).
+
+**Le logement : des loyers, jamais un achat en une fois.**
+- Un logement se propose dans la file des nouveautés quand la moyenne de tes deux dernières semaines atteint au moins 8 fois son loyer (il pèse ~10 % du revenu). Refusé, il reste proposé ; accepté, on ne redescend jamais.
+- **Le loyer est prélevé chaque lundi**, après l'entretien. Si l'argent manque, le compte passe en négatif (« Argent : -85 € », signe moins U+2212 ou trait d'union, sans rouge ni message). Il ne touche jamais au livret (un retrait forcé coûterait ses intérêts en silence). En négatif, les achats et le dépôt sur le livret sont impossibles ; les propositions gratuites, le compromis, les rendez-vous, Maman, « Tout reprendre », les clics et la sortie restent possibles. Les livraisons paient toujours : aucun blocage.
+- **Pourquoi déménager** : un bénéfice réel pour le travail, par la vie (R2). Le logement monte l'**énergie maximale** (la barre grandit en largeur) ; la chambre donne un bureau, donc le deuxième écran ; le T1 donne une vraie cuisine (les repas rechargent plus). Jamais une obligation : la satire est la ligne « Loyer » qui grossit sur le graphique, sans commentaire.
+
+| Vers | Logement | Loyer | Énergie max | Ce que ça change |
+|---|---|---|---|---|
+| départ | « Logement : canapé convertible chez Sam » (texte seul) | 0 € | 100 | tu dors mal, pas de bureau |
+| ~2:20 | « Louer une chambre en colocation » | 110 € chaque lundi | 120 | un bureau (le deuxième écran paraît ensuite) |
+| ~4:55 | « Louer un T1 de 25 m² » | 190 € chaque lundi | 140 | une vraie cuisine : un repas recharge plus |
+| ~12:40 | « Louer un deux-pièces avec un bureau » | 380 € chaque lundi | 170 | plus d'autonomie avant la fatigue |
+
+- À l'emménagement, l'énergie gagne l'écart, comme une nuit reposée ; Maman remplit jusqu'au nouveau maximum ; le seuil de fatigue reste à 25.
+- « Studio » est réservé au chapitre 3 (ton entreprise) : le logement s'appelle « T1 ».
+- **Sam** : quitter son canapé pose « Sam t'a aidé à porter tes cartons. » (souvenir neutre). Tant que tu vis chez lui, le dîner du vendredi a lieu « dans le salon de Sam » ; ensuite « chez Sam », il faut y aller.
+- **L'image** : le canapé et la chambre sont une ligne de texte ; le T1 devient une petite vignette dessinée ; le deux-pièces une illustration en couleur en tête du tableau de bord. La maison d'architecte (référence d'Alexandre, photo nocturne pleine largeur) est l'apogée du chapitre 5. Un palier égale un seul changement visuel.
+- Chapitres suivants : un loft (3), une maison avec jardin (4), la maison d'architecte (5), une résidence gardée et froide (Acte III). `homes.ts` est à réécrire en loyers.
+- **Les véhicules commencent au chapitre 3** : scooter puis voiture d'occasion (tu rentres plus vite du dîner : les mains sont libres dès vendredi minuit), berline (4), « Prendre un chauffeur » (5, corvée déléguée), le jet (6).
+
+**L'ordre du lundi** : l'entretien est encaissé, puis le loyer prélevé, puis le livret verse ses intérêts. Une seule ligne récapitule : « Lundi : 4 080 € d'entretien, 380 € de loyer, +40 € de livret ».
+
+**La banque au chapitre 2** : le compte courant et le livret A seulement. Pas d'assurance vie (redondante avec le livret). Un **compte-titres** ouvre au chapitre 3 : « Ouvrir un compte-titres », « Acheter des actions », « Tout vendre », « Plus que le livret, mais ça peut baisser ». Sans hasard, c'est une courbe fixe, datée, identique à chaque partie : +8, +6, -4, +9, +7, -25, +10, +9 % par semaine (+15 % sur 8 semaines contre +8,3 % pour le livret ; acheter juste avant la chute coûte 25 %).
+
+**Les amis (Sam, Inès, Léo).**
+- Le dîner du vendredi est un choix explicite : « Y aller » ou « Travailler ce soir-là » (qui vaut « laisser passer la carte »).
+- **Pénible** : « Y aller » affiche son vrai coût, qui grandit avec tes clients du soir (« Les bugs du vendredi attendront : -890 € lundi »).
+- **Inutile** : une fois les repas livrés, le sous-titre dit « Énergie déjà pleine ». Il ne reste que le souvenir.
+- **La fin** : après **3 dîners manqués d'affilée** (un dîner honoré remet le compteur à zéro), la ligne « Sam, Inès et Léo ne t'invitent plus le vendredi. » paraît. La carte du vendredi, leurs visages et leur ligne de stat disparaissent pour toujours. Le Sens perd 7, une fois. Nouveau cas R1 : le **lien perdu par négligence**. Le jeu ne dit jamais que ce sont les repas livrés qui ont ôté la raison d'y aller.
+
+**Maman, l'arc sur tout le jeu.**
+- Chapitre 2 (fin) : après l'IA de la boîte mail, un dimanche où au moins 5 bugs sont ouverts, paraît « Laisser l'IA répondre aux messages de Maman » (gratuit, irréversible). Tes dimanches redeviennent travaillés : plus rien ne s'arrête jusqu'à lundi. Sur la frise, « Maman » devient « Répondeur IA » : « Dimanche : le Répondeur IA a répondu à Maman. Elle demande si tu manges bien. » Le Sens perd 7.
+- Plus tard : l'IA appelle Maman elle-même, avec ta voix, pour garder le lien (faux) ; puis tout est automatisé, et il n'y a même plus rien à suivre. À l'épilogue, on constate qu'on n'a plus de lien avec personne. Aux chapitres 3 et 4, Maman ne crée plus de collision : Camille porte la vie.
+- Les exemples de R1 (« Maman » devient « VoixIA ») et du chapitre 5 sont à mettre à jour dans ce sens.
+
+**Les chiffres de ta vie** : des compteurs et des ratios, affichés comme une donnée, jamais comme un commentaire : « Ton repos : +58 énergie / min », « Appels de Maman décrochés : 7 sur 9 », « Dîners avec tes amis : 2 sur 6 ». Ils ne comptent qu'à partir de leur révélation (jamais « 0 sur 3 » d'emblée). Le Sens reste interne.
+
+**Les repas livrés** sont payés à la commande, pas en abonnement (un abonnement creuserait le négatif en silence). Leur prix est réaliste (~75 € par semaine).
+
+**L'interface** : le chapitre part de la page du plongeur, avec des sections arrondies et une couleur légère (maquette « L'arrivée », validée), et finit en tableau de bord complet en verre dépoli (maquette de fin, validée dans son style). On construit l'écran de fin d'abord, puis le chemin inverse : on retire rubrique par rubrique, de la plus tardive à la plus précoce, jusqu'à l'arrivée. Chaque rubrique paraît quand elle sert, une à la fois.
+
+**Tests R7 à ajouter** :
+- partir à -2 000 € : la sortie reste atteignable à 2 et 4 clics/s ;
+- une livraison en négatif est créditée ;
+- propositions et compromis restent possibles en négatif ;
+- le loyer ne touche jamais le livret ;
+- l'ordre du lundi (entretien de 50 €, loyer de 110 € : 0 € devient -60 €) ;
+- l'énergie ne dépasse jamais l'énergie maximale du logement ;
+- la sortie reste atteignable en refusant chaque logement.
 
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
