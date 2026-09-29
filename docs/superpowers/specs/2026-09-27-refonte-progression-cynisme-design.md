@@ -143,7 +143,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : 8 M€ et une levée → « Accepter l'invitation d'un plateau télé ».
 
 **6. Célébrité, 40 ans (~16 min, charnière)**
-- Verbes : poster et surfer la tendance ; **les sponsors dictent** (une demande en file bloque « Publier » tant qu'on ne l'a pas acceptée ou refusée) ; **la polémique** est une rafale de commentaires critiques qu'on éteint avec « Supprimer un commentaire » (motif B, 1re occurrence).
+- Verbes : poster et surfer la tendance ; **les sponsors dictent** (une demande en file bloque « Publier » tant qu'on ne l'a pas acceptée ou refusée) ; **la polémique** est une rafale de commentaires critiques qu'on éteint avec « Supprimer un commentaire » (motif B, 2e occurrence).
 - Compromis : « Faire la promo du jeton $MOI à ses abonnés » (+2 M€ ; le jeton s'effondre, −8 % de followers courants, le pic reste).
 - Vie : « Aller à la fête d'école de Lou ». Délégations : « Envoyer son assistante à la réunion parents-profs », « Filmer l'anniversaire de Lou pour un sponsor ». **Le Sens se révèle** : la frise reçoit sa légende.
 - Promotion : pic de 50 M followers → « Entrer en politique ».
@@ -157,7 +157,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : Emprise → « Se présenter à la présidentielle ».
 
 **8. Chef d'État, 52 ans (~16 min, fusion président + maître du monde)**
-- Première moitié : damier des institutions (« Contrôler les médias nationaux », « Nommer un ami à la banque centrale », « Nommer ses généraux », « Surveiller la population »…), Résistance, **élection datée** toutes les 4 min (−10 % d'Emprise courante si l'adhésion est sous 50 %). Après les médias, le bandeau ne publie plus que du positif, et « Supprimer un article » a le même bouton et le même son que « Supprimer un commentaire » (motif B, 2e occurrence). « Signer un décret sans vote ». Le dernier décret masque la jauge de Résistance et gèle son effet : un trou reste visible dans la grille.
+- Première moitié : damier des institutions (« Contrôler les médias nationaux », « Nommer un ami à la banque centrale », « Nommer ses généraux », « Surveiller la population »…), Résistance, **élection datée** toutes les 4 min (−10 % d'Emprise courante si l'adhésion est sous 50 %). Après les médias, le bandeau ne publie plus que du positif, et « Supprimer un article » a le même bouton et le même son que « Supprimer un commentaire » (motif B, 3e occurrence). « Signer un décret sans vote ». Le dernier décret masque la jauge de Résistance et gèle son effet : un trou reste visible dans la grille.
 - Compromis 1 : « Reporter les élections de deux ans » (supprime la taxe électorale).
 - Seconde moitié : « Proclamer le gouvernement mondial », puis le damier des continents.
 - Compromis 2 : « Couper Internet dans les régions qui résistent » (Résistance −50 %).
@@ -165,7 +165,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : Emprise → l'empire cosmique s'ouvre.
 
 **9. Empereur cosmique (~8 min, le final accélère)**
-- Verbes : **liquider l'interface pour lancer la sonde**. La première sonde coûte 50 Md€ ; chaque tuile de la liste blanche se vend 6 à 12 Md€ (en vendre 4 avance la sonde d'environ 5 min). Puis les sondes se répliquent seules et l'écran vidé se remplit de leurs points. À l'emplacement exact du premier bouton du plongeur réapparaît un bouton vide ; il incrémente un compteur « assiettes » sans effet (motif B, 3e occurrence).
+- Verbes : **liquider l'interface pour lancer la sonde**. La première sonde coûte 50 Md€ ; chaque tuile de la liste blanche se vend 6 à 12 Md€ (en vendre 4 avance la sonde d'environ 5 min). Puis les sondes se répliquent seules et l'écran vidé se remplit de leurs points. À l'emplacement exact du premier bouton du plongeur réapparaît un bouton vide ; il incrémente un compteur « assiettes » sans effet (motif B, 4e occurrence).
 - Compromis : « Démonter la Terre pour fabriquer des sondes » (sondes ×10, soit environ 77 s gagnées).
 - Option : « Vendre sa frise » (15 Md€) : l'épilogue montre alors une frise vide.
 - Épilogue : la frise comme seul bilan, puis deux choix (régner sur le vide, ou renoncer et renaître). Aucun commentaire.
@@ -546,7 +546,7 @@ Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tou
   - le rigoureux : « Corrige 4 bugs par jour. Accepte l'astreinte. » ;
   - le discret : plus lent, « Reste tard sans rien dire. » Il ne part pas avec le compromis de 22 h (graine de la pente).
 - Chaque carte : un prénom, une ligne de vie (« Hugo apporte des chouquettes le lundi. »), deux lignes chiffrées, le salaire en dernier.
-- Salaires chargés par semaine : junior ~950 €, senior ~1 500 €, commercial 700 € plus 8 % des contrats qu'il signe. **Nora (600 €) à trancher** : alternante, ou salaire relevé.
+- Salaires chargés par semaine : junior ~950 €, senior ~1 500 €, commercial 700 € plus 8 % des contrats qu'il signe. **Nora est en alternance** (décision d'Alexandre) : « Embaucher Nora en alternance » au ch2, 600 € chaque lundi reste plausible.
 - **Vivier sans soft-lock** : les candidats non choisis restent et reviennent (« Hugo cherche toujours. »). 5 juniors, 4 seniors, 3 commerciaux. Test R7 : réembaucher reste possible après avoir refusé chaque carte une fois, et après une démission.
 - Le senior ouvre « Proposer à Kévin de refaire toute sa plateforme de livraison » (30 000 lignes, 18 000 €, 900 € d'entretien ; « Il faut quelqu'un qui a déjà monté un serveur. »).
 - L'astreinte du week-end (+50 % du salaire, chaque lundi) se propose à qui l'accepte sur sa carte.
@@ -568,7 +568,7 @@ Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tou
 - Depuis le ch2, les amis ne t'invitent plus : le vendredi soir est vide. Se propose « Télécharger une appli de rencontre ».
 - 3 profils : un prénom et une ligne, **aucun chiffre** (R1 : la vie garde ses prénoms). « Proposer un verre à Camille » est un rendez-vous daté (vendredi 20 h). Après : « Revoir Camille » ou « Ne pas donner suite ». Au 3e verre avec la même personne, vous êtes ensemble. Le prénom choisi est une variable du moteur, utilisée jusqu'à l'épilogue.
 - Les soirées rechargent l'énergie, qui sert encore aux appels.
-- **Règle connue, jamais cachée** : 3 soirées manquées d'affilée et elle part (comme les amis). **Départ à trancher** : jamais, ou une seule fois avant l'emménagement (ch4), l'appli revenant alors avec 3 profils.
+- **Règle connue, jamais cachée** : 3 soirées manquées d'affilée et elle part (comme les amis). **Un seul départ possible, avant l'emménagement** (décision d'Alexandre) : l'appli revient alors avec 3 profils ; après l'emménagement (ch4), plus de départ.
 - **La mesure révèle la règle** (comme la montre au ch1) : « Suivre vos soirées dans un tableur ». Sous-titre : « Soirées manquées d'affilée : 1 sur 3 avant qu'elle parte. » Le gain est réel : tu sais combien de soirées tu peux sacrifier pour un déjeuner (environ un déjeuner de plus toutes les 2 semaines, ~+4 000 € par semaine). Drôle, rentable, jamais commenté.
 - **Délégation du lien** : « Faire livrer des fleurs à Camille chaque vendredi » (40 € chaque lundi, en charges perso). Une soirée manquée ne compte plus dans les 3 : la collision disparaît (R2), le Sens perd 7. Frise : « Vendredi : fleurs livrées à Camille ». Réserver un restaurant serait une corvée (R1), donc neutre.
 
@@ -579,8 +579,8 @@ Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tou
 ### Reporté au ch4
 Le compte-titres (avec l'immobilier et le robot-conseiller : un bloc patrimoine), le plateau de 12 places, la montre connectée, la voiture. Le livret reste plafonné à 22 950 € dès le ch3 : l'argent qui dépasse dort, visible, et appelle le ch4.
 
-### Le motif B (à trancher)
-Proposition du challenger : la carte partagée devient la 1re occurrence du motif B. Candidats et profils utilisent le même composant, et « Ne pas donner suite » a le même bouton et le même son pour un candidat et pour Camille. Le compromis de 22 h est reclassé en A. Les occurrences suivantes (commentaire, article, assiettes) glissent d'un cran.
+### Le motif B (décision d'Alexandre : 1re occurrence)
+La carte partagée devient la 1re occurrence du motif B. Candidats et profils utilisent le même composant, et « Ne pas donner suite » a le même bouton et le même son pour un candidat et pour Camille. Le compromis de 22 h est reclassé en A. Les occurrences suivantes (commentaire, article, assiettes) glissent d'un cran.
 
 ### Séquence esquissée (à simuler, écart maximal ≤ 2:30)
 0:00 Nora en poste · 1:30 premier poste junior et le coworking · 3:00 l'appli de rencontre · 4:00 augmenter tes tarifs · 4:30 le senior et la plateforme de Kévin · 5:30 le compromis · 6:30 arrêter de coder, appeler · 7:30 le local rue des Tanneurs · 8:30 le tableur des soirées · 9:30 l'astreinte · 10:30 le commercial · 11:30 les fleurs · 13:00 la sortie.
