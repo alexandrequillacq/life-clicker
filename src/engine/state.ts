@@ -2,6 +2,7 @@ import { D, type Decimal, ZERO } from "./numbers";
 import { MISSION_PERIOD } from "./content/missions";
 import { BADBUZZ_OFFSET } from "./content/audience";
 import { START_COVERS, START_PILE } from "./content/plonge";
+import { KINDS, START_LPC, DUVAL, type Kind } from "./content/freelance";
 
 export const SAVE_VERSION = 10;
 
@@ -25,6 +26,7 @@ export const MEETING_ENERGY_COST = 6; // énergie dépensée par meeting (action
 
 export type Job =
   | "plongeur"
+  | "freelance"
   | "developpeur"
   | "lead_dev"
   | "cto"
@@ -146,6 +148,181 @@ export function createPlongeState(): PlongeState {
   };
 }
 
+/** Chapitre 2 : une commande (un site à construire). */
+export interface FlOrder {
+  id: number;
+  kind: Kind;
+  client: string; // nom du client (voir ClientDef)
+  lines: number; // lignes à écrire
+  done: number; // lignes écrites
+  red: "none" | "failing" | "passed"; // test rouge : pas encore vérifié, bloqué, passé
+}
+/** Un bug à corriger (10 clics). `site` : un site entretenu ; `order` : un test rouge sur une commande. */
+export interface FlBug {
+  id: number;
+  site: number | null;
+  order: number | null;
+  clicks: number; // clics faits (un clic fatigué compte pour moitié)
+  text: string;
+}
+/** Un site sous contrat d'entretien : il paie chaque lundi s'il n'a pas de bug ouvert, et envoie des bugs. */
+export interface FlSite {
+  id: number;
+  client: string;
+  kind: Kind;
+  fee: number;
+  nextBug: number; // heure de calendrier du prochain bug
+  bugOpen: boolean;
+  bugs: number; // bugs envoyés au total (fait tourner les textes)
+  sinceWeek: number;
+}
+/** L'argent d'une semaine (du lundi au dimanche ; les paiements du lundi ouvrent la semaine). */
+export interface FlLedger {
+  livraisons: number;
+  entretien: number;
+  entretienPossible: number;
+  livret: number;
+  abonnements: number;
+  salaires: number;
+  loyer: number;
+  repas: number;
+  repasCount: number;
+  sorties: number;
+  achats: number; // achats uniques : hors du net
+}
+export interface FlWeek {
+  entrees: number;
+  net: number; // hors achats
+  livraisons: number;
+  entretien: number;
+  charges: number; // pro et perso
+}
+export function emptyLedger(): FlLedger {
+  return { livraisons: 0, entretien: 0, entretienPossible: 0, livret: 0, abonnements: 0, salaires: 0, loyer: 0, repas: 0, repasCount: 0, sorties: 0, achats: 0 };
+}
+
+export interface FreelanceState {
+  day: number; // secondes de calendrier depuis le premier lundi du chapitre
+  nextId: number;
+  orders: FlOrder[];
+  bugs: FlBug[]; // en tête du carnet, dans l'ordre
+  sites: FlSite[];
+  clientIndex: Record<Kind, number>; // prochain client de chaque liste
+  delivered: number;
+  firstDeliveryAt: number; // -1 tant que rien n'est livré
+  pendingInvoice: boolean; // le site de Mme Duval est prêt, la facture attend la micro-entreprise
+  company: { name: string; logo: number } | null;
+  lpc: number;
+  aiRate: number;
+  themeMult: number;
+  compMult: number;
+  bugRate: number; // 1, puis 0,5 avec la formation
+  tests: boolean;
+  weekly: Kind[]; // commandes qui arrivent chaque lundi
+  maintDuval: boolean;
+  maintAll: boolean;
+  evening: boolean;
+  proposals: Record<string, number>; // propositions acceptées → heure
+  tools: Record<string, number>; // outils achetés → heure
+  subs: Record<string, number>; // abonnements → € chaque lundi
+  home: number; // index dans HOMES
+  bugArrivals: number[]; // heures d'arrivée des bugs des 7 derniers jours
+  keptUp: number; // secondes d'affilée à carnet vide
+  behind: number; // secondes d'affilée en retard
+  revealed: Record<string, number>; // nouveautés parues → heure
+  lastNovelty: number;
+  busy: number; // secondes où tes mains sont prises
+  busyWhy: "" | "maman" | "diner" | "sortie";
+  mealsToday: number;
+  mealsCooked: number;
+  delivery: boolean;
+  friends: boolean;
+  friendsMissed: number;
+  dinnerOpen: boolean;
+  dinnerInvites: number;
+  dinners: number;
+  mamanRing: boolean;
+  mamanIA: boolean;
+  mamanRings: number;
+  mamanCalls: number;
+  outingOpen: boolean;
+  outings: number;
+  reds: number; // livraisons vérifiées par les tests
+  compromis: "none" | "offered" | "taken";
+  compromisQuoteDue: boolean;
+  quote: string; // id dans QUOTES
+  ledger: FlLedger;
+  lastWeek: FlLedger | null;
+  history: FlWeek[];
+  livretBalance: number;
+  livretLow: number;
+  nora: boolean;
+  noraAcc: number;
+  liensPerdus: number; // liens perdus par négligence (les amis) : même effet sur le Sens qu'un lien délégué
+}
+
+export function createFreelanceState(): FreelanceState {
+  return {
+    day: 0,
+    nextId: 2,
+    orders: [{ id: 1, kind: "vitrine", client: DUVAL.name, lines: KINDS.vitrine.lines, done: 0, red: "none" }],
+    bugs: [],
+    sites: [],
+    clientIndex: { vitrine: 0, appli: 0, boutique: 0 },
+    delivered: 0,
+    firstDeliveryAt: -1,
+    pendingInvoice: false,
+    company: null,
+    lpc: START_LPC,
+    aiRate: 0,
+    themeMult: 1,
+    compMult: 1,
+    bugRate: 1,
+    tests: false,
+    weekly: [],
+    maintDuval: false,
+    maintAll: false,
+    evening: false,
+    proposals: {},
+    tools: {},
+    subs: {},
+    home: 0,
+    bugArrivals: [],
+    keptUp: 0,
+    behind: 0,
+    revealed: {},
+    lastNovelty: -1000,
+    busy: 0,
+    busyWhy: "",
+    mealsToday: 0,
+    mealsCooked: 0,
+    delivery: false,
+    friends: true,
+    friendsMissed: 0,
+    dinnerOpen: false,
+    dinnerInvites: 0,
+    dinners: 0,
+    mamanRing: false,
+    mamanIA: false,
+    mamanRings: 0,
+    mamanCalls: 0,
+    outingOpen: false,
+    outings: 0,
+    reds: 0,
+    compromis: "none",
+    compromisQuoteDue: false,
+    quote: "debut",
+    ledger: emptyLedger(),
+    lastWeek: null,
+    history: [],
+    livretBalance: 0,
+    livretLow: 0,
+    nora: false,
+    noraAcc: 0,
+    liensPerdus: 0,
+  };
+}
+
 export interface GameState {
   version: number;
   money: Decimal;
@@ -158,6 +335,7 @@ export interface GameState {
   generators: Record<string, number>; // machines (lave-vaisselle…), id → quantité
   upgrades: Record<string, boolean>; // upgrades one-shot achetés
   plonge: PlongeState; // chapitre 1 : le restaurant, la pile, les machines, la bibliothèque
+  freelance: FreelanceState; // chapitre 2 : les commandes, les bugs, les outils, la vie du freelance
   souvenirs: Souvenir[]; // la vie perso vécue (ou manquée), la plus récente en tête
   homeLevel: number; // niveau de logement (décor de fond), du sous-sol à la villa
   job: Job; // métier courant
@@ -224,6 +402,7 @@ export function createInitialState(now: number, karma = 0): GameState {
     generators: {},
     upgrades: {},
     plonge: createPlongeState(),
+    freelance: createFreelanceState(),
     souvenirs: [],
     homeLevel: 0,
     job: "plongeur",

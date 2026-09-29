@@ -83,6 +83,7 @@
   // Titre de la fenêtre (l'écran ressemble à une appli ; remplace le « Métier : … »).
   const APP_TITLES: Record<Job, string> = {
     plongeur: "Plonge",
+    freelance: "Ton atelier",
     developpeur: "Résolveur de bugs",
     lead_dev: "Console d'équipe",
     cto: "Console technique",
