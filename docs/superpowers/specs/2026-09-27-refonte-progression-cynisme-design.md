@@ -464,6 +464,40 @@ Retours d'Alexandre sur la maquette de l'écran de fin : « le générateur de c
 - l'énergie ne dépasse jamais l'énergie maximale du logement ;
 - la sortie reste atteignable en refusant chaque logement.
 
+### v3 : charges, navigation, sortie payante (2026-09-29, 4e challenge et audit de la maquette)
+Retours d'Alexandre : « Banque » devient « Finances » avec les charges, pour voir ce qu'on gagne vraiment par semaine ; embaucher coûte un salaire chaque semaine ; charges pro et perso séparées ; la sortie en tête et côté pro ; un menu Pro, Perso, Finances et un tableau de bord. Ce qui suit remplace v2 quand elles se contredisent.
+
+**Un seul compte courant, deux catégories de charges** (R5 : un porte-monnaie unique au chapitre 2 ; la séparation éventuelle se tranche au chapitre 3). Tout se paie depuis le même compte ; pro et perso ne se séparent qu'à l'affichage.
+- **Entrées** : les livraisons (au fil de l'eau), l'entretien et les intérêts du livret (le lundi).
+- **Charges pro, le lundi** : les abonnements IA, puis le salaire de Nora au chapitre 3. Les outils suivent leur forme réelle :
+  - achats uniques : le deuxième écran (150 €), la licence d'éditeur (400 €), le thème pro (2 000 €), la formation aux tests (3 000 €) ;
+  - **abonnements, prélevés chaque lundi** : l'autocomplétion par IA (5 €), l'IA qui écrit les pages neuves (25 €, puis l'abonnement pro à 50 € qui la remplace), l'IA de la boîte mail (10 €). Leurs gros prix uniques (600, 1 200, 6 000, 4 800 €) disparaissent : **la cadence est à resimuler**.
+  - Chaque sous-titre met le gain face au prix : « L'IA : 20 → 60 lignes / s, 50 € chaque lundi ».
+- **Charges perso** : le loyer (le lundi) et les repas livrés (11 € débités à chaque repas).
+- **Aucune charge n'est suspendue en négatif** (couper l'IA ou le repos creuserait la spirale).
+- **L'ordre du lundi** : l'entretien, puis les charges pro, puis le loyer, puis le livret. Une seule ligne le dit ; le détail est dans Finances.
+- **Le net de la semaine** = livraisons + entretien + intérêts − charges pro − charges perso, du lundi au dimanche. C'est le grand chiffre de « Ce que tu gagnes », et le graphique montre les charges en barres sous zéro.
+- La ligne « Abonnements IA : 65 € » à côté de « Nora : 600 € » prépare le chapitre 5 sans un mot.
+
+**La sortie devient payante.**
+- « Embaucher Nora pour corriger les bugs » : **600 € chaque lundi**, en charges pro, dès le lundi qui suit. Sous-titre : « 600 € chaque lundi, en charges pro. Elle corrige jusqu'à 15 bugs par semaine, du lundi au vendredi. » Ligne de contexte : « Ces 7 derniers jours : 12 bugs arrivés. » et l'entretien en jeu lundi.
+- Nora corrige 3 bugs par jour ouvré, jamais le week-end : les bugs du vendredi soir restent les tiens (elle ne travaille pas le week-end, toi si). Son gain minimal (~600 € d'impayés évités et ~120 clics libérés) dépasse son salaire.
+- Elle paraît en tête du tableau de bord, en bande pleine largeur côté pro, et reste affichée. Elle reste possible en négatif ; Nora ne part jamais, même impayée.
+- Tests R7 : le net de la semaine qui suit l'embauche est au moins celui d'avant, à 2, 4 et 6 clics/s, en arrêtant de cliquer après l'IA et en partant de −2 000 € ; si ce test échoue, on baisse le salaire, pas sa capacité.
+
+**La navigation : Tableau de bord, Pro, Perso, Finances.**
+- Trois conditions : une barre de travail fixe sur chaque onglet (la tâche en cours, le bouton, l'argent, l'énergie, la nouveauté en attente) ; aucune action urgente n'existe seulement dans un onglet (seuls le livret et « Tout reprendre » vivent dans Finances) ; le menu arrive tard (jusqu'à ~10 min, la page reste en deux colonnes Travail et Ta vie).
+- Un onglet paraît quand il sert : **Finances** d'abord (il crée le menu, avec le Tableau de bord), quand il y a au moins 3 lignes de charges ; **Perso** ensuite, avec les ratios ; **Pro** en dernier, quand la liste des clients déborde (vers l'IA de la boîte mail).
+- Contenu à la fin : le **Tableau de bord** réunit la sortie, le carnet, le net de la semaine et ses clients, ce qui travaille sans toi, « D'ici lundi », le logement, ta vie et tes finances ; **Pro** : le carnet complet, les clients, les outils, le compromis ; **Perso** : ta vie et ses ratios, les repas, le logement, les souvenirs ; **Finances** : les comptes, le livret, le détail de la semaine, le graphique.
+
+**Détails corrigés par l'audit** (maquette de fin, état figé au dimanche de la semaine 8) :
+- la carte sombre s'appelle « D'ici lundi » (elle ne couvre que les jours à venir) ; « Laisser l'IA répondre aux messages de Maman » se propose le dimanche, à côté de « Décrocher » ;
+- le test rouge survient à la livraison (« Sa boutique est prête, un test échoue : 1 900 € bloqués ») ; il passe juste après la tâche en cours, avant les autres bugs ;
+- la ligne « Dîners avec tes amis » disparaît avec eux ; « Sorties » devient « Cinéma et restaurant » ;
+- les ratios ne comptent que les dimanches passés (« Appels de Maman décrochés : 6 sur 7 » à la semaine 8) ;
+- « Tes clients qui paient le plus », triés ; plus de compteur « Clients » (une règle de recommandation n'existe pas) ;
+- les montants sont en euros entiers (« 10 000 € », jamais « 10 k€ ») et chaque bouton de Finances a son sous-titre (« +1 % chaque lundi »).
+
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
 2. Jalons d'interface, une fois les étapes validées.
