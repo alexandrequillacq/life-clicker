@@ -3,13 +3,15 @@ import {
   PROPOSALS,
   PROPOSAL_BY_ID,
   PETIT,
+  DUVAL,
+  DUVAL_FIRST_BUG,
   KEEP_UP_SECS,
   PROPOSAL_LATE,
   BEHIND_LINES,
   BEHIND_BUGS,
   type ProposalDef,
 } from "../content/freelance";
-import { addOrder, pendingLines } from "./carnet";
+import { addOrder, addSite, pendingLines } from "./carnet";
 import { isRevealed, acted } from "./revelations";
 
 // La demande : ce que tu proposes à tes clients (gratuit), et les commandes qui arrivent chaque lundi.
@@ -42,6 +44,7 @@ export function acceptProposal(s: GameState, id: string): boolean {
   if (p.maintDuval) {
     f.maintDuval = true;
     // [contrat Duval]
+    addSite(s, DUVAL.name, "vitrine", f.day + DUVAL_FIRST_BUG);
   }
   if (p.maintAll) f.maintAll = true;
   if (p.evening) f.evening = true;

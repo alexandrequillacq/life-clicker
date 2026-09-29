@@ -287,3 +287,52 @@ describe("chapitre 2 : la demande", () => {
     expect(s.freelance.orders.at(-1)).toMatchObject({ kind: "appli", client: PETIT.name });
   });
 });
+
+import { tickBugs, bugsLast7Days, maintenancePossible, maintenanceAtStake, eveningBugs, addSite } from "../src/engine/freelance";
+import { DUVAL_FIRST_BUG, FORMATION_BUG_RATE } from "../src/engine/content/freelance";
+
+describe("chapitre 2 : l'entretien", () => {
+  it("le contrat de Mme Duval envoie son premier bug 40 s plus tard, puis un par semaine", () => {
+    const s = invoiced();
+    run(s, KEEP_UP_SECS + 1);
+    acceptProposal(s, "entretien_duval");
+    expect(s.freelance.sites).toHaveLength(1);
+    run(s, DUVAL_FIRST_BUG + 0.1);
+    expect(s.freelance.bugs).toHaveLength(1);
+    expect(s.freelance.bugs[0].text).toBe("Les horaires du dimanche ont disparu.");
+    expect(bugsLast7Days(s)).toBe(1);
+  });
+
+  it("un site n'a qu'un bug ouvert à la fois ; la formation espace les bugs", () => {
+    const s = fresh();
+    const site = addSite(s, DUVAL.name, "vitrine", 0);
+    tickBugs(s);
+    s.freelance.day += FL_WEEK_SECS;
+    tickBugs(s);
+    expect(s.freelance.bugs).toHaveLength(1);
+    s.freelance.bugRate = FORMATION_BUG_RATE;
+    s.freelance.bugs = [];
+    site.bugOpen = false;
+    site.nextBug = s.freelance.day;
+    tickBugs(s);
+    expect(site.nextBug - s.freelance.day).toBeCloseTo(FL_WEEK_SECS / FORMATION_BUG_RATE);
+  });
+
+  it("avec l'entretien à chaque livraison, chaque site livré devient un contrat", () => {
+    const s = invoiced();
+    s.freelance.maintAll = true;
+    const o = addOrder(s, "boutique");
+    o.done = o.lines - 1;
+    workClick(s);
+    expect(s.freelance.sites.map((x) => x.client)).toContain("Épicerie bio Garnier");
+    expect(maintenancePossible(s)).toBe(130);
+  });
+
+  it("le vendredi soir, deux sites sans bug en reçoivent un ; l'argent en jeu suit les bugs ouverts", () => {
+    const s = fresh();
+    for (let i = 0; i < 3; i++) addSite(s, `Site ${i}`, "vitrine", 1e9);
+    eveningBugs(s);
+    expect(s.freelance.bugs).toHaveLength(2);
+    expect(maintenanceAtStake(s)).toBe(100);
+  });
+});

@@ -1,7 +1,7 @@
 import type { GameState } from "../state";
 import { dayIndex } from "./commun";
 import { revealQueue } from "./revelations";
-import { aiWrite } from "./carnet";
+import { aiWrite, tickBugs, eveningBugs } from "./carnet";
 import { trackPace, weeklyArrivals } from "./demande";
 
 // Le temps qui passe au chapitre 2. Les tâches du plan insèrent leur code sous les repères entre crochets.
@@ -21,6 +21,7 @@ export function onNewDay(s: GameState, wd: number): void {
   }
   if (wd === 4) {
     // [vendredi]
+    if (s.freelance.evening) eveningBugs(s); // les commandes du soir amènent leurs bugs
   }
   if (wd === 5) {
     // [samedi]
@@ -41,6 +42,7 @@ export function tickFreelance(s: GameState, t: number): void {
     if (f.busy === 0) f.busyWhy = "";
   }
   // [chaque tick]
+  tickBugs(s);
   aiWrite(s, t); // l'IA écrit, même quand tes mains sont prises
   trackPace(s, t);
   revealQueue(s);

@@ -1,4 +1,4 @@
-import type { GameState, FlOrder, FlBug } from "../state";
+import type { GameState, FlOrder, FlBug, FlSite } from "../state";
 import {
   KINDS,
   CLIENTS,
@@ -8,10 +8,16 @@ import {
   TIRED_BELOW,
   TIRED_SHARE,
   BUG_CLICKS,
+  BUG_TEXTS,
+  FL_WEEK_SECS,
+  FIRST_BUG_MIN,
+  FIRST_BUG_STEP,
+  FIRST_BUG_SPREAD,
+  EVENING_BUGS,
   type Kind,
   type ClientDef,
 } from "../content/freelance";
-import { handsFree } from "./commun";
+import { handsFree, weekNumber } from "./commun";
 import { earn } from "./finances";
 import { acted } from "./revelations";
 
@@ -126,6 +132,7 @@ function deliver(s: GameState, o: FlOrder): void {
   }
   earn(s, KINDS[o.kind].price, "livraisons");
   // [après une livraison]
+  if (f.maintAll) addSite(s, o.client, o.kind, f.day + FIRST_BUG_MIN + ((f.sites.length * FIRST_BUG_STEP) % FIRST_BUG_SPREAD));
 }
 
 export function pendingLines(s: GameState): number {
@@ -135,3 +142,53 @@ export function pendingLines(s: GameState): number {
 export function waitingValue(s: GameState): number {
   return s.freelance.orders.reduce((n, o) => n + KINDS[o.kind].price, 0);
 }
+
+// --- L'entretien : chaque site sous contrat paie le lundi et envoie des bugs ---
+
+export function addSite(s: GameState, client: string, kind: Kind, nextBug: number): FlSite {
+  const f = s.freelance;
+  const site: FlSite = { id: f.nextId++, client, kind, fee: KINDS[kind].fee, nextBug, bugOpen: false, bugs: 0, sinceWeek: weekNumber(s) };
+  f.sites.push(site);
+  return site;
+}
+
+/** Un bug arrive au bout de la file des bugs (toujours avant les commandes). Les textes tournent par site. */
+export function openBug(s: GameState, site: FlSite): void {
+  const f = s.freelance;
+  const texts = BUG_TEXTS[site.kind];
+  site.bugOpen = true;
+  const text = texts[(f.sites.indexOf(site) + site.bugs) % texts.length];
+  f.bugs.push({ id: f.nextId++, site: site.id, order: null, clicks: 0, text });
+  site.bugs += 1;
+  f.bugArrivals.push(f.day);
+}
+
+const bugPeriod = (s: GameState): number => FL_WEEK_SECS / s.freelance.bugRate;
+
+/** Les sites envoient leurs bugs à leur heure ; on oublie ceux arrivés il y a plus de 7 jours. */
+export function tickBugs(s: GameState): void {
+  const f = s.freelance;
+  for (const site of f.sites) {
+    if (f.day < site.nextBug) continue;
+    site.nextBug = f.day + bugPeriod(s);
+    if (!site.bugOpen) openBug(s, site);
+  }
+  f.bugArrivals = f.bugArrivals.filter((t) => t > f.day - FL_WEEK_SECS);
+}
+
+/** « Répondre aux clients le soir » : le vendredi, deux sites sans bug en reçoivent un. */
+export function eveningBugs(s: GameState): void {
+  const f = s.freelance;
+  const free = f.sites.filter((x) => !x.bugOpen).sort((a, b) => a.nextBug - b.nextBug).slice(0, EVENING_BUGS);
+  for (const site of free) {
+    openBug(s, site);
+    site.nextBug = f.day + bugPeriod(s);
+  }
+}
+
+export const bugsLast7Days = (s: GameState): number => s.freelance.bugArrivals.length;
+/** € d'entretien si tout est corrigé lundi. */
+export const maintenancePossible = (s: GameState): number => s.freelance.sites.reduce((n, x) => n + x.fee, 0);
+/** € d'entretien que les bugs encore ouverts feraient perdre lundi. */
+export const maintenanceAtStake = (s: GameState): number =>
+  s.freelance.sites.reduce((n, x) => n + (x.bugOpen ? x.fee : 0), 0);
