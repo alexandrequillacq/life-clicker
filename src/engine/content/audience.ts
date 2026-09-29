@@ -42,7 +42,8 @@ function clamp(min: number, max: number, v: number): number {
 /** Sens initial à la révélation : agrégat honnête des choix de vie enregistrés. */
 export function computeInitialSens(s: GameState): number {
   const lived = SENS_PER_LIFE * Math.min(s.vieVecueTicks, SENS_LIFE_CAP);
-  const automated = SENS_PER_AUTOMATION * s.vieAutomatiseeCount;
+  // Un lien délégué (l'IA répond à Maman) ou perdu par négligence (les amis qui n'invitent plus) : même effet.
+  const automated = SENS_PER_AUTOMATION * (s.vieAutomatiseeCount + (s.freelance?.liensPerdus ?? 0));
   const neglect = s.secsSinceLife > NEGLECT_SECONDS ? SENS_NEGLECT_PENALTY : 0;
   return clamp(0, 100, SENS_BASE + lived - automated - neglect);
 }

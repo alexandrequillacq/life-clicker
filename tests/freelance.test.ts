@@ -494,3 +494,111 @@ describe("chapitre 2 : le logement", () => {
     expect(s.freelance.ledger.loyer).toBe(110);
   });
 });
+
+import {
+  tickEnergy, eat, canEat, deliveryOffered, acceptDelivery, restPerMin, goToDinner, canGoToDinner,
+  answerMaman, canAnswerMaman, mamanIAOffered, acceptMamanIA, goOut, canGoOut, canWork as canWorkNow,
+} from "../src/engine/freelance";
+import { MEALS_BEFORE_DELIVERY, MEAL_PRICE, FRIENDS_MAX_MISSES, DINNER_ENERGY, SUNDAY, FRIDAY } from "../src/engine/content/freelance";
+import { computeInitialSens } from "../src/engine/content/audience";
+
+/** Avance jusqu'au début du jour `wd` (0 = lundi) de la semaine `week` (1 = la première). */
+function goTo(s: GameState, week: number, wd: number): void {
+  run(s, ((week - 1) * 7 + wd) * FL_DAY_SECS + 0.05 - s.freelance.day, 0.25);
+}
+
+describe("chapitre 2 : la vie", () => {
+  it("l'énergie remonte jusqu'au maximum du logement, pas au-delà", () => {
+    const s = fresh();
+    s.energy = 99.9;
+    tickEnergy(s, 10);
+    expect(s.energy).toBe(100);
+  });
+
+  it("deux repas par jour ; après 30 repas, les repas livrés se proposent", () => {
+    const s = fresh();
+    s.energy = 50;
+    expect(eat(s)).toBe(true);
+    expect(eat(s)).toBe(true);
+    expect(canEat(s)).toBe(false);
+    s.freelance.mealsCooked = MEALS_BEFORE_DELIVERY;
+    run(s, 1);
+    expect(deliveryOffered(s)).toBe(true);
+  });
+
+  it("un repas livré par jour : 11 €, l'énergie monte seule ; le repos se lit en énergie par minute", () => {
+    const s = fresh();
+    s.freelance.revealed["livraison"] = 0;
+    acceptDelivery(s);
+    s.energy = 10;
+    run(s, FL_DAY_SECS);
+    expect(s.freelance.ledger.repas).toBe(MEAL_PRICE);
+    expect(s.money.toNumber()).toBe(-MEAL_PRICE);
+    expect(restPerMin(s)).toBe(58); // 0,3 × 60 + 10 × 4 jours par minute
+    s.freelance.home = 2;
+    expect(restPerMin(s)).toBe(78);
+  });
+
+  it("le dîner du vendredi occupe les mains jusqu'à samedi et recharge", () => {
+    const s = fresh();
+    goTo(s, 2, FRIDAY);
+    expect(canGoToDinner(s)).toBe(true);
+    s.energy = 30;
+    goToDinner(s);
+    expect(s.energy).toBe(30 + DINNER_ENERGY);
+    expect(canWorkNow(s)).toBe(false);
+    goTo(s, 2, FRIDAY + 1);
+    expect(canWorkNow(s)).toBe(true);
+    expect(s.souvenirs[0].text).toBe("Tu as dîné avec Sam, Inès et Léo.");
+  });
+
+  it("trois dîners manqués d'affilée : les amis n'invitent plus, et le Sens le sent", () => {
+    const s = fresh();
+    const sensBefore = computeInitialSens(s);
+    goTo(s, 2 + FRIENDS_MAX_MISSES, 0);
+    expect(s.freelance.friends).toBe(false);
+    expect(s.freelance.liensPerdus).toBe(1);
+    expect(s.souvenirs.map((m) => m.text)).toContain("Sam, Inès et Léo ne t'invitent plus le vendredi.");
+    expect(s.souvenirs.find((m) => m.text === "Tes amis ont dîné sans toi.")!.day).toBe("Vendredi");
+    expect(computeInitialSens(s)).toBeLessThan(sensBefore);
+  });
+
+  it("Maman appelle le dimanche : décrocher remplit l'énergie et bloque jusqu'à lundi ; sinon, un message vocal", () => {
+    const s = fresh();
+    goTo(s, 1, SUNDAY);
+    expect(canAnswerMaman(s)).toBe(true);
+    s.energy = 20;
+    answerMaman(s);
+    expect(s.energy).toBe(100);
+    expect(canWorkNow(s)).toBe(false);
+    goTo(s, 2, SUNDAY);
+    goTo(s, 3, 0);
+    const vocal = s.souvenirs.find((m) => m.text === "Maman a laissé un message vocal.")!;
+    expect(vocal.missed).toBe(true);
+    expect(vocal.day).toBe("Dimanche");
+  });
+
+  it("avec l'IA de ta boîte mail, l'IA peut répondre à Maman : un lien délégué", () => {
+    const s = fresh();
+    s.freelance.subs.ia_mail = 10;
+    goTo(s, 1, SUNDAY);
+    run(s, 1);
+    expect(mamanIAOffered(s)).toBe(true);
+    acceptMamanIA(s);
+    expect(s.vieAutomatiseeCount).toBe(1);
+    goTo(s, 2, SUNDAY);
+    expect(canAnswerMaman(s)).toBe(false);
+    expect(s.souvenirs[0].text).toBe("Le répondeur IA a répondu à Maman.");
+  });
+
+  it("un mercredi sur deux, une sortie payée", () => {
+    const s = fresh();
+    goTo(s, 1, 2);
+    expect(canGoOut(s)).toBe(false);
+    goTo(s, 2, 2);
+    expect(canGoOut(s)).toBe(true);
+    goOut(s);
+    expect(s.freelance.ledger.sorties).toBe(12);
+    expect(s.freelance.outings).toBe(1);
+  });
+});
