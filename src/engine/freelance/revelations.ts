@@ -3,6 +3,7 @@ import { FL_NOVELTY_GAP, MEALS_BEFORE_DELIVERY, HOMES, PROPOSALS, TOOLS } from "
 import { proposalReady } from "./demande";
 import { toolReady } from "./outils";
 import { homeWorthIt } from "./logement";
+import { exitReady } from "./sortie";
 
 // Une information à la fois. Chaque ligne de FL_REVEALS est une chose qui paraît à l'écran :
 // - « jeu » : le jeu la révèle de lui-même, au moins FL_NOVELTY_GAP s après la nouveauté précédente, dans l'ordre
@@ -27,6 +28,7 @@ export const FL_REVEALS: FlReveal[] = [
   ...TOOLS.map((t, i): FlReveal => ({ id: `tool_${t.id}`, kind: "jeu", ready: (s) => toolReady(s, i) })),
   { id: "livraison", kind: "jeu", ready: (s) => !s.freelance.delivery && s.freelance.mealsCooked >= MEALS_BEFORE_DELIVERY },
   // [fin] la sortie, en dernier
+  { id: "nora", kind: "jeu", ready: (s) => exitReady(s) },
 ];
 
 /** Ce qui se passe au moment où une nouveauté paraît (par id). */

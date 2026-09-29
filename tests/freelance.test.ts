@@ -662,3 +662,52 @@ describe("chapitre 2 : le compromis", () => {
     expect(compromisVisible(s)).toBe(true);
   });
 });
+
+import { exitReady, noraOffered, hireNora } from "../src/engine/freelance";
+import { EXIT_BUGS } from "../src/engine/content/freelance";
+
+describe("chapitre 2 : la sortie", () => {
+  function almostDone(): GameState {
+    const s = invoiced();
+    const f = s.freelance;
+    f.bugArrivals = Array(EXIT_BUGS).fill(0);
+    f.subs.ia_mail = 10;
+    f.revealed.maman_ia = 0;
+    f.compromis = "offered";
+    f.revealed.compromis = 0; // déjà paru : sinon ce geste repousse Nora de 35 s
+    f.lastNovelty = -1000;
+    return s;
+  }
+
+  it("attend 12 bugs en 7 jours, l'IA de la boîte mail, l'IA pour Maman et le compromis", () => {
+    const s = almostDone();
+    expect(exitReady(s)).toBe(true);
+    s.freelance.compromis = "none";
+    expect(exitReady(s)).toBe(false);
+    s.freelance.compromis = "taken";
+    delete s.freelance.revealed.maman_ia;
+    expect(exitReady(s)).toBe(false);
+  });
+
+  it("Nora se propose, se paie chaque lundi et corrige 3 bugs par jour ouvré, par la fin de la file", () => {
+    const s = almostDone();
+    s.freelance.bugArrivals = [];
+    const total = EXIT_BUGS * 3; // assez pour qu'il en reste le week-end
+    for (let i = 0; i < total; i++) s.freelance.bugs.push({ id: 1000 + i, site: null, order: null, clicks: 0, text: `b${i}` });
+    for (const r of FL_REVEALS) if (r.id !== "nora") s.freelance.revealed[r.id] = 0; // les autres offres sont déjà parues : sinon l écart de 35 s repousse Nora
+    run(s, 0.1);
+    expect(noraOffered(s)).toBe(true);
+    expect(hireNora(s)).toBe(true);
+    run(s, FL_DAY_SECS); // le lundi
+    const fixed = total - s.freelance.bugs.length;
+    expect(fixed).toBeGreaterThanOrEqual(3);
+    expect(fixed).toBeLessThanOrEqual(4);
+    expect(s.freelance.bugs[0].text).toBe("b0"); // ta tâche en cours reste à toi
+    goTo(s, 1, 5); // samedi
+    const saturday = s.freelance.bugs.length;
+    goTo(s, 1, 6); // dimanche : elle ne travaille pas le week-end
+    expect(s.freelance.bugs.length).toBe(saturday);
+    goTo(s, 2, 0);
+    expect(s.freelance.ledger.salaires).toBe(600);
+  });
+});

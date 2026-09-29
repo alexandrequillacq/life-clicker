@@ -3,6 +3,7 @@ import { dayIndex } from "./commun";
 import { revealQueue } from "./revelations";
 import { aiWrite, tickBugs, eveningBugs } from "./carnet";
 import { mondayMorning } from "./finances";
+import { tickNora } from "./sortie";
 import { trackPace, weeklyArrivals } from "./demande";
 import { tickEnergy, lifeNewDay, startDinner, endDinner, startSunday, endSunday, startOuting, endOuting } from "./vie";
 
@@ -60,6 +61,7 @@ export function tickFreelance(s: GameState, t: number): void {
   f.livretLow = Math.min(f.livretLow, f.livretBalance);
   tickBugs(s);
   aiWrite(s, t); // l'IA écrit, même quand tes mains sont prises
+  tickNora(s, t);
   trackPace(s, t);
   revealQueue(s);
   // [après le tick]
