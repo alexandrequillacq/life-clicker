@@ -224,3 +224,66 @@ describe("chapitre 2 : la micro-entreprise", () => {
     expect(companyInitial("")).toBe("A");
   });
 });
+
+import { proposalVisible, acceptProposal, visibleProposals } from "../src/engine/freelance";
+import { KEEP_UP_SECS, PROPOSAL_LATE, FL_WEEK_SECS, PETIT } from "../src/engine/content/freelance";
+
+/** Mme Duval livrée et facturée. */
+function invoiced(): GameState {
+  const s = fresh();
+  s.freelance.orders[0].done = s.freelance.orders[0].lines - 1;
+  workClick(s);
+  createCompany(s, "Pixel", 0);
+  return s;
+}
+
+describe("chapitre 2 : la demande", () => {
+  it("rien n'est proposé avant la facture ; ensuite, le contrat d'entretien dès que tu suis", () => {
+    const s = fresh();
+    run(s, 30);
+    expect(visibleProposals(s)).toHaveLength(0);
+    const t = invoiced();
+    run(t, KEEP_UP_SECS + 1);
+    expect(proposalVisible(t, "entretien_duval")).toBe(true);
+    expect(proposalVisible(t, "cartes")).toBe(false); // une à la fois
+    expect(acceptProposal(t, "entretien_duval")).toBe(true);
+    expect(t.freelance.maintDuval).toBe(true);
+    expect(proposalVisible(t, "entretien_duval")).toBe(false);
+  });
+
+  it("même si tu ne suis pas, la proposition suivante paraît au plus tard 120 s après la précédente", () => {
+    const s = invoiced();
+    run(s, KEEP_UP_SECS + 1);
+    acceptProposal(s, "entretien_duval");
+    s.freelance.orders.push({ id: 500, kind: "vitrine", client: "X", lines: 2000, done: 0, red: "none" }); // carnet jamais vide
+    s.freelance.delivered = 0; // aucun outil ne se propose dans ce test : seule la proposition compte
+    s.freelance.sites = []; // ni bug de Mme Duval
+    s.freelance.home = 3; // ni logement (le deux-pièces est le dernier)
+    // la nouveauté précédente (le contrat d'entretien) est parue à 0 s ; on en est à KEEP_UP_SECS + 1 s
+    run(s, PROPOSAL_LATE - (KEEP_UP_SECS + 1) - 5);
+    expect(proposalVisible(s, "cartes")).toBe(false);
+    run(s, 10);
+    expect(proposalVisible(s, "cartes")).toBe(true);
+  });
+
+  it("les cartes de visite font arriver un site vitrine chaque lundi", () => {
+    const s = invoiced();
+    run(s, KEEP_UP_SECS + 1);
+    acceptProposal(s, "entretien_duval");
+    run(s, 36 + KEEP_UP_SECS);
+    expect(acceptProposal(s, "cartes")).toBe(true);
+    const before = s.freelance.orders.length;
+    run(s, FL_WEEK_SECS);
+    expect(s.freelance.orders.length).toBe(before + 1);
+    expect(s.freelance.orders.at(-1)!.kind).toBe("vitrine");
+  });
+
+  it("l'appli de M. Petit arrive tout de suite", () => {
+    const s = invoiced();
+    for (const id of ["entretien_duval", "cartes", "profil", "entretien_tous"]) s.freelance.proposals[id] = 0;
+    s.freelance.lastNovelty = -1000;
+    run(s, KEEP_UP_SECS + 1);
+    expect(acceptProposal(s, "petit")).toBe(true);
+    expect(s.freelance.orders.at(-1)).toMatchObject({ kind: "appli", client: PETIT.name });
+  });
+});

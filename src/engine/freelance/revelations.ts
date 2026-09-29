@@ -1,5 +1,6 @@
 import type { GameState } from "../state";
-import { FL_NOVELTY_GAP } from "../content/freelance";
+import { FL_NOVELTY_GAP, PROPOSALS } from "../content/freelance";
+import { proposalReady } from "./demande";
 
 // Une information à la fois. Chaque ligne de FL_REVEALS est une chose qui paraît à l'écran :
 // - « jeu » : le jeu la révèle de lui-même, au moins FL_NOVELTY_GAP s après la nouveauté précédente, dans l'ordre
@@ -17,6 +18,7 @@ export const FL_REVEALS: FlReveal[] = [
   // [instants] ce qui ne dure qu'un moment (un dimanche), à placer avant le reste
   // [interface] les paliers de la page (v5)
   // [offres] ce que tu peux accepter ou acheter, une chose à la fois
+  ...PROPOSALS.map((p, i): FlReveal => ({ id: `prop_${p.id}`, kind: "jeu", ready: (s) => proposalReady(s, i) })),
   // [fin] la sortie, en dernier
 ];
 

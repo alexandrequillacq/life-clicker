@@ -2,6 +2,7 @@ import type { GameState } from "../state";
 import { dayIndex } from "./commun";
 import { revealQueue } from "./revelations";
 import { aiWrite } from "./carnet";
+import { trackPace, weeklyArrivals } from "./demande";
 
 // Le temps qui passe au chapitre 2. Les tâches du plan insèrent leur code sous les repères entre crochets.
 
@@ -10,6 +11,7 @@ export function onNewDay(s: GameState, wd: number): void {
   // [nouveau jour]
   if (wd === 0) {
     // [lundi]
+    weeklyArrivals(s); // les commandes de la semaine
   }
   if (wd === 2) {
     // [mercredi]
@@ -40,6 +42,7 @@ export function tickFreelance(s: GameState, t: number): void {
   }
   // [chaque tick]
   aiWrite(s, t); // l'IA écrit, même quand tes mains sont prises
+  trackPace(s, t);
   revealQueue(s);
   // [après le tick]
 }
