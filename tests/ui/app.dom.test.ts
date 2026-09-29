@@ -383,7 +383,7 @@ describe("App P0 (DOM)", () => {
     select.dispatchEvent(new Event("change", { bubbles: true }));
     flushSync();
     expect(game.state.job).toBe("freelance");
-    expect(target.querySelector("main.freelance")).not.toBeNull();
+    expect(target.querySelector("main.fl")).not.toBeNull();
     unmount(component);
   });
 });
