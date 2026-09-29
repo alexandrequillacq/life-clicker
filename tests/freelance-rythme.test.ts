@@ -4,6 +4,7 @@ import { D } from "../src/engine/numbers";
 import { TOOLS, PROPOSALS, FL_WEEK_SECS } from "../src/engine/content/freelance";
 import { hireNora, toolOffered, visibleProposals } from "../src/engine/freelance";
 import { tick } from "../src/engine/loop";
+import type { GameState } from "../src/engine/state";
 
 const joueur = (cps: number): FlJoueur => ({ cps, buys: true, answersMaman: true, dinners: true });
 const MIN = 60;
@@ -51,14 +52,24 @@ describe("chapitre 2 : le rythme (R7)", () => {
     expect(trace.exitAt!).toBeLessThanOrEqual(25 * MIN);
   });
 
-  it("embaucher Nora ne fait pas baisser le net de la semaine suivante", () => {
-    const { s } = playFreelance(joueur(4), 30 * MIN);
-    const before = s.freelance.history.length;
-    const lastNet = s.freelance.history[before - 1].net;
-    expect(hireNora(s)).toBe(true);
-    // on laisse passer la fin de la semaine en cours, puis une semaine entière avec Nora, sans cliquer
-    for (let t = 0; t < 2 * FL_WEEK_SECS && s.freelance.history.length < before + 2; t += 0.05) tick(s, 0.05);
-    expect(s.freelance.history.length).toBe(before + 2);
-    expect(s.freelance.history[before + 1].net).toBeGreaterThanOrEqual(lastNet);
-  });
+  // Spec R7 : le net de la semaine qui suit l'embauche est au moins celui d'avant, à 2, 4 et 6 clics / s,
+  // en arrêtant de cliquer après l'IA et en partant de −2 000 €. Ce joueur peut sortir plus tard : on lui
+  // laisse 40 min et on ne vérifie que la sortie (la fenêtre de 10 à 22 min vaut pour ceux qui cliquent).
+  for (const cps of [2, 4, 6]) {
+    for (const debt of [false, true]) {
+      const name = `à ${cps} clics / s${debt ? ", départ à −2 000 €" : ""}, sans cliquer après l'IA`;
+      it(`${name} : embaucher Nora ne fait pas baisser le net de la semaine suivante`, () => {
+        const setup = debt ? (s: GameState) => void (s.money = D(-2000)) : undefined;
+        const { s, trace } = playFreelance({ ...joueur(cps), stopsAfterAI: true }, 40 * MIN, setup);
+        expect(trace.exitAt).not.toBeNull();
+        const before = s.freelance.history.length;
+        const lastNet = s.freelance.history[before - 1].net;
+        expect(hireNora(s)).toBe(true);
+        // la fin de la semaine en cours, puis une semaine entière avec Nora, toujours sans cliquer
+        for (let t = 0; t < 2 * FL_WEEK_SECS && s.freelance.history.length < before + 2; t += 0.05) tick(s, 0.05);
+        expect(s.freelance.history.length).toBe(before + 2);
+        expect(s.freelance.history[before + 1].net).toBeGreaterThanOrEqual(lastNet);
+      });
+    }
+  }
 });

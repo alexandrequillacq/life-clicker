@@ -23,7 +23,7 @@ export const KEEP_UP_SECS = 6; // carnet vide pendant 6 s : tu suis, une proposi
 export const BEHIND_SECS = 6; // en retard pendant 6 s : un outil se propose
 export const BEHIND_LINES = 2500; // plus de 2 500 lignes en attente : tu ne suis plus
 export const BEHIND_BUGS = 3; // ou 3 bugs en file
-export const PROPOSAL_LATE = 50; // une proposition paraît au plus tard 50 s après la nouveauté précédente (v5 : à 120, « recommander » ne paraissait jamais avant la sortie)
+export const PROPOSAL_LATE = 60; // une proposition paraît au plus tard 60 s après la nouveauté précédente (v5 : à 120, « recommander » ne paraissait jamais avant la sortie)
 export const TOOL_LATE = 60; // un outil se propose au plus tard 60 s après le précédent (v4 : le joueur rapide n'attend plus)
 
 // --- Le travail ---
@@ -247,9 +247,9 @@ export const TOOLS: ToolDef[] = [
     name: "L'IA écrit les pages neuves",
     cost: 0,
     sub: 50,
-    lines: ["L'IA : 20 → 150 lignes / s.", "50 € chaque lundi au lieu de 25 €."],
-    owned: "150 lignes / s, même sans toi",
-    aiRate: 150,
+    lines: ["L'IA : 20 → 60 lignes / s.", "50 € chaque lundi au lieu de 25 €."],
+    owned: "60 lignes / s, même sans toi",
+    aiRate: 60,
     replaces: "ia_pages",
   },
   {

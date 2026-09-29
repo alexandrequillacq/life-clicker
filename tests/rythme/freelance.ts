@@ -38,6 +38,7 @@ export interface FlJoueur {
   buys: boolean; // accepte les outils, les propositions, les logements, les repas livrés, le compromis
   answersMaman: boolean; // décroche (jusqu'à ce que le répondeur IA se propose, qu'il accepte s'il achète)
   dinners: boolean; // va aux dîners
+  stopsAfterAI?: boolean; // arrête de cliquer dès que l'IA qui écrit les pages neuves est achetée (spec R7)
 }
 export interface FlTrace {
   exitAt: number | null; // Nora proposée
@@ -58,7 +59,8 @@ export function playFreelance(j: FlJoueur, maxSecs: number, setup?: (s: GameStat
   let acc = 0;
   let exitAt: number | null = null;
   for (let t = 0; t < maxSecs && exitAt === null; t += DT) {
-    acc += j.cps * DT;
+    const clicking = !(j.stopsAfterAI && f.tools.ia_pages !== undefined);
+    acc += clicking ? j.cps * DT : 0;
     while (acc >= 1) {
       acc -= 1;
       if (canWork(s)) workClick(s);

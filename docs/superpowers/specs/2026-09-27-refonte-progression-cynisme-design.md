@@ -579,19 +579,33 @@ Maquettes (hors dépôt) : `maquette-freelance-paliers.html` (écrans 1 à 4 : 0
 
 | Clics / s | Sortie (Nora proposée) | Silence le plus long | Net de la dernière semaine close |
 |---|---|---|---|
-| 2 | 18:09 (1 089 s) | 135 s | 10 668 € |
-| 4 | 16:16 (976 s) | 84 s | 10 458 € |
-| 6 | 16:05 (965 s) | 110 s | 12 888 € |
+| 2 | 19:35 (1 175 s) | 135 s | 6 518 € |
+| 4 | 17:16 (1 036 s) | 105 s | 12 418 € |
+| 6 | 16:05 (965 s) | 63 s | 8 668 € |
 
-Avant réglage : sorties à 17:51, 16:17 et 16:05 ; silences de 135, 114 et 101 s ; nets de 4 360, 8 268 et 8 588 €. Deux seuils tombaient. « Recommander » ne paraissait jamais avant la sortie (ni « Répondre le soir » à 2 clics / s) : avec une nouveauté toutes les 35 à 60 s, la place ne restait jamais libre 120 s. Et la première semaine pleine avec Nora, sans cliquer, rapportait moins que la semaine d'avant (6 178 € contre 8 268 € à 4 clics / s) : l'IA seule n'écrivait que 6 300 lignes par semaine pour 13 500 lignes commandées.
+Test R7 de la spec (le joueur arrête de cliquer dès l'IA qui écrit les pages neuves, joue la sortie, embauche Nora, puis une semaine entière avec elle, toujours sans cliquer) :
 
-Constantes réglées :
-- `PROPOSAL_LATE` : 120 → 50 s. Toutes les propositions paraissent avant la sortie, à chaque cadence.
-- Abonnement pro de l'IA (`ia_pro.aiRate`) : 60 → 150 lignes / s (textes « L'IA : 20 → 150 lignes / s » et « 150 lignes / s, même sans toi »). L'IA seule couvre la demande de la semaine ; Nora prend les bugs ; la semaine avec Nora, mains au repos, rapporte 13 378 € contre 10 458 € la semaine d'avant (4 clics / s), et le même sens à 2, 3, 5, 6 et 8 clics / s.
+| Clics / s | Départ | Sortie | Net avant l'embauche | Net de la semaine avec Nora |
+|---|---|---|---|---|
+| 2 | 0 € | 19:35 | 2 918 € | 3 458 € |
+| 2 | −2 000 € | 26:35 | 2 868 € | 3 458 € |
+| 4 | 0 € | 17:50 | 5 418 € | 5 988 € |
+| 4 | −2 000 € | 19:35 | 4 578 € | 5 298 € |
+| 6 | 0 € | 16:05 | 3 728 € | 5 768 € |
+| 6 | −2 000 € | 17:50 | 7 078 € | 7 178 € |
 
-Le répondeur IA de Maman glisse d'une semaine à 2 clics / s : l'IA de la boîte mail arrive à 922 s, la place n'est libre qu'à 957 s, après l'appel du dimanche (930 à 945 s) ; il paraît le dimanche suivant (1 035 s). La sortie reste à 18 min.
+Avant réglage : sorties à 17:51, 16:17 et 16:05 ; silences de 135, 114 et 101 s ; nets de 4 360, 8 268 et 8 588 €. « Recommander » ne paraissait jamais avant la sortie (ni « Répondre le soir » à 2 clics / s) : avec une nouveauté toutes les 35 à 60 s, la place ne restait jamais libre 120 s.
 
-À revoir au chapitre 3 : on sort du chapitre 2 avec 10 000 à 13 000 € net par semaine, loin des ~3 600 € de la simulation ; les 600 € de Nora ne pèsent presque plus.
+Constante réglée :
+- `PROPOSAL_LATE` : 120 → 60 s. Toutes les propositions paraissent avant la sortie, à chaque cadence. À 50 s, le test R7 tombait à 6 clics / s depuis −2 000 € (7 078 € avant, 5 408 € avec Nora), et même un salaire de Nora à 0 € ne suffisait pas (6 008 €) : la semaine d'avant avait livré un gros arriéré d'un coup. L'écart vient de la semaine où tombe la sortie, pas de Nora.
+- `NORA_SALARY` reste à 600 €, l'IA pro à 60 lignes / s.
+
+Fragile : à 6 clics / s depuis −2 000 €, la marge n'est que de 100 € ; une sortie décalée d'une semaine la fait varier de ±2 000 €.
+
+Le répondeur IA de Maman glisse à 2 clics / s : l'IA de la boîte mail arrive à 935 s, pendant l'appel du dimanche (930 à 945 s), la place n'est libre qu'à 970 s ; le dimanche suivant, le joueur décroche dès la sonnerie et l'offre n'a pas le temps de paraître ; elle paraît deux dimanches plus tard (1 140 s).
+
+À revoir au chapitre 3 : le joueur qui clique sort avec 6 500 à 12 400 € net par semaine, loin des ~3 600 € de la simulation ; celui qui arrête de cliquer après l'IA, avec 2 900 à 7 100 €.
+
 
 ## Chapitre 3 : Ton studio (v2, 2026-09-29, challengé deux fois, à simuler)
 Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tout le monde a un clavier) ; à la place, se consacrer à la vente, puis recruter des commerciaux, puis automatiser la prospection ; des prix cohérents mais incrémentaux (postes, puis bureaux qui s'embellissent comme l'appartement) ; choisir ses recrues selon leurs caractéristiques ; une appli de rencontre, puis des statistiques sur le couple qui donnent envie d'optimiser. Ce qui suit remplace l'esquisse. Tous les nombres sont supposés, à simuler.
