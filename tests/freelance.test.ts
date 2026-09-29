@@ -6,6 +6,8 @@ import { tick } from "../src/engine/loop";
 import { applyOffline } from "../src/engine/offline";
 import { D } from "../src/engine/numbers";
 import { tickFreelance, startFreelance, FL_REVEALS, isRevealed, revealQueue, acted, fmtEur, dayName, weekNumber } from "../src/engine/freelance";
+import { currentTask, workClick, canWork, clickLines, aiWrite, addOrder, pendingLines, waitingValue } from "../src/engine/freelance";
+import { CLICK_ENERGY, TIRED_BELOW, BUG_CLICKS } from "../src/engine/content/freelance";
 import { FL_NOVELTY_GAP, FL_DAY_SECS, FL_OFFLINE_CAP } from "../src/engine/content/freelance";
 
 /** Un état neuf au premier lundi du chapitre 2. */
@@ -105,5 +107,75 @@ describe("chapitre 2 : la file des nouveautés", () => {
     } finally {
       FL_REVEALS.splice(FL_REVEALS.findIndex((r) => r.id === "t_a"), 3);
     }
+  });
+});
+
+describe("chapitre 2 : le carnet", () => {
+  it("un clic écrit 5 lignes sur la commande de Mme Duval et coûte un peu d'énergie", () => {
+    const s = fresh();
+    s.energy = 100;
+    expect(workClick(s)).toBe(true);
+    expect(s.freelance.orders[0].done).toBe(START_LPC);
+    expect(s.energy).toBeCloseTo(100 - CLICK_ENERGY);
+    expect(s.totalClicks).toBe(1);
+  });
+
+  it("fatigué, un clic écrit moitié moins, mais le bouton ne se grise jamais", () => {
+    const s = fresh();
+    s.energy = TIRED_BELOW - 1;
+    expect(clickLines(s)).toBe(START_LPC / 2);
+    s.energy = 0;
+    expect(canWork(s)).toBe(true);
+    expect(workClick(s)).toBe(true);
+  });
+
+  it("un bug passe en tête du carnet et se corrige en 10 clics", () => {
+    const s = fresh();
+    s.energy = 100;
+    s.freelance.bugs.push({ id: 99, site: null, order: null, clicks: 0, text: "x" });
+    expect(currentTask(s)?.type).toBe("bug");
+    for (let i = 0; i < BUG_CLICKS; i++) workClick(s);
+    expect(s.freelance.bugs).toHaveLength(0);
+    expect(s.freelance.orders[0].done).toBe(0); // les clics sont allés au bug
+  });
+
+  it("Mme Duval livrée, sa facture attend la micro-entreprise : pas encore d'argent", () => {
+    const s = fresh();
+    s.freelance.orders[0].done = KINDS.vitrine.lines - START_LPC;
+    workClick(s);
+    expect(s.freelance.orders).toHaveLength(0);
+    expect(s.freelance.pendingInvoice).toBe(true);
+    expect(s.freelance.delivered).toBe(1);
+    expect(s.money.toNumber()).toBe(0);
+  });
+
+  it("une autre commande livrée paie son prix ; les clients se suivent dans l'ordre", () => {
+    const s = fresh();
+    s.freelance.orders = [];
+    const o = addOrder(s, "vitrine");
+    expect(o.client).toBe("Garage Leroy");
+    expect(addOrder(s, "vitrine").client).toBe("Pharmacie Morel");
+    o.done = o.lines - 1;
+    workClick(s);
+    expect(s.money.toNumber()).toBe(KINDS.vitrine.price);
+    expect(s.freelance.ledger.livraisons).toBe(KINDS.vitrine.price);
+  });
+
+  it("l'IA écrit seule sur la première commande, jamais sur un bug, et ne fatigue pas", () => {
+    const s = fresh();
+    s.energy = 50;
+    s.freelance.aiRate = 20;
+    s.freelance.bugs.push({ id: 99, site: null, order: null, clicks: 0, text: "x" });
+    aiWrite(s, 2);
+    expect(s.freelance.orders[0].done).toBe(40);
+    expect(s.freelance.bugs[0].clicks).toBe(0);
+    expect(s.energy).toBe(50);
+  });
+
+  it("compte les lignes et l'argent qui attendent", () => {
+    const s = fresh();
+    addOrder(s, "appli");
+    expect(pendingLines(s)).toBe(KINDS.vitrine.lines + KINDS.appli.lines);
+    expect(waitingValue(s)).toBe(KINDS.vitrine.price + KINDS.appli.price);
   });
 });

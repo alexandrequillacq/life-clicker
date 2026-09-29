@@ -1,6 +1,7 @@
 import type { GameState } from "../state";
 import { dayIndex } from "./commun";
 import { revealQueue } from "./revelations";
+import { aiWrite } from "./carnet";
 
 // Le temps qui passe au chapitre 2. Les tâches du plan insèrent leur code sous les repères entre crochets.
 
@@ -38,6 +39,7 @@ export function tickFreelance(s: GameState, t: number): void {
     if (f.busy === 0) f.busyWhy = "";
   }
   // [chaque tick]
+  aiWrite(s, t); // l'IA écrit, même quand tes mains sont prises
   revealQueue(s);
   // [après le tick]
 }

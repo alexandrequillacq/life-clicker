@@ -8,6 +8,7 @@ import { HOMES } from "../content/freelance";
 
 export * from "./commun";
 export * from "./finances";
+export * from "./carnet";
 export * from "./revelations";
 export * from "./tick";
 
