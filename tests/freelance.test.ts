@@ -467,3 +467,30 @@ describe("chapitre 2 : les outils", () => {
     expect(s.freelance.tests).toBe(true);
   });
 });
+
+import { homeOffered, moveHome, energyMax } from "../src/engine/freelance";
+import { HOME_RENT_FACTOR } from "../src/engine/content/freelance";
+
+describe("chapitre 2 : le logement", () => {
+  it("la chambre se propose quand une semaine rapporte 5 fois son loyer", () => {
+    const s = fresh();
+    s.freelance.history = [{ entrees: HOME_RENT_FACTOR * HOMES[1].rent - 1, net: 0, livraisons: 0, entretien: 0, charges: 0 }];
+    run(s, 1);
+    expect(homeOffered(s)).toBeUndefined();
+    s.freelance.history.push({ entrees: HOME_RENT_FACTOR * HOMES[1].rent + 10, net: 0, livraisons: 0, entretien: 0, charges: 0 });
+    run(s, 1);
+    expect(homeOffered(s)?.id).toBe("chambre");
+  });
+
+  it("déménager agrandit l'énergie maximale, laisse un souvenir, et le loyer tombe le lundi", () => {
+    const s = fresh();
+    s.freelance.revealed["home_chambre"] = 0;
+    s.energy = 90;
+    expect(moveHome(s)).toBe(true);
+    expect(energyMax(s)).toBe(120);
+    expect(s.energy).toBe(110);
+    expect(s.souvenirs[0].text).toBe(HOMES[1].souvenir);
+    mondayMorning(s);
+    expect(s.freelance.ledger.loyer).toBe(110);
+  });
+});

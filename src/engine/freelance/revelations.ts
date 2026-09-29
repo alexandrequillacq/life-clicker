@@ -1,7 +1,8 @@
 import type { GameState } from "../state";
-import { FL_NOVELTY_GAP, PROPOSALS, TOOLS } from "../content/freelance";
+import { FL_NOVELTY_GAP, HOMES, PROPOSALS, TOOLS } from "../content/freelance";
 import { proposalReady } from "./demande";
 import { toolReady } from "./outils";
+import { homeWorthIt } from "./logement";
 
 // Une information à la fois. Chaque ligne de FL_REVEALS est une chose qui paraît à l'écran :
 // - « jeu » : le jeu la révèle de lui-même, au moins FL_NOVELTY_GAP s après la nouveauté précédente, dans l'ordre
@@ -19,6 +20,7 @@ export const FL_REVEALS: FlReveal[] = [
   // [instants] ce qui ne dure qu'un moment (un dimanche), à placer avant le reste
   // [interface] les paliers de la page (v5)
   // [offres] ce que tu peux accepter ou acheter, une chose à la fois
+  ...HOMES.slice(1).map((h, k): FlReveal => ({ id: `home_${h.id}`, kind: "jeu", ready: (s) => homeWorthIt(s, k + 1) })),
   ...PROPOSALS.map((p, i): FlReveal => ({ id: `prop_${p.id}`, kind: "jeu", ready: (s) => proposalReady(s, i) })),
   ...TOOLS.map((t, i): FlReveal => ({ id: `tool_${t.id}`, kind: "jeu", ready: (s) => toolReady(s, i) })),
   // [fin] la sortie, en dernier

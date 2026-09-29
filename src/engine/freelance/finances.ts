@@ -1,7 +1,8 @@
 import { emptyLedger, type GameState, type FlLedger } from "../state";
-import { HOMES, NORA_SALARY, LIVRET_RATE, FL_DAY_SECS } from "../content/freelance";
+import { NORA_SALARY, LIVRET_RATE, FL_DAY_SECS } from "../content/freelance";
 import { maintenancePossible } from "./carnet";
 import { acted } from "./revelations";
+import { currentHome } from "./logement";
 
 // L'argent de la semaine : un seul compte courant, des entrées, des charges pro et perso, et des achats à part.
 
@@ -43,7 +44,7 @@ export function mondayMorning(s: GameState): void {
   earn(s, f.sites.reduce((n, x) => n + (x.bugOpen ? 0 : x.fee), 0), "entretien");
   spend(s, subsTotal(s), "abonnements");
   if (f.nora) spend(s, NORA_SALARY, "salaires");
-  spend(s, HOMES[f.home].rent, "loyer");
+  spend(s, currentHome(s).rent, "loyer");
   const interest = nextInterest(s);
   if (interest > 0) {
     f.livretBalance += interest;
