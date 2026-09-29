@@ -258,7 +258,7 @@ describe("chapitre 2 : la demande", () => {
     expect(proposalVisible(t, "entretien_duval")).toBe(false);
   });
 
-  it("même si tu ne suis pas, la proposition suivante paraît au plus tard 120 s après la précédente", () => {
+  it(`même si tu ne suis pas, la proposition suivante paraît au plus tard ${PROPOSAL_LATE} s après la précédente`, () => {
     const s = invoiced();
     hush(s);
     run(s, KEEP_UP_SECS + 1);
