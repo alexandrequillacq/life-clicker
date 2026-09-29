@@ -23,6 +23,7 @@ export const FL_REVEALS: FlReveal[] = [
   // [interface] les paliers de la page (v5)
   { id: "repas", kind: "jeu", ready: (s) => s.energy <= energyMax(s) - currentHome(s).meal }, // « Se faire à manger », à la première fatigue
   { id: "semaine", kind: "geste", ready: (s) => s.freelance.proposals.entretien_duval !== undefined }, // la ligne du lundi, la semaine
+  { id: "semaine", kind: "jeu", ready: (s) => s.freelance.history.length > 0 }, // sans contrat, au premier lundi passé
   { id: "ensuite", kind: "jeu", ready: (s) => s.freelance.orders.length + s.freelance.bugs.length >= 2 },
   { id: "couleur", kind: "geste", ready: (s) => s.freelance.home >= 1 }, // la chambre
   { id: "etiquettes", kind: "geste", ready: (s) => s.freelance.tools.editeur !== undefined }, // un éditeur colore le code

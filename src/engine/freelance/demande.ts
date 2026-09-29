@@ -22,7 +22,12 @@ export function proposalReady(s: GameState, i: number): boolean {
   const f = s.freelance;
   const p = PROPOSALS[i];
   if (f.proposals[p.id] !== undefined) return false;
-  const previousDone = i === 0 ? f.company !== null : f.proposals[PROPOSALS[i - 1].id] !== undefined;
+  // La précédente est acceptée, ou parue depuis au moins PROPOSAL_LATE : la refuser ne bloque pas la suite.
+  const prev = i === 0 ? null : `prop_${PROPOSALS[i - 1].id}`;
+  const previousDone =
+    prev === null
+      ? f.company !== null
+      : f.proposals[PROPOSALS[i - 1].id] !== undefined || (isRevealed(s, prev) && f.day - f.revealed[prev] >= PROPOSAL_LATE);
   if (!previousDone) return false;
   return f.keptUp >= KEEP_UP_SECS || f.day - f.lastNovelty >= PROPOSAL_LATE;
 }

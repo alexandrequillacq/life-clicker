@@ -5,15 +5,32 @@ import { isRevealed, acted } from "./revelations";
 
 // Les outils : automatiser ton travail est sain et célébré. Un à la fois, quand tu ne suis plus.
 
-/** L'outil n° i est-il prêt à se proposer (pour la file des nouveautés) ? */
+/** Ce qu'il faut à l'outil : une chambre à toi (l'écran), 3 bugs en 7 jours (la formation). */
+function needMet(s: GameState, t: ToolDef): boolean {
+  const f = s.freelance;
+  if (t.needs === "chambre") return f.home >= 1;
+  if (t.needs === "bugs") return f.bugArrivals.length >= 3;
+  return true;
+}
+/** Tu as laissé passer, depuis au moins TOOL_LATE, ce qui aurait rempli ce besoin (la chambre, l'entretien de chaque site). */
+function needDeclined(s: GameState, t: ToolDef): boolean {
+  const f = s.freelance;
+  const declined = (reveal: string, taken: boolean): boolean => !taken && isRevealed(s, reveal) && f.day - f.revealed[reveal] >= TOOL_LATE;
+  if (t.needs === "chambre") return declined("home_chambre", f.home >= 1);
+  if (t.needs === "bugs") return declined("prop_entretien_tous", f.proposals.entretien_tous !== undefined);
+  return false;
+}
+
+/** L'outil n° i est-il prêt à se proposer (pour la file des nouveautés) ? Dans l'ordre, un à la fois ; un outil
+ *  dont tu as refusé le besoin est sauté (il se proposera quand le besoin sera rempli). */
 export function toolReady(s: GameState, i: number): boolean {
   const f = s.freelance;
   const t = TOOLS[i];
-  if (f.tools[t.id] !== undefined || f.delivered < 1) return false;
-  if (i > 0 && f.tools[TOOLS[i - 1].id] === undefined) return false;
-  if (t.needs === "chambre" && f.home < 1) return false;
-  if (t.needs === "bugs" && f.bugArrivals.length < 3) return false;
-  const since = i > 0 ? f.tools[TOOLS[i - 1].id] : f.firstDeliveryAt;
+  if (f.tools[t.id] !== undefined || f.delivered < 1 || !needMet(s, t)) return false;
+  if (TOOLS.some((d) => f.tools[d.id] === undefined && isRevealed(s, `tool_${d.id}`))) return false; // un à la fois
+  for (const d of TOOLS.slice(0, i)) if (f.tools[d.id] === undefined && (needMet(s, d) || !needDeclined(s, d))) return false;
+  const bought = Object.values(f.tools);
+  const since = bought.length > 0 ? Math.max(...bought) : f.firstDeliveryAt;
   return f.behind >= BEHIND_SECS || f.day - since >= TOOL_LATE;
 }
 

@@ -44,6 +44,23 @@ describe("chapitre 2 : le rythme (R7)", () => {
     expect(toolOffered(s) !== undefined || visibleProposals(s).length > 0).toBe(true);
   });
 
+  // Refuser un temps (ou pour de bon) ne bloque pas : l'entretien de chaque site et les outils restent proposés,
+  // mais un logement, une proposition ou le compromis refusés ne ferment pas la sortie.
+  const refus: [string, Partial<FlJoueur>][] = [
+    ["refuse chaque proposition 5 min, puis l'accepte", { proposalDelay: 5 * MIN }],
+    ["refuse tous les logements", { noHome: true }],
+    ["refuse le contrat de Mme Duval", { refuse: ["entretien_duval"] }],
+    ["refuse les cartes de visite", { refuse: ["cartes"] }],
+    ["refuse le compromis", { refuse: ["compromis"] }],
+  ];
+  for (const [name, extra] of refus) {
+    it(`qui ${name} sort en moins de 40 min`, () => {
+      const { trace } = playFreelance({ ...joueur(4), ...extra }, 40 * MIN);
+      expect(trace.exitAt).not.toBeNull();
+      expect(trace.exitAt!).toBeLessThanOrEqual(40 * MIN);
+    });
+  }
+
   it("un départ à −2 000 € sort quand même", () => {
     const { trace } = playFreelance(joueur(4), 30 * MIN, (s) => {
       s.money = D(-2000);

@@ -577,7 +577,7 @@ Retours d'Alexandre : valider le chapitre 2 en entier avant le 3 ; au début pas
 
 Maquettes (hors dépôt) : `maquette-freelance-paliers.html` (écrans 1 à 4 : 0:30, 4:00, 7:30, 10:10) et `maquette-freelance-fin.html` (la fin, chiffres alignés).
 
-**Rythme mesuré** (2026-09-29, sonde `tests/rythme/freelance.ts` : un joueur qui prend tout, décroche, va aux dîners ; temps de calendrier) :
+**Rythme mesuré** (2026-09-29, sonde `tests/rythme/freelance.ts` : un joueur qui prend tout, décroche, va aux dîners ; temps de calendrier). L'entretien de chaque site et les outils sont des actions requises : toujours proposés, jamais perdus. Refuser un logement, laisser une proposition de côté un moment ou refuser le compromis ne bloque pas la sortie (la sonde le vérifie, sortie en moins de 40 min dans chaque cas) :
 
 | Clics / s | Sortie (Nora proposée) | Silence le plus long | Net de la dernière semaine close |
 |---|---|---|---|

@@ -13,7 +13,7 @@ import { COMPANY_DEFAULT_NAME, COMPANY_NAME_MAX, LOGO_COUNT } from "../src/engin
 import { FL_NOVELTY_GAP, FL_DAY_SECS, FL_OFFLINE_CAP } from "../src/engine/content/freelance";
 
 import { toolOffered, canBuyTool, buyTool, ownedTools } from "../src/engine/freelance";
-import { TOOL_LATE, TOOLS } from "../src/engine/content/freelance";
+import { TOOL_LATE, TOOLS, PROPOSALS } from "../src/engine/content/freelance";
 
 /** Un état neuf au premier lundi du chapitre 2. */
 function fresh(): GameState {
@@ -420,6 +420,7 @@ describe("chapitre 2 : les outils", () => {
   it("acheter l'éditeur : 250 €, 8 lignes par clic ; puis l'écran attend une chambre", () => {
     const s = invoiced();
     hush(s);
+    for (const p of PROPOSALS) s.freelance.proposals[p.id] = 0; // les propositions ne prennent pas la place ici
     run(s, TOOL_LATE + 1);
     s.money = D(100);
     expect(canBuyTool(s, "editeur")).toBe(false); // il faut 250 € en poche
@@ -455,6 +456,7 @@ describe("chapitre 2 : les outils", () => {
   it("la formation attend 3 bugs en 7 jours, puis divise les bugs par deux et active les tests", () => {
     const s = invoiced();
     hush(s);
+    for (const p of PROPOSALS) s.freelance.proposals[p.id] = 0; // les propositions ne prennent pas la place ici
     s.money = D(10000);
     for (const t of TOOLS.slice(0, 5)) s.freelance.tools[t.id] = 0;
     s.freelance.lastNovelty = -1000;
@@ -475,6 +477,7 @@ import { HOME_RENT_FACTOR } from "../src/engine/content/freelance";
 describe("chapitre 2 : le logement", () => {
   it("la chambre se propose quand une semaine rapporte 5 fois son loyer", () => {
     const s = fresh();
+    s.freelance.revealed.semaine = 0; // la ligne du lundi est déjà parue
     s.freelance.history = [{ entrees: HOME_RENT_FACTOR * HOMES[1].rent - 1, net: 0, livraisons: 0, entretien: 0, charges: 0 }];
     run(s, 1);
     expect(homeOffered(s)).toBeUndefined();
@@ -684,6 +687,7 @@ describe("chapitre 2 : la sortie", () => {
   it("attend 12 bugs en 7 jours, l'IA de la boîte mail, l'IA pour Maman et le compromis", () => {
     const s = almostDone();
     expect(exitReady(s)).toBe(true);
+    s.freelance.tools.formation = 0; // avec la formation, les tests rouges amènent le compromis
     s.freelance.compromis = "none";
     expect(exitReady(s)).toBe(false);
     s.freelance.compromis = "taken";
@@ -941,5 +945,132 @@ describe("chapitre 2 : le hors-ligne (le calendrier s'arrête, seule l'IA travai
     expect(s.freelance.compromis).toBe("offered");
     expect(s.freelance.orders[0].red).toBe("failing");
     expect(s.freelance.bugs[0].order).toBe(s.freelance.orders[0].id);
+  });
+});
+
+import { toolReady, proposalReady } from "../src/engine/freelance";
+
+describe("chapitre 2 : refuser ne bloque pas", () => {
+  const idx = (id: string): number => TOOLS.findIndex((t) => t.id === id);
+  /** Mme Duval facturée, l'éditeur acheté, les nouveautés d'interface parues, la place libre. */
+  function afterEditor(): GameState {
+    const s = invoiced();
+    hush(s);
+    s.money = D(100000);
+    s.freelance.tools.editeur = s.freelance.day;
+    s.freelance.lastNovelty = -1000;
+    return s;
+  }
+
+  it("l'écran attend la chambre tant que tu ne l'as pas refusée ; refusée depuis 60 s, l'outil suivant passe", () => {
+    const s = afterEditor();
+    s.freelance.day = TOOL_LATE + 1;
+    expect(toolReady(s, idx("ecran"))).toBe(false); // pas de chambre
+    expect(toolReady(s, idx("autocompletion"))).toBe(false); // la chambre n'a pas encore été proposée
+    s.freelance.revealed.home_chambre = s.freelance.day;
+    s.freelance.day += TOOL_LATE - 1;
+    expect(toolReady(s, idx("autocompletion"))).toBe(false); // proposée depuis moins de 60 s
+    s.freelance.day += 2;
+    expect(toolReady(s, idx("autocompletion"))).toBe(true);
+  });
+
+  it("l'écran sauté se propose plus tard, quand tu as une chambre ; un seul outil à la fois", () => {
+    const s = afterEditor();
+    s.freelance.revealed.home_chambre = 0;
+    s.freelance.day = 2 * TOOL_LATE + 1;
+    s.freelance.revealed.tool_autocompletion = s.freelance.day; // parue, pas encore achetée
+    s.freelance.home = 1;
+    expect(toolReady(s, idx("ecran"))).toBe(false); // l'autocomplétion est à l'écran
+    expect(toolReady(s, idx("ia_pages"))).toBe(false);
+    s.freelance.tools.autocompletion = s.freelance.day;
+    s.freelance.day += TOOL_LATE + 1;
+    expect(toolReady(s, idx("ecran"))).toBe(true);
+    expect(toolReady(s, idx("ia_pages"))).toBe(false); // l'écran d'abord
+  });
+
+  it("l'horloge des outils part du dernier outil acheté", () => {
+    const s = afterEditor();
+    s.freelance.home = 1;
+    s.freelance.tools.editeur = 100;
+    s.freelance.day = 100 + TOOL_LATE - 1;
+    expect(toolReady(s, idx("ecran"))).toBe(false);
+    s.freelance.day = 100 + TOOL_LATE + 1;
+    expect(toolReady(s, idx("ecran"))).toBe(true);
+  });
+
+  it("la formation attend l'entretien de chaque site tant que tu ne l'as pas refusé ; refusé depuis 60 s, l'abonnement pro passe", () => {
+    const s = afterEditor();
+    for (const t of TOOLS.slice(0, 5)) s.freelance.tools[t.id] = 0;
+    s.freelance.day = TOOL_LATE + 1;
+    expect(toolReady(s, idx("ia_pro"))).toBe(false);
+    s.freelance.revealed.prop_entretien_tous = s.freelance.day;
+    s.freelance.day += TOOL_LATE + 1;
+    expect(toolReady(s, idx("ia_pro"))).toBe(true);
+    s.freelance.proposals.entretien_tous = s.freelance.day; // acceptée : la formation reprend sa place
+    expect(toolReady(s, idx("ia_pro"))).toBe(false);
+  });
+
+  it("une proposition refusée depuis 60 s laisse paraître la suivante", () => {
+    const s = afterEditor();
+    s.freelance.keptUp = 1000;
+    expect(proposalReady(s, 1)).toBe(false); // le contrat de Mme Duval n'a pas encore paru
+    s.freelance.revealed.prop_entretien_duval = s.freelance.day;
+    s.freelance.day += PROPOSAL_LATE - 1;
+    expect(proposalReady(s, 1)).toBe(false);
+    s.freelance.day += 2;
+    expect(proposalReady(s, 1)).toBe(true);
+  });
+
+  it("sans contrat de Mme Duval, la ligne du lundi paraît au premier lundi", () => {
+    const s = invoiced();
+    hush(s);
+    delete s.freelance.revealed.semaine;
+    s.freelance.lastNovelty = -1000;
+    run(s, FL_WEEK_SECS - 1);
+    expect(isRevealed(s, "semaine")).toBe(false);
+    run(s, 2);
+    expect(s.freelance.history.length).toBe(1);
+    run(s, FL_NOVELTY_GAP + 1);
+    expect(isRevealed(s, "semaine")).toBe(true);
+  });
+});
+
+describe("chapitre 2 : la sortie, cas par cas", () => {
+  function ready(): GameState {
+    const s = invoiced();
+    const f = s.freelance;
+    f.bugArrivals = Array(EXIT_BUGS).fill(0);
+    f.subs.ia_mail = 10;
+    f.revealed.maman_ia = 0;
+    f.tools.formation = 0;
+    f.compromis = "offered";
+    return s;
+  }
+  it("prête quand tout y est", () => expect(exitReady(ready())).toBe(true));
+  it("pas à 11 bugs", () => {
+    const s = ready();
+    s.freelance.bugArrivals = Array(EXIT_BUGS - 1).fill(0);
+    expect(exitReady(s)).toBe(false);
+  });
+  it("pas sans l'IA de la boîte mail", () => {
+    const s = ready();
+    delete s.freelance.subs.ia_mail;
+    expect(exitReady(s)).toBe(false);
+  });
+  it("pas avant le répondeur IA de Maman", () => {
+    const s = ready();
+    delete s.freelance.revealed.maman_ia;
+    expect(exitReady(s)).toBe(false);
+  });
+  it("pas avant le compromis quand la formation est achetée", () => {
+    const s = ready();
+    s.freelance.compromis = "none";
+    expect(exitReady(s)).toBe(false);
+  });
+  it("sans formation, pas de test rouge : le compromis n'est pas attendu", () => {
+    const s = ready();
+    s.freelance.compromis = "none";
+    delete s.freelance.tools.formation;
+    expect(exitReady(s)).toBe(true);
   });
 });

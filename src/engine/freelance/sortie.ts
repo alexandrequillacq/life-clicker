@@ -10,7 +10,9 @@ export function exitReady(s: GameState): boolean {
   const f = s.freelance;
   if (f.nora) return false;
   const bugs = Math.max(bugsLast7Days(s), f.bugs.length);
-  return bugs >= EXIT_BUGS && f.subs.ia_mail !== undefined && isRevealed(s, "maman_ia") && f.compromis !== "none";
+  // Sans formation, pas de test rouge : le compromis ne peut pas se présenter, on ne l'attend pas.
+  const compromisSeen = f.compromis !== "none" || f.tools.formation === undefined;
+  return bugs >= EXIT_BUGS && f.subs.ia_mail !== undefined && isRevealed(s, "maman_ia") && compromisSeen;
 }
 
 export const noraOffered = (s: GameState): boolean => s.job === "freelance" && isRevealed(s, "nora") && !s.freelance.nora;

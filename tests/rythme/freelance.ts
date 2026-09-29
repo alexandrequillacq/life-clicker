@@ -39,6 +39,9 @@ export interface FlJoueur {
   answersMaman: boolean; // décroche (jusqu'à ce que le répondeur IA se propose, qu'il accepte s'il achète)
   dinners: boolean; // va aux dîners
   stopsAfterAI?: boolean; // arrête de cliquer dès que l'IA qui écrit les pages neuves est achetée (spec R7)
+  refuse?: string[]; // propositions, outils (par id) et « compromis » qu'il ne prend jamais
+  noHome?: boolean; // ne déménage jamais
+  proposalDelay?: number; // laisse chaque proposition à l'écran ce nombre de secondes avant de l'accepter
 }
 export interface FlTrace {
   exitAt: number | null; // Nora proposée
@@ -67,12 +70,13 @@ export function playFreelance(j: FlJoueur, maxSecs: number, setup?: (s: GameStat
     }
     if (canCreateCompany(s)) createCompany(s, "Pixel", 0);
     if (j.buys) {
-      for (const p of visibleProposals(s)) acceptProposal(s, p.id);
+      for (const p of visibleProposals(s))
+        if (!j.refuse?.includes(p.id) && f.day - f.revealed[`prop_${p.id}`] >= (j.proposalDelay ?? 0)) acceptProposal(s, p.id);
       const tool = toolOffered(s);
-      if (tool && canBuyTool(s, tool.id)) buyTool(s, tool.id);
-      if (homeOffered(s)) moveHome(s);
+      if (tool && !j.refuse?.includes(tool.id) && canBuyTool(s, tool.id)) buyTool(s, tool.id);
+      if (!j.noHome && homeOffered(s)) moveHome(s);
       if (deliveryOffered(s)) acceptDelivery(s);
-      if (compromisVisible(s)) takeCompromis(s);
+      if (!j.refuse?.includes("compromis") && compromisVisible(s)) takeCompromis(s);
       if (mamanIAOffered(s)) acceptMamanIA(s);
     }
     if (canEat(s) && s.energy <= energyMax(s) - currentHome(s).meal) eat(s);
