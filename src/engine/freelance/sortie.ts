@@ -30,9 +30,16 @@ export function tickNora(s: GameState, t: number): void {
   const f = s.freelance;
   if (!f.nora || weekday(s) > FRIDAY) return;
   f.noraAcc += (t * NORA_BUGS_PER_DAY) / FL_DAY_SECS;
+  let idle = f.bugs.length === 0;
   while (f.noraAcc >= 1 - 1e-9 && f.bugs.length > 0) {
-    fixBug(s, f.bugs.length > 1 ? f.bugs[f.bugs.length - 1] : f.bugs[0]);
+    const bug = f.bugs[f.bugs.length - 1];
+    if (bug === f.bugs[0] && bug.clicks > 0) {
+      idle = true; // le seul bug restant est celui que tu as commencé : il reste à toi
+      break;
+    }
+    fixBug(s, bug);
     f.noraAcc -= 1;
+    idle = f.bugs.length === 0;
   }
-  if (f.bugs.length === 0) f.noraAcc = Math.min(f.noraAcc, 1); // elle ne met pas de bugs de côté
+  if (idle) f.noraAcc = Math.min(f.noraAcc, 1); // elle ne met pas de bugs de côté
 }

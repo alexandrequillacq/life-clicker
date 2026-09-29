@@ -12,7 +12,7 @@ import { tickEnergy, lifeNewDay, startDinner, endDinner, startSunday, endSunday,
 /** Un nouveau jour commence (`wd` : 0 = lundi). */
 export function onNewDay(s: GameState, wd: number): void {
   // [nouveau jour]
-  lifeNewDay(s);
+  if (wd !== 0) lifeNewDay(s);
   if (wd === 0) {
     // [lundi]
     endSunday(s); // l'appel d'hier, décroché ou non
@@ -22,6 +22,7 @@ export function onNewDay(s: GameState, wd: number): void {
       s.freelance.compromisQuoteDue = false;
       s.freelance.quote = "gateaux"; // un week-end de pages blanches chez Mme Duval
     }
+    lifeNewDay(s); // après la clôture : le repas livré du lundi compte dans la semaine qui commence
   }
   if (wd === 2) {
     // [mercredi]

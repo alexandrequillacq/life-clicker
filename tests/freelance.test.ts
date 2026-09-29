@@ -785,6 +785,13 @@ describe("chapitre 2 : l'écran", () => {
     expect(vueSemaine(s)!.net).toBe("+600 €");
   });
 
+  it("« Cette semaine » montre les achats en sortie, avec un signe moins", () => {
+    const s = invoiced();
+    s.freelance.revealed.cette_semaine = 0;
+    s.freelance.ledger.achats = 250;
+    expect(vueSemaine(s)!.rows.find(([k]) => k === TEXTES.achats)![1]).toBe("−250 €");
+  });
+
   it("la bande de Nora parle des commandes qui s'empilent, avec le nom de ton entreprise", () => {
     const s = invoiced();
     s.freelance.revealed.nora = 0;
@@ -949,6 +956,36 @@ describe("chapitre 2 : le hors-ligne (le calendrier s'arrête, seule l'IA travai
 });
 
 import { toolReady, proposalReady } from "../src/engine/freelance";
+
+describe("chapitre 2 : petites corrections", () => {
+  it("le repas livré du lundi compte dans la semaine qui commence", () => {
+    const s = invoiced();
+    s.freelance.delivery = true;
+    goTo(s, 2, 0);
+    expect(s.freelance.ledger.repas).toBe(MEAL_PRICE);
+    expect(s.freelance.ledger.repasCount).toBe(1);
+  });
+
+  it("Nora ne prend jamais le bug que tu as commencé", () => {
+    const s = invoiced();
+    s.freelance.nora = true;
+    s.freelance.bugs.push({ id: 3000, site: null, order: null, clicks: 3, text: "commencé" });
+    run(s, 2 * FL_DAY_SECS); // lundi et mardi : 6 bugs à sa portée
+    expect(s.freelance.bugs.map((b) => b.text)).toEqual(["commencé"]);
+    expect(s.freelance.noraAcc).toBeLessThanOrEqual(1); // elle ne met pas de bugs de côté
+    s.freelance.bugs[0].clicks = 0;
+    run(s, FL_DAY_SECS);
+    expect(s.freelance.bugs).toHaveLength(0); // pas commencé : elle le prend
+  });
+
+  it("un logo qui n'est pas un nombre devient le premier", () => {
+    const s = fresh();
+    s.freelance.orders[0].done = s.freelance.orders[0].lines - 1;
+    workClick(s);
+    expect(createCompany(s, "Pixel", Number.NaN)).toBe(true);
+    expect(s.freelance.company).toEqual({ name: "Pixel", logo: 0 });
+  });
+});
 
 describe("chapitre 2 : refuser ne bloque pas", () => {
   const idx = (id: string): number => TOOLS.findIndex((t) => t.id === id);

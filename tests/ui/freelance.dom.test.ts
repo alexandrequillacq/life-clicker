@@ -90,6 +90,42 @@ describe("chapitre 2 (DOM)", () => {
     unmount(component);
   });
 
+  it("sur chaque onglet, la barre de travail montre l'énergie ; un dîner reste visible sur l'onglet Finances", () => {
+    game.state = startAtChapter(2, Date.now());
+    const f = game.state.freelance;
+    f.company = { name: "Pixel", logo: 4 };
+    f.revealed.sans_toi = 0;
+    f.revealed.menu = 0;
+    const { target, component } = mountApp();
+    const tabs = [...(target.querySelector(".side") as HTMLElement).querySelectorAll("button")];
+    for (const i of [0, 1, 2, 3]) {
+      tabs[i].click();
+      flushSync();
+      expect((target.querySelector(".card.now") as HTMLElement).textContent).toContain("Énergie : ");
+    }
+    f.dinnerOpen = true;
+    tabs[3].click();
+    flushSync();
+    expect(target.textContent).toContain("Sam, Inès et Léo dînent ensemble ce soir.");
+    unmount(component);
+  });
+
+  it("l'aperçu du cinquième logo prend l'initiale comme le moteur (un émoji compte pour un caractère)", () => {
+    game.state = startAtChapter(2, Date.now());
+    const o = game.state.freelance.orders[0];
+    o.done = o.lines - 1;
+    const { target, component } = mountApp();
+    (target.querySelector("button.work") as HTMLButtonElement).click();
+    flushSync();
+    const input = target.querySelector(".invoice input[type=text]") as HTMLInputElement;
+    input.value = "🍞 Pain";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const picks = target.querySelectorAll(".logo-pick");
+    expect(picks[picks.length - 1].textContent).toContain("🍞");
+    unmount(component);
+  });
+
   it("la chambre colore la page", () => {
     game.state = startAtChapter(2, Date.now());
     game.state.freelance.revealed.couleur = 0;

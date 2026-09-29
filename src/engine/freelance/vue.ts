@@ -337,7 +337,6 @@ export interface VueVie {
   age: string;
   energy: string;
   share: number;
-  tired: string | null;
   rest: string | null;
   logement: string | null; // en texte, jusqu'au deux-pièces
   home: { id: string; caption: string; line: string } | null; // en image, au deux-pièces
@@ -366,7 +365,6 @@ export function vueVie(s: GameState): VueVie {
     age: TEXTES.ageWhen(AGE_FREELANCE, vueEntete(s).when),
     energy: TEXTES.energy(Math.round(s.energy), max),
     share: s.energy / max,
-    tired: currentTask(s) && isTired(s) ? TEXTES.tired : null,
     rest: isRevealed(s, "repos") ? TEXTES.rest(restPerMin(s)) : null,
     logement: verre ? null : TEXTES.logement(h.label),
     home: verre ? { id: h.id, caption: TEXTES.homeCaption(h.label), line: TEXTES.homeSince(fmtEur(h.rent), max) } : null,
@@ -420,7 +418,7 @@ export function vueSemaine(s: GameState): { title: string; net: string; rows: [s
     rows: [
       [TEXTES.entrees, TEXTES.signed(fmtEur(entrees(l)), 1)],
       [TEXTES.charges, fmtEur(-(chargesPro(l) + chargesPerso(l)))],
-      [TEXTES.achats, fmtEur(l.achats)],
+      [TEXTES.achats, fmtEur(-l.achats)],
     ],
   };
 }

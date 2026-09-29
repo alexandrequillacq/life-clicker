@@ -23,6 +23,7 @@
     vueSortie,
     vueFin,
     vueSouvenirs,
+    companyInitial,
     type Bouton,
   } from "../engine/freelance";
   import Logo from "./freelance/Logo.svelte";
@@ -88,7 +89,7 @@
           {#each Array.from({ length: inv.logoCount }, (_, i) => i) as i (i)}
             <label class="logo-pick" class:on={companyLogo === i}>
               <input type="radio" name="logo" value={i} aria-label={LOGO_LABELS[i]} bind:group={companyLogo} />
-              <Logo logo={i} initial={companyName.trim().charAt(0).toUpperCase() || "A"} />
+              <Logo logo={i} initial={companyInitial(companyName)} />
             </label>
           {/each}
         </fieldset>
@@ -105,6 +106,13 @@
       </div>
       <button class="bt work cta" disabled={carnet.work.disabled} onclick={carnet.work.act}>{carnet.work.label}</button>
       {#each carnet.work.lines as l}<p class="sub">{l}</p>{/each}
+    {/if}
+    {#if menu}
+      <!-- Avec le menu, l'énergie de tes mains reste sous les yeux, quel que soit l'onglet. -->
+      <div class="energy">
+        <p class="sub">{vie.energy}</p>
+        <div class="gauge"><i style="width: {Math.min(100, vie.share * 100)}%"></i></div>
+      </div>
     {/if}
   </section>
 {/snippet}
@@ -359,6 +367,7 @@
               {@render blocRdv()}
             {:else if tab === 3}
               {@render blocSemaine()}
+              {@render blocRdv()}
             {:else if tab === 1}
               {@render blocRdv()}
             {/if}

@@ -26,7 +26,8 @@ export function createCompany(s: GameState, rawName: string, logo: number): bool
   if (!canCreateCompany(s)) return false;
   const f = s.freelance;
   const name = sanitizeCompanyName(rawName);
-  f.company = { name, logo: Math.max(0, Math.min(LOGO_COUNT - 1, Math.floor(logo))) };
+  const l = Number.isFinite(logo) ? Math.floor(logo) : 0;
+  f.company = { name, logo: Math.max(0, Math.min(LOGO_COUNT - 1, l)) };
   f.pendingInvoice = false;
   const price = KINDS.vitrine.price;
   earn(s, price, "livraisons");
