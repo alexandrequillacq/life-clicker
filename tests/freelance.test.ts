@@ -345,3 +345,50 @@ describe("chapitre 2 : l'entretien", () => {
     expect(s.freelance.quote).toBe("petit");
   });
 });
+
+import { mondayMorning, net, depositAll, withdrawAll, canDeposit } from "../src/engine/freelance";
+import { NORA_SALARY, HOMES } from "../src/engine/content/freelance";
+
+describe("chapitre 2 : le lundi", () => {
+  it("paie l'entretien des sites sans bug, puis prélève abonnements, Nora et loyer, même en négatif", () => {
+    const s = fresh();
+    addSite(s, "A", "appli", 1e9);
+    const b = addSite(s, "B", "vitrine", 1e9);
+    b.bugOpen = true;
+    s.freelance.subs = { autocompletion: 5, ia_pro: 50 };
+    s.freelance.nora = true;
+    s.freelance.home = 3;
+    mondayMorning(s);
+    const l = s.freelance.ledger;
+    expect(l.entretien).toBe(160);
+    expect(l.entretienPossible).toBe(210);
+    expect(l.abonnements).toBe(55);
+    expect(l.salaires).toBe(NORA_SALARY);
+    expect(l.loyer).toBe(HOMES[3].rent);
+    expect(s.money.toNumber()).toBe(160 - 55 - NORA_SALARY - HOMES[3].rent);
+  });
+
+  it("clôt la semaine : son net (hors achats) rejoint l'historique", () => {
+    const s = fresh();
+    s.freelance.ledger.livraisons = 600;
+    s.freelance.ledger.repas = 22;
+    s.freelance.ledger.achats = 250;
+    mondayMorning(s);
+    expect(s.freelance.history).toEqual([{ entrees: 600, net: 578, livraisons: 600, entretien: 0, charges: 22 }]);
+    expect(s.freelance.lastWeek!.achats).toBe(250);
+    expect(net(s.freelance.ledger)).toBe(0);
+  });
+
+  it("le livret verse 1 % de son plus petit solde de la semaine, compté dans les entrées", () => {
+    const s = fresh();
+    s.money = D(1000);
+    expect(canDeposit(s)).toBe(true);
+    depositAll(s);
+    expect(s.freelance.livretBalance).toBe(1000);
+    run(s, FL_WEEK_SECS + 0.1);
+    expect(s.freelance.livretBalance).toBeCloseTo(1010);
+    expect(s.freelance.ledger.livret).toBeCloseTo(10);
+    withdrawAll(s);
+    expect(s.money.toNumber()).toBeCloseTo(1010);
+  });
+});
