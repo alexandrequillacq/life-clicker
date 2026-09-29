@@ -581,7 +581,7 @@ Maquettes (hors dépôt) : `maquette-freelance-paliers.html` (écrans 1 à 4 : 0
 
 | Clics / s | Sortie (Nora proposée) | Silence le plus long | Net de la dernière semaine close |
 |---|---|---|---|
-| 2 | 19:35 (1 175 s) | 135 s | 6 518 € |
+| 2 | 19:10 (1 150 s) | 105 s | 5 778 € |
 | 4 | 17:16 (1 036 s) | 105 s | 12 418 € |
 | 6 | 16:05 (965 s) | 63 s | 8 668 € |
 
@@ -589,8 +589,8 @@ Test R7 de la spec (le joueur arrête de cliquer dès l'IA qui écrit les pages 
 
 | Clics / s | Départ | Sortie | Net avant l'embauche | Net de la semaine avec Nora |
 |---|---|---|---|---|
-| 2 | 0 € | 19:35 | 2 918 € | 3 458 € |
-| 2 | −2 000 € | 26:35 | 2 868 € | 3 458 € |
+| 2 | 0 € | 19:35 | 2 918 € | 3 998 € |
+| 2 | −2 000 € | 28:20 | 2 268 € | 2 668 € |
 | 4 | 0 € | 17:50 | 5 418 € | 5 988 € |
 | 4 | −2 000 € | 19:35 | 4 578 € | 5 298 € |
 | 6 | 0 € | 16:05 | 3 728 € | 5 768 € |
