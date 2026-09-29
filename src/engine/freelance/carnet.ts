@@ -133,6 +133,7 @@ function deliver(s: GameState, o: FlOrder): void {
   earn(s, KINDS[o.kind].price, "livraisons");
   // [après une livraison]
   if (f.maintAll) addSite(s, o.client, o.kind, f.day + FIRST_BUG_MIN + ((f.sites.length * FIRST_BUG_STEP) % FIRST_BUG_SPREAD));
+  if (o.client === PETIT.name) f.quote = "petit";
 }
 
 export function pendingLines(s: GameState): number {

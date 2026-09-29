@@ -335,4 +335,13 @@ describe("chapitre 2 : l'entretien", () => {
     expect(s.freelance.bugs).toHaveLength(2);
     expect(maintenanceAtStake(s)).toBe(100);
   });
+
+  it("livrer l'appli de M. Petit change la réplique de la semaine", () => {
+    const s = invoiced();
+    const o = addOrder(s, "appli", PETIT.name);
+    o.done = o.lines - 1;
+    s.freelance.orders = [o];
+    workClick(s);
+    expect(s.freelance.quote).toBe("petit");
+  });
 });
