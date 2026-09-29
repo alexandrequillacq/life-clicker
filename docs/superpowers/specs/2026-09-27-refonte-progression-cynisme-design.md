@@ -10,7 +10,7 @@
 - Colonne vertébrale :
   - **A, l'échelle des compromis.** Chaque métier propose un compromis que le joueur choisit lui-même : concret, rentable, raisonnable pris isolément, un peu plus gros que le précédent.
   - **C, l'humain devient un nombre.** À chaque métier, la représentation des collègues, clients, citoyens recule d'un cran.
-  - **B, même geste, autre cible**, en motif ponctuel (3 occurrences).
+  - **B, même geste, autre cible**, en motif ponctuel (4 occurrences : la carte candidat et rencontre au ch3, le commentaire, l'article, les assiettes).
 - **Wording concret** : un lecteur doit pouvoir mimer chaque CTA. Objets, chiffres, prénoms. Jamais de jargon creux.
 
 ## Diagnostic de l'existant (résumé)
