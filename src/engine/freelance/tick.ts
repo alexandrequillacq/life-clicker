@@ -17,6 +17,10 @@ export function onNewDay(s: GameState, wd: number): void {
     endSunday(s); // l'appel d'hier, décroché ou non
     mondayMorning(s); // l'entretien, les charges pro, le loyer, le livret
     weeklyArrivals(s); // les commandes de la semaine
+    if (s.freelance.compromisQuoteDue) {
+      s.freelance.compromisQuoteDue = false;
+      s.freelance.quote = "gateaux"; // un week-end de pages blanches chez Mme Duval
+    }
   }
   if (wd === 2) {
     // [mercredi]

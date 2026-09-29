@@ -602,3 +602,63 @@ describe("chapitre 2 : la vie", () => {
     expect(s.freelance.outings).toBe(1);
   });
 });
+
+import { compromisVisible, takeCompromis } from "../src/engine/freelance";
+import { RED_EVERY, COMPROMIS_LINES } from "../src/engine/content/freelance";
+
+describe("chapitre 2 : le compromis", () => {
+  function withTests(): GameState {
+    const s = invoiced();
+    s.freelance.tests = true;
+    return s;
+  }
+  function finishFirst(s: GameState): void {
+    s.freelance.orders[0].done = s.freelance.orders[0].lines - 1;
+    workClick(s);
+  }
+
+  it("une livraison sur trois bute sur un test rouge, qui passe juste après la tâche en cours", () => {
+    const s = withTests();
+    addOrder(s, "vitrine");
+    addOrder(s, "vitrine");
+    finishFirst(s);
+    finishFirst(s);
+    expect(s.freelance.reds).toBe(RED_EVERY - 1);
+    addOrder(s, "vitrine");
+    s.freelance.bugs.push({ id: 900, site: null, order: null, clicks: 0, text: "en cours" }, { id: 901, site: null, order: null, clicks: 0, text: "suivant" });
+    s.freelance.orders[0].done = s.freelance.orders[0].lines;
+    s.freelance.aiRate = 1;
+    aiWrite(s, 0.001);
+    expect(s.freelance.orders[0].red).toBe("failing");
+    expect(s.freelance.bugs.map((b) => b.text)).toEqual(["en cours", "Un test échoue.", "suivant"]);
+    expect(compromisVisible(s)).toBe(true);
+  });
+
+  it("désactiver le test : la commande part, plus de test rouge, 20 % de lignes en moins ensuite, et Mme Duval perd des commandes", () => {
+    const s = withTests();
+    s.freelance.reds = RED_EVERY - 1;
+    addOrder(s, "vitrine");
+    finishFirst(s);
+    expect(s.freelance.orders[0].red).toBe("failing");
+    const money = s.money.toNumber();
+    expect(takeCompromis(s)).toBe(true);
+    expect(s.freelance.orders).toHaveLength(0);
+    expect(s.money.toNumber()).toBe(money + 600);
+    expect(s.freelance.bugs).toHaveLength(0);
+    expect(addOrder(s, "appli").lines).toBe(Math.round(4000 * COMPROMIS_LINES));
+    expect(compromisVisible(s)).toBe(false);
+    run(s, FL_WEEK_SECS + 0.05); // +0.05 s : franchir la frontière du lundi malgré la dérive flottante
+    expect(s.freelance.quote).toBe("gateaux");
+  });
+
+  it("refusé, le test rouge se corrige en 10 clics et la commande part", () => {
+    const s = withTests();
+    s.freelance.reds = RED_EVERY - 1;
+    addOrder(s, "vitrine");
+    finishFirst(s);
+    s.energy = 100;
+    for (let i = 0; i < BUG_CLICKS; i++) workClick(s);
+    expect(s.freelance.orders).toHaveLength(0);
+    expect(compromisVisible(s)).toBe(true);
+  });
+});

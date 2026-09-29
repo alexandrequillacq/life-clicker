@@ -9,6 +9,8 @@ import {
   TIRED_SHARE,
   BUG_CLICKS,
   BUG_TEXTS,
+  RED_EVERY,
+  TEXTES,
   FL_WEEK_SECS,
   FIRST_BUG_MIN,
   FIRST_BUG_STEP,
@@ -115,7 +117,17 @@ export function deliverReady(s: GameState): void {
   while (f.orders.length > 0) {
     const o = f.orders[0];
     if (o.done < o.lines - 1e-9 || o.red === "failing") return;
-    // [tests rouges]
+    // Avec les tests, une livraison sur trois bute sur un test rouge (tant qu'on ne l'a pas désactivé).
+    if (f.tests && o.red === "none" && f.compromis !== "taken") {
+      f.reds += 1;
+      if (f.reds % RED_EVERY === 0) {
+        o.red = "failing";
+        f.bugs.splice(f.bugs.length > 0 ? 1 : 0, 0, { id: f.nextId++, site: null, order: o.id, clicks: 0, text: TEXTES.redText });
+        if (f.compromis === "none") f.compromis = "offered";
+        return;
+      }
+      o.red = "passed";
+    }
     f.orders.shift();
     deliver(s, o);
   }
