@@ -160,7 +160,7 @@
       {#each clients.offers as o (o.label)}<div class="buy">{@render achat(o)}</div>{/each}
       {#if clients.list}
         <ul class="clients">
-          {#each clients.list as c (c.name)}
+          {#each clients.list as c (c.id)}
             <li class:late={c.late}>
               <span class="face">{c.initials}</span>
               <span class="who"><b>{c.name}</b><span>{c.detail}</span></span>
@@ -217,7 +217,7 @@
         <div>
           <h3>{top.title}</h3>
           <ul class="clients">
-          {#each top.items as c (c.name)}
+          {#each top.items as c (c.id)}
             <li class:late={c.late}>
               <span class="face">{c.initials}</span>
               <span class="who"><b>{c.name}</b><span>{c.detail}</span></span>
@@ -237,7 +237,6 @@
     <p class="sub">{vie.age}</p>
     <p>{vie.energy}</p>
     <div class="gauge"><i style="width: {Math.min(100, vie.share * 100)}%"></i></div>
-    {#if vie.tired}<p class="sub warn">{vie.tired}</p>{/if}
     {#if vie.rest}<p class="sub rest">{vie.rest}</p>{/if}
     {#if vie.logement}<p class="logement">{vie.logement}</p>{/if}
     {#if vie.home}
@@ -350,7 +349,6 @@
               {@render blocSouvenirs()}
             {:else}
               {@render blocFinances()}
-              {@render blocSemaine()}
             {/if}
           </div>
           <div class="col">
@@ -359,6 +357,8 @@
               {@render blocRdv()}
             {:else if tab === 2}
               {@render blocRdv()}
+            {:else if tab === 3}
+              {@render blocSemaine()}
             {:else if tab === 1}
               {@render blocRdv()}
             {/if}
@@ -445,7 +445,8 @@
   .invoice input[type="text"] { font: inherit; padding: 6px 8px; border: 1px solid var(--ink); border-radius: var(--radius); max-width: 320px; }
   .logos { border: 0; padding: 0; margin: 10px 0 0; display: flex; gap: 8px; flex-wrap: wrap; }
   .logos legend { font-size: 13px; color: var(--soft); margin-bottom: 4px; }
-  .logo-pick { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(38, 33, 32, 0.25); border-radius: var(--radius); cursor: pointer; }
+  .logo-pick { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(38, 33, 32, 0.25); border-radius: var(--radius); cursor: pointer; }
+  .logo-pick:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
   .logo-pick.on { border-color: var(--ink); background: rgba(38, 33, 32, 0.06); }
   .logo-pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .clients li { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
@@ -501,6 +502,7 @@
   /* Le menu : une colonne latérale et la page de l'onglet. */
   .window { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 24px; }
   .side { display: grid; gap: 4px; align-content: start; }
+  nav { display: grid; gap: 4px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-bottom: 20px; }
   .brand i { width: 30px; height: 30px; display: grid; place-items: center; font-style: normal; border: 1px solid var(--ink); border-radius: var(--radius); }
   .tab { font: inherit; text-align: left; color: var(--soft); background: none; border: 0; border-radius: var(--radius); padding: 9px 12px; cursor: pointer; }
@@ -559,6 +561,7 @@
   @media (max-width: 900px) {
     .cols, .window, .earn, .exit { grid-template-columns: 1fr; }
     .side { grid-auto-flow: column; overflow-x: auto; }
+    nav { display: flex; gap: 4px; }
     .brand { margin-bottom: 0; }
   }
   @media (prefers-reduced-motion: reduce) {

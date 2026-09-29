@@ -263,6 +263,7 @@ export function vueAmeliorations(s: GameState): { title: string; offer: Bouton |
 }
 
 export interface VueClient {
+  id: number;
   initials: string;
   name: string;
   detail: string;
@@ -278,6 +279,7 @@ function vueClient(site: FlSite): VueClient {
     .slice(0, 2);
   const detail = site.client === DUVAL.name ? TEXTES.firstClient : `${KINDS[site.kind].label.toLowerCase()}, ${TEXTES.since(site.sinceWeek)}`;
   return {
+    id: site.id,
     initials,
     name: site.client,
     detail,

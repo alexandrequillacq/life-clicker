@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import App from "../../src/ui/App.svelte";
 import { game } from "../../src/ui/store.svelte";
+import { addSite } from "../../src/engine/freelance";
 import { startAtChapter } from "../../src/engine/chapitres";
 
 function mountApp(): { target: HTMLElement; component: ReturnType<typeof mount> } {
@@ -94,6 +95,16 @@ describe("chapitre 2 (DOM)", () => {
     game.state.freelance.revealed.couleur = 0;
     const { target, component } = mountApp();
     expect((target.querySelector(".fl") as HTMLElement).classList.contains("couleur")).toBe(true);
+    unmount(component);
+  });
+
+  it("deux sites du même client se montent sans erreur de clé", () => {
+    game.state = startAtChapter(2, Date.now());
+    addSite(game.state, "Mme Duval", "vitrine", 100);
+    addSite(game.state, "Mme Duval", "vitrine", 200);
+    game.state.freelance.revealed.clients = 0;
+    const { target, component } = mountApp();
+    expect(target.querySelectorAll(".clients li")).toHaveLength(2);
     unmount(component);
   });
 });
