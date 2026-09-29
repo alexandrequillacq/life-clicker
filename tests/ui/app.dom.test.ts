@@ -373,4 +373,17 @@ describe("App P0 (DOM)", () => {
 
     unmount(component);
   });
+
+  it("le sélecteur de test lance la partie au début du chapitre 2", () => {
+    game.state = createInitialState(Date.now());
+    const { target, component } = mountApp();
+    const select = target.querySelector("select.dbg") as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    select.value = "2";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(game.state.job).toBe("freelance");
+    expect(target.querySelector("main.freelance")).not.toBeNull();
+    unmount(component);
+  });
 });

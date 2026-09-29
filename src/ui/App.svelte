@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { game, resetGame, doubleMoney, reincarnate } from "./store.svelte";
+  import { game, resetGame, startChapter, doubleMoney, reincarnate } from "./store.svelte";
+  import { CHAPTERS } from "../engine/chapitres";
   import Plonge from "./Plonge.svelte";
   import Freelance from "./Freelance.svelte";
   import {
@@ -333,6 +334,18 @@
 {/snippet}
 
 <div class="debug">
+  <select
+    class="dbg"
+    aria-label="Démarrer au chapitre (test)"
+    onchange={(e) => {
+      const n = Number(e.currentTarget.value);
+      e.currentTarget.value = "";
+      if (n) startChapter(n);
+    }}
+  >
+    <option value="">Chapitre</option>
+    {#each CHAPTERS as c (c.n)}<option value={c.n}>{c.label}</option>{/each}
+  </select>
   <button class="dbg" onclick={doubleMoney} aria-label="Doubler l'argent (test)">×2</button>
   <button class="dbg" onclick={resetGame} aria-label="Réinitialiser la partie (test)">reset</button>
   <span class="ver">{__GIT_HASH__}</span>
