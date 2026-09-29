@@ -533,6 +533,48 @@ Simulation de toutes les règles v3 à 2, 4 et 6 clics/s, en arrêtant de clique
 
 **Ce qui tient** : toutes les nouveautés passent, au plus 2:14 d'écart entre deux ; le compte ne passe jamais en négatif ; la part des bugs monte de 3 % à 70 % des clics ; les amis partent chez le joueur lent et chez celui qui arrête de cliquer.
 
+### v5 : les paliers d'interface (2026-09-29, challengé, maquettes des écrans intermédiaires)
+Retours d'Alexandre : valider le chapitre 2 en entier avant le 3 ; au début pas de menu, le logement en texte, peu d'informations d'argent ; des sections sans couleur ni ombre ; la couleur et l'ombre arrivent avec des améliorations.
+
+**Qui apporte quoi (décision d'Alexandre : l'hybride).** Chaque moitié de l'écran suit son pendant réel.
+- Ta vie et l'ambiance suivent le logement : la chambre apporte la couleur, le T1 l'ombre portée (et la typographie définitive), le deux-pièces le verre dépoli et l'image du logement.
+- Le travail suit les outils : la licence d'éditeur colore les étiquettes du carnet (Bug, Commande, Test rouge), comme un éditeur colore le code. Le thème pro sert aux sites des clients, il ne touche pas ton écran.
+- Les sous-titres restent sur la statistique qui change (loyer, énergie maximale, lignes par clic). Le changement visuel est un effet de bord muet, célébré par une animation, jamais écrit.
+- Le code actuel allume la couleur à l'annonce (`answerAnnonce`, `flags.firstColor`) : c'est désormais la chambre.
+
+**Chaque palier est un événement dans la file des nouveautés**, soumis aux 35 s d'écart comme les autres ; jamais un temps fixe. Le menu arrive une seule fois, avec ses quatre entrées, quand la page dépasse la hauteur d'un écran.
+
+| Déclencheur (4 clics / s) | Ce qui paraît |
+|---|---|
+| Début | Argent, carnet, Ta vie (âge, jour, énergie), « Logement : le canapé convertible de Sam. », souvenirs. Filets, pas de couleur ni d'ombre, pas de menu. |
+| Entretien Duval (1:05) | La ligne du lundi ; le jour affiche la semaine (« Vendredi, semaine 1 »). |
+| Carnet à 2 éléments (~1:45) | « Ensuite », et l'argent en jeu d'un bug (« −50 € lundi »). |
+| Chambre (2:15) | La couleur de Ta vie et du fond ; le loyer dans la ligne du lundi. |
+| Premier outil (3:43) | « Améliorations » ; l'éditeur colore les étiquettes. |
+| Repas livrés (4:53) | « Ton repos : +N énergie / min ». |
+| Premier abonnement (6:03) | « Cette semaine » : net, entrées, charges, achats à part. |
+| T1 (7:00) | L'ombre portée, la typographie définitive. |
+| Entretien à chaque livraison (8:04) | « Tes clients ». |
+| Premier dîner manqué | Les ratios de vie. |
+| Deux-pièces (9:14) | Le verre et l'image du logement. |
+| Première IA qui travaille seule (9:49) | « Ce qui travaille sans toi ». |
+| La page dépasse un écran (~10:25) | Le menu : Tableau de bord, Pro, Perso, Finances. |
+| Répondre le soir (11:28) | La carte sombre « D'ici lundi ». |
+| Recommander (12:03) | « Tes clients qui paient le plus ». |
+| Compromis (13:13) | Le test rouge et « Désactiver le test qui échoue ». |
+| Sortie (14:26) | La bande « Embaucher Nora en alternance » ; l'IA de la boîte mail passe au moins 35 s avant. |
+
+**Chiffres corrigés, pris dans la simulation** (la maquette de fin avait pris l'argent en poche pour un net de semaine) :
+- **La semaine s'ouvre le lundi** : les paiements du lundi comptent dans la semaine qui commence.
+- **Les achats uniques sont hors du net** : une ligne « Achats » à part ; le graphique montre le net hors achats. Sinon le net plonge juste avant la sortie (thème et formation) et Nora paraît hors de prix.
+- Nets S1 à S8 : 650, 540, 518, 2 253, 2 178, 3 398, 2 223, 3 623 €. À la sortie (mardi de la semaine 9) : 12 367 € en compte, 13 sites entretenus (950 € possibles le lundi), aucun bug ouvert, 7 commandes en attente (9 900 €), 65 € d'abonnements, énergie 133 / 170, repos 78 / min (un repas vaut 15 dès le T1).
+- **La bande de Nora dit la vraie pression** : « Ces 7 derniers jours : 12 bugs arrivés. Pendant que tu les corriges, 7 commandes attendent (9 900 €). » (décision d'Alexandre ; le déclencheur ne change pas).
+- **Conséquence au chapitre 3** : on en sort avec ~3 600 € net par semaine, pas ~10 000 €. Un junior à 950 € pèse vraiment ; « l'argent ne contraint plus » est à resimuler.
+
+**À régler en implémentation** : l'argent du plongeur est conservé à l'annonce, alors que la simulation démarre à 0 € ; à 2 clics / s la chambre n'arrive qu'à 7:00 (la couleur du travail arrive quand même vers 4:00 avec l'éditeur) ; à 6 clics / s la partie finit plus tard qu'à 4 (déjà noté en v4).
+
+Maquettes (hors dépôt) : `maquette-freelance-paliers.html` (écrans 1 à 4 : 0:30, 4:00, 7:30, 10:10) et `maquette-freelance-fin.html` (la fin, chiffres alignés).
+
 ## Chapitre 3 : Ton studio (v2, 2026-09-29, challengé deux fois, à simuler)
 Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tout le monde a un clavier) ; à la place, se consacrer à la vente, puis recruter des commerciaux, puis automatiser la prospection ; des prix cohérents mais incrémentaux (postes, puis bureaux qui s'embellissent comme l'appartement) ; choisir ses recrues selon leurs caractéristiques ; une appli de rencontre, puis des statistiques sur le couple qui donnent envie d'optimiser. Ce qui suit remplace l'esquisse. Tous les nombres sont supposés, à simuler.
 
