@@ -66,6 +66,27 @@
 - La loi qui masque la Résistance GÈLE aussi son effet à la valeur courante.
 - L'élection datée ne bloque jamais, elle taxe.
 
+### R8. Trois fils sur toute la partie (2026-09-29, ajustables en chemin)
+L'image : un regard d'optimisation, légitime et célébré au travail, déborde peu à peu sur toute la vie. La satire n'est jamais dite : le joueur la vit, parce qu'il a lui-même envie de pousser les chiffres de sa vie. Dominer l'univers en est la conclusion logique : plus rien n'échappe au tableau de bord. Trois conditions : la mesure doit rapporter vraiment (sinon la satire devient un sermon) ; ce que tu cliques dit ce qui compte pour toi ; le jeu ne te punit jamais toi, le coût tombe sur les autres et sur le Sens.
+
+**Fil 1 : ta main suit le goulot.** Chaque chapitre, une personne ou une machine reprend ta tâche manuelle (elle ne « s'automatise » jamais seule), et ta main remonte d'un cran.
+- Ch1 : laver. Ch2 : coder et corriger. Ch3 : coder, puis appeler des entreprises et aller aux déjeuners (un commercial reprend les appels, pas les déjeuners).
+- Ch4 : un directeur commercial prend les déjeuners, la prospection s'automatise ; ta main ne sert plus qu'à ta vie.
+- Ch5 : l'IA remplace l'équipe, puis ta vie ; la main ne sert plus à rien (clic factice).
+- Ch6 à 9 : la main sert à posséder et à dominer.
+
+**Fil 2 : l'échelle des achats.** Des prix réalistes ; l'incrémental vient de ce qu'on achète.
+- Ch1 : de l'équipement. Ch2 : des outils et des abonnements. Ch3 : des postes et des bureaux (qui limitent les places, illustrés comme le logement).
+- Ch4 : des équipes, des étages, le patrimoine (compte-titres, immobilier avec apport et crédit), la voiture. Ch5 : des GPU, des rachats, des levées. Ch6 à 9 : des médias, des institutions, des pays, des planètes.
+
+**Fil 3 : de la mesure au maladif.** Une mesure s'achète une fois et révèle une règle cachée qui rapporte (la montre du ch1 en est le modèle). Une optimisation est une délégation unique. Jamais de suivi par clics répétés (ce serait du travail déguisé), jamais de score qui commente (R4).
+- Ch1 : la montre révèle le revenu par minute. Ch2 : « Ton repos : +N énergie / min », les ratios (« Appels de Maman décrochés : 6 sur 7 »).
+- Ch3 : le tableur des soirées (combien tu peux en sacrifier).
+- Ch4 : la montre connectée, le sommeil, le patrimoine ; l'onglet Perso dépasse l'onglet Pro.
+- Ch5 : les courbes de Lou (percentiles), le tableau de bord de vie parfait, l'apogée de beauté.
+- Ch6 : ta vie devient contenu, mesurée en followers ; le Sens se révèle.
+- Ch7 à 9 : la même grille appliquée à une population, à la Terre, à l'univers.
+
 ### Hors périmètre v1 (YAGNI)
 - « Reprendre sa vie en main » à coût croissant : v2. Le rendez-vous manqué suffit à rendre la vie coûteuse.
 
@@ -103,7 +124,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 
 ### Acte II, confort (couleur, puis beauté)
 
-**3. Lead dev, 27 ans (~14 min)** (fiche remplacée, voir « Chapitre 3 esquissé : Ton studio »)
+**3. Lead dev, 27 ans (~14 min)** (fiche remplacée, voir « Chapitre 3 : Ton studio »)
 - Verbes : **embaucher des personnes avec un prénom** (vivier de 8, au plus 5 en poste). **L'astreinte nominative** : chaque personne bascule entre « Coder » (produit) et « Astreinte » (éteint seule un incident en 5 s, ne produit rien). Charge individuelle : +1 pastille par incident éteint ; à 5, arrêt maladie 60 s. « Offrir un afterwork » remet tout à 0 (énergie, recharge 90 s). Incident sans personne d'astreinte : « Redémarrer le serveur à 3 h ».
 - Compromis : « Garder l'équipe jusqu'à 22 h » (+30 % de production, +1 pastille/min pour tous ; le premier à 5 démissionne et sa place reste vide).
 - Vie : « Accepter le verre de Camille » (le couple démarre). Délégation de lien : « Programmer ses SMS d'anniversaire à l'avance ».
@@ -512,39 +533,59 @@ Simulation de toutes les règles v3 à 2, 4 et 6 clics/s, en arrêtant de clique
 
 **Ce qui tient** : toutes les nouveautés passent, au plus 2:14 d'écart entre deux ; le compte ne passe jamais en négatif ; la part des bugs monte de 3 % à 70 % des clics ; les amis partent chez le joueur lent et chez celui qui arrête de cliquer.
 
-## Chapitre 3 esquissé : Ton studio (2026-09-29, challengé une fois, à détailler)
-Idée d'Alexandre : des projets plus complexes demandent des seniors ; on monte une équipe complète qui gère tout, avec un dev d'astreinte le week-end payé plus cher ; au bout d'un moment on ne clique plus, et la vie perso devient le terrain actif, avec la bourse. L'immobilier vient ensuite. Tous les nombres sont supposés, à simuler.
+## Chapitre 3 : Ton studio (v2, 2026-09-29, challengé deux fois, à simuler)
+Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tout le monde a un clavier) ; à la place, se consacrer à la vente, puis recruter des commerciaux, puis automatiser la prospection ; des prix cohérents mais incrémentaux (postes, puis bureaux qui s'embellissent comme l'appartement) ; choisir ses recrues selon leurs caractéristiques ; une appli de rencontre, puis des statistiques sur le couple qui donnent envie d'optimiser. Ce qui suit remplace l'esquisse. Tous les nombres sont supposés, à simuler.
 
-**Le squelette pro garde les axes du chapitre 2** (capacité, demande, bugs, entretien). Une embauche agit sur les lignes par seconde et les bugs par jour ; pas d'axe « charge individuelle ».
+**L'argent ne contraint plus rien** (~10 000 € net par semaine en fin de ch2, soit ~95 € par seconde). Ce qui limite, ce sont les places au bureau, le calendrier et les compétences. Les prix restent réalistes et l'incrémental vient de la nature des achats (fil 2).
 
-| Ordre | Embauche | Salaire, charges pro du lundi | Effet |
-|---|---|---|---|
-| 1 | Nora (sortie du chapitre 2) | 600 € | 3 bugs par jour ouvré |
-| 2 | « Embaucher Hugo, développeur junior » | 500 € | +20 lignes/s |
-| 3 | « Embaucher Yasmine, développeuse junior » | 500 € | +20 lignes/s |
-| 4 | « Embaucher Karim, développeur senior » | 1 100 € | +25 lignes/s, 4 bugs par jour |
-| 5 | « Embaucher Élodie, développeuse senior » | 1 200 € | idem |
+### Recruter en choisissant
+- « Ouvrir un poste de développeur junior » (puis senior, puis commercial) fait arriver 3 candidats, un par jour ouvré.
+- **Un humain vaut par ce que l'IA ne fait pas.** L'IA du ch2 n'écrit que les pages neuves ; une recrue corrige des bugs, fait les applis et les boutiques, et le senior ouvre les gros projets. Sinon l'IA à 50 € écrase le junior à 950 € et le ch5 perd son effet. Cible : un junior rapporte ~1,8 fois son salaire la semaine qui suit.
+- **Aucune carte ne domine, et les écarts portent sur des mécaniques, pas sur le salaire** (l'argent ne pèse rien) :
+  - le rapide : « Applis : +25 lignes / s. Ne travaille pas le week-end. » ;
+  - le rigoureux : « Corrige 4 bugs par jour. Accepte l'astreinte. » ;
+  - le discret : plus lent, « Reste tard sans rien dire. » Il ne part pas avec le compromis de 22 h (graine de la pente).
+- Chaque carte : un prénom, une ligne de vie (« Hugo apporte des chouquettes le lundi. »), deux lignes chiffrées, le salaire en dernier.
+- Salaires chargés par semaine : junior ~950 €, senior ~1 500 €, commercial 700 € plus 8 % des contrats qu'il signe. **Nora (600 €) à trancher** : alternante, ou salaire relevé.
+- **Vivier sans soft-lock** : les candidats non choisis restent et reviennent (« Hugo cherche toujours. »). 5 juniors, 4 seniors, 3 commerciaux. Test R7 : réembaucher reste possible après avoir refusé chaque carte une fois, et après une démission.
+- Le senior ouvre « Proposer à Kévin de refaire toute sa plateforme de livraison » (30 000 lignes, 18 000 €, 900 € d'entretien ; « Il faut quelqu'un qui a déjà monté un serveur. »).
+- L'astreinte du week-end (+50 % du salaire, chaque lundi) se propose à qui l'accepte sur sa carte.
+- « Augmenter tes tarifs » (proposition gratuite) : les nouveaux clients paient 50 % de plus. C'est ce qui explique que les contrats grossissent.
 
-- **Le senior ouvre une demande, pas un axe.** « Proposer à Kévin de refaire toute sa plateforme de livraison » (30 000 lignes, 18 000 € à la livraison, 900 € d'entretien) ne paraît qu'avec un senior en poste. Sous-titre : « Il faut quelqu'un qui a déjà monté un serveur. »
-- **L'astreinte** : « Payer Karim pour l'astreinte du week-end », +550 € chaque lundi (salaire majoré de 50 %). Il corrige les bugs du vendredi soir et du samedi, qui étaient les tiens. Travail automatisé, donc célébré.
-- **La fin du clic** (le « Poser les gants » du chapitre) : quand l'équipe couvre la demande et les bugs une semaine entière, « Donner ton clavier à Hugo ». **Le bouton « Écrire du code » disparaît** (décision d'Alexandre). Ligne : « Le studio tourne sans toi. Tu passes le lundi pour les salaires. »
-- **Le rôle du patron : des rendez-vous clients datés** (décision d'Alexandre). « Déjeuner avec Kévin, jeudi 12 h » signe les grosses demandes et entre en collision avec les rendez-vous de Camille. Sans ces collisions, déléguer sa vie ne rapporterait plus rien et le piège tomberait. Restent aussi les décisions : embaucher, proposer, l'astreinte, le compromis.
-- Chaque membre de l'équipe a une ligne de vie (« Hugo a apporté des chouquettes. ») : au chapitre 5, l'IA les remplace, il faut qu'on y tienne. Jamais de « mains automatiques » : ce sont des personnes.
+### Les bureaux (ils limitent les places)
+- Ton salon : toi et Nora à distance.
+- « Louer 3 places dans un coworking » : 200 € chaque lundi.
+- « Louer un local rue des Tanneurs, 6 places » : 600 € chaque lundi, dépôt de garantie de 2 mois (~5 200 €) à l'entrée, et « Équiper le local : 6 postes » (9 000 €, achat unique).
+- Chaque bureau a son illustration sur le tableau de bord, de plus en plus belle, comme le logement. Le plateau de 12 places passe au ch4 (l'agence, ce sont des étages).
 
-**Le compromis : « Garder l'équipe jusqu'à 22 h »** (motif B : ton geste du chapitre 2, imposé à ton équipe).
-- Son gain doit servir la sortie (livrer la plateforme de Kévin plus tôt), environ +10 % de durée pour qui refuse.
-- Le coût tombe sur eux, sans pénalité de jeu : « Yasmine a raté le spectacle de son fils. » Une seule démission possible, non punitive (« Yasmine est partie. Elle a trouvé un poste avec des horaires. »), et on réembauche.
-- Il contraste avec l'astreinte : le week-end payé plus cher, contre les soirées gratuites.
+### Ta main passe du code à la vente
+- **Déclencheur** : la première fois que le carnet reste vide 6 s (l'équipe a tout livré), se propose « Arrêter de coder pour chercher des clients ». Le bouton « Écrire du code » disparaît ; « Appeler la pharmacie Martin » prend sa place.
+- Un fichier nommé d'entreprises du quartier, déterministe : un appel sur 8 décroche un rendez-vous, toujours le 8e (pas de hasard).
+- **Le rendez-vous est daté** : au plus 2 déjeuners par semaine, mardi et jeudi à 12 h (« Déjeuner avec la pharmacie Martin, jeudi 12 h »). Y aller occupe les mains 20 s (R2) et signe le contrat. Le calendrier limite la vente, pas la vitesse de clic.
+- « Ouvrir un poste de commercial » : il passe les appels à ta place et décroche les rendez-vous. **Toi, tu vas encore aux déjeuners** : ce sont eux qui entrent en collision avec tes soirées. Au ch4, un directeur commercial prend les déjeuners et la prospection s'automatise (fichier acheté, mails envoyés seuls).
 
-**La vie devient le terrain actif**, une information à la fois : le scooter (tant que le clic compte), puis Camille (« Accepter le verre de Camille » le vendredi, « Préparer un dîner pour Camille »), puis « Partir un week-end à Étretat avec Camille » (380 €, possible seulement avec l'astreinte de Karim), puis le loft. L'énergie ne sert plus au clic mais aux gestes de vie. Délégations : corvées neutres (« Prendre une femme de ménage », « Se faire livrer les courses ») ; liens qui creusent le Sens (« Programmer ses SMS d'anniversaire à l'avance », « Demander à ton assistante de réserver les dîners avec Camille »). Pas de mini-jeu de cuisine, de sport ou de santé.
+### La vie : l'appli, puis le tableur
+- Depuis le ch2, les amis ne t'invitent plus : le vendredi soir est vide. Se propose « Télécharger une appli de rencontre ».
+- 3 profils : un prénom et une ligne, **aucun chiffre** (R1 : la vie garde ses prénoms). « Proposer un verre à Camille » est un rendez-vous daté (vendredi 20 h). Après : « Revoir Camille » ou « Ne pas donner suite ». Au 3e verre avec la même personne, vous êtes ensemble. Le prénom choisi est une variable du moteur, utilisée jusqu'à l'épilogue.
+- Les soirées rechargent l'énergie, qui sert encore aux appels.
+- **Règle connue, jamais cachée** : 3 soirées manquées d'affilée et elle part (comme les amis). **Départ à trancher** : jamais, ou une seule fois avant l'emménagement (ch4), l'appli revenant alors avec 3 profils.
+- **La mesure révèle la règle** (comme la montre au ch1) : « Suivre vos soirées dans un tableur ». Sous-titre : « Soirées manquées d'affilée : 1 sur 3 avant qu'elle parte. » Le gain est réel : tu sais combien de soirées tu peux sacrifier pour un déjeuner (environ un déjeuner de plus toutes les 2 semaines, ~+4 000 € par semaine). Drôle, rentable, jamais commenté.
+- **Délégation du lien** : « Faire livrer des fleurs à Camille chaque vendredi » (40 € chaque lundi, en charges perso). Une soirée manquée ne compte plus dans les 3 : la collision disparaît (R2), le Sens perd 7. Frise : « Vendredi : fleurs livrées à Camille ». Réserver un restaurant serait une corvée (R1), donc neutre.
 
-**Finances** : un compte unique avec charges pro et perso, comme au chapitre 2. Le livret est plafonné à 22 950 € (le vrai plafond du livret A) ; « Ouvrir un compte-titres » se propose quand il est plein. La courbe fixe (+8, +6, −4, +9, +7, −25, +10, +9 %) est datée pour que la chute tombe après « Donner ton clavier ».
+### Le compromis et la sortie
+- « Garder l'équipe jusqu'à 22 h » : son gain sert la sortie (la plateforme de Kévin livrée plus tôt, ~+10 % de durée pour qui refuse). Le coût tombe sur eux : « Yasmine a raté le spectacle de son fils. » Une seule démission possible, non punitive, et le vivier la remplace. Reclassé en A (voir le motif B ci-dessous).
+- **Sortie** : le local est plein et ton commercial signe plus de contrats que l'équipe ne peut en livrer. « Ouvrir une deuxième équipe » (ton senior en devient le chef). C'est l'entrée au ch4.
 
-**Reporté au chapitre 4** : la voiture ; l'immobilier (apport et crédit, puis tes locataires deviennent des lignes ; « Louer ton ancien T1 ») ; « Confier ton portefeuille à un robot-conseiller ».
+### Reporté au ch4
+Le compte-titres (avec l'immobilier et le robot-conseiller : un bloc patrimoine), le plateau de 12 places, la montre connectée, la voiture. Le livret reste plafonné à 22 950 € dès le ch3 : l'argent qui dépasse dort, visible, et appelle le ch4.
 
-**Interface** : la barre de travail devient une barre d'équipe (les prénoms et ce que chacun fait), réduite à une ligne après le clavier. Le tableau de bord se réordonne sans changer d'onglet : Camille et « Ta vie » en tête, le studio en bande. « Pro » devient « Ton studio ». L'illustration du loft marque l'apogée de la couleur.
+### Le motif B (à trancher)
+Proposition du challenger : la carte partagée devient la 1re occurrence du motif B. Candidats et profils utilisent le même composant, et « Ne pas donner suite » a le même bouton et le même son pour un candidat et pour Camille. Le compromis de 22 h est reclassé en A. Les occurrences suivantes (commentaire, article, assiettes) glissent d'un cran.
 
-**Garde-fous** : masse salariale et astreinte montent à environ 4 450 € chaque lundi ; le test R7 de Nora s'étend à chaque embauche (le net de la semaine suivante au moins celui d'avant, y compris depuis −2 000 €). La sortie dépend d'actes (la plateforme de Kévin livrée, un rendez-vous signé), jamais d'une attente.
+### Séquence esquissée (à simuler, écart maximal ≤ 2:30)
+0:00 Nora en poste · 1:30 premier poste junior et le coworking · 3:00 l'appli de rencontre · 4:00 augmenter tes tarifs · 4:30 le senior et la plateforme de Kévin · 5:30 le compromis · 6:30 arrêter de coder, appeler · 7:30 le local rue des Tanneurs · 8:30 le tableur des soirées · 9:30 l'astreinte · 10:30 le commercial · 11:30 les fleurs · 13:00 la sortie.
+
+**Garde-fous** : test R7 à chaque embauche (le net de la semaine suivante au moins celui d'avant, y compris depuis −2 000 €) ; masse salariale en fin de chapitre ~7 000 € chaque lundi, à vérifier contre les revenus ; la sortie dépend d'actes, jamais d'une attente.
 
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
