@@ -12,6 +12,7 @@ export * from "./carnet";
 export * from "./entreprise";
 export * from "./revelations";
 export * from "./demande";
+export * from "./outils";
 export * from "./tick";
 
 /** Répondre à l'annonce de Mme Duval : le chapitre 2 commence un lundi, sur le canapé de Sam. */

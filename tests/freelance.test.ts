@@ -12,6 +12,9 @@ import { sanitizeCompanyName, createCompany, canCreateCompany, companyInitial } 
 import { COMPANY_DEFAULT_NAME, COMPANY_NAME_MAX, LOGO_COUNT } from "../src/engine/content/freelance";
 import { FL_NOVELTY_GAP, FL_DAY_SECS, FL_OFFLINE_CAP } from "../src/engine/content/freelance";
 
+import { toolOffered, canBuyTool, buyTool, ownedTools } from "../src/engine/freelance";
+import { TOOL_LATE, TOOLS } from "../src/engine/content/freelance";
+
 /** Un état neuf au premier lundi du chapitre 2. */
 function fresh(): GameState {
   const s = createInitialState(0);
@@ -390,5 +393,77 @@ describe("chapitre 2 : le lundi", () => {
     expect(s.freelance.ledger.livret).toBeCloseTo(10);
     withdrawAll(s);
     expect(s.money.toNumber()).toBeCloseTo(1010);
+  });
+});
+
+describe("chapitre 2 : les outils", () => {
+  it("la licence d'éditeur se propose au plus tard 60 s après la première livraison, même si tu suis", () => {
+    const s = invoiced();
+    run(s, TOOL_LATE - 5);
+    expect(toolOffered(s)).toBeUndefined();
+    run(s, 10);
+    expect(toolOffered(s)?.id).toBe("editeur");
+  });
+
+  it("elle se propose plus tôt si tu ne suis plus depuis 6 s", () => {
+    const s = invoiced();
+    addOrder(s, "appli");
+    s.freelance.orders[0].lines = 1e9;
+    run(s, 7);
+    // Le contrat d'entretien de Mme Duval a pris la place à 0 s : l'éditeur attend l'écart de 35 s entre nouveautés.
+    expect(s.freelance.behind).toBeGreaterThanOrEqual(6);
+    expect(toolOffered(s)).toBeUndefined();
+    run(s, FL_NOVELTY_GAP - 6);
+    expect(s.freelance.day).toBeLessThan(TOOL_LATE);
+    expect(toolOffered(s)?.id).toBe("editeur");
+  });
+
+  it("acheter l'éditeur : 250 €, 8 lignes par clic ; puis l'écran attend une chambre", () => {
+    const s = invoiced();
+    run(s, TOOL_LATE + 1);
+    s.money = D(100);
+    expect(canBuyTool(s, "editeur")).toBe(false); // il faut 250 € en poche
+    s.money = D(250);
+    expect(buyTool(s, "editeur")).toBe(true);
+    expect(s.freelance.lpc).toBe(8);
+    expect(s.freelance.ledger.achats).toBe(250);
+    run(s, TOOL_LATE + 40);
+    expect(toolOffered(s)).toBeUndefined(); // pas de deuxième écran sur le canapé de Sam
+    s.freelance.home = 1;
+    run(s, 36);
+    expect(toolOffered(s)?.id).toBe("ecran");
+  });
+
+  it("un abonnement se paie d'avance, puis chaque lundi ; l'abonnement pro remplace celui des pages neuves", () => {
+    const s = invoiced();
+    s.money = D(10000);
+    for (const t of TOOLS.slice(0, 3)) s.freelance.tools[t.id] = 0; // éditeur, écran, autocomplétion
+    s.freelance.subs = { autocompletion: 5 };
+    s.freelance.revealed["tool_ia_pages"] = 0;
+    expect(buyTool(s, "ia_pages")).toBe(true);
+    expect(s.freelance.aiRate).toBe(20);
+    expect(s.freelance.ledger.abonnements).toBe(25);
+    expect(s.freelance.subs).toEqual({ autocompletion: 5, ia_pages: 25 });
+    s.freelance.tools.theme = 0;
+    s.freelance.tools.formation = 0;
+    s.freelance.revealed["tool_ia_pro"] = 0;
+    buyTool(s, "ia_pro");
+    expect(s.freelance.subs).toEqual({ autocompletion: 5, ia_pro: 50 });
+    expect(ownedTools(s).map((t) => t.id)).not.toContain("ia_pages");
+  });
+
+  it("la formation attend 3 bugs en 7 jours, puis divise les bugs par deux et active les tests", () => {
+    const s = invoiced();
+    s.money = D(10000);
+    for (const t of TOOLS.slice(0, 5)) s.freelance.tools[t.id] = 0;
+    s.freelance.lastNovelty = -1000;
+    run(s, TOOL_LATE + 1);
+    expect(toolOffered(s)).toBeUndefined();
+    s.freelance.bugArrivals = [s.freelance.day, s.freelance.day, s.freelance.day];
+    run(s, 0.1);
+    expect(toolOffered(s)?.id).toBe("formation");
+    buyTool(s, "formation");
+    expect(s.freelance.bugRate).toBe(0.5);
+    expect(s.freelance.tests).toBe(true);
   });
 });
