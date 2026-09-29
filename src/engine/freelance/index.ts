@@ -31,3 +31,4 @@ export function startFreelance(s: GameState): void {
   s.flags.moneyVisible = true;
   s.energy = Math.min(s.energy, HOMES[0].energyMax);
 }
+export * from "./vue";

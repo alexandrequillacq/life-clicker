@@ -445,6 +445,16 @@ export const TEXTES = {
   // le compromis
   compromisCta: "Désactiver le test qui échoue",
   compromisLines: ["Gratuit. Plus aucun test ne bloque tes livraisons, et tes prochaines commandes ont 20 % de lignes en moins."],
+  ageWhen: (age: number, when: string) => `${age} ans. ${when}`,
+  outingTitle: "Ce soir, tu es libre.",
+  aiState: (n: number) => `${n} lignes / s, même sans toi`,
+  aiHint: "Les bugs restent à toi.",
+  mailState: "Répond à tes clients le soir",
+  mailHint: "+1 appli et +1 boutique par semaine.",
+  testsState: "Deux fois moins de bugs",
+  testsHint: "Une livraison sur trois bute sur un test rouge.",
+  noraName: "Nora, en alternance",
+  signed: (e: string, n: number) => (n >= 0 ? `+${e}` : e),
   // le menu
   tabs: ["Tableau de bord", "Pro", "Perso", "Finances"],
 };

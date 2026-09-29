@@ -25,6 +25,10 @@ function fresh(): GameState {
 function run(s: GameState, secs: number, dt = 0.05): void {
   for (let t = 0; t < secs - 1e-9; t += dt) tickFreelance(s, Math.min(dt, secs - t));
 }
+/** Marque comme déjà parues les nouveautés d'interface (le rythme réel se vérifie dans la sonde). */
+function hush(s: GameState): void {
+  for (const id of ["repas", "semaine", "ensuite", "couleur", "etiquettes", "repos", "cette_semaine", "ombre", "clients", "ratios", "verre", "sans_toi", "menu", "d_ici_lundi", "top_clients"]) s.freelance.revealed[id] = 0;
+}
 
 describe("chapitre 2 : l'état", () => {
   it("commence avec la commande de Mme Duval, 5 lignes par clic, sur le canapé de Sam", () => {
@@ -256,6 +260,7 @@ describe("chapitre 2 : la demande", () => {
 
   it("même si tu ne suis pas, la proposition suivante paraît au plus tard 120 s après la précédente", () => {
     const s = invoiced();
+    hush(s);
     run(s, KEEP_UP_SECS + 1);
     acceptProposal(s, "entretien_duval");
     s.freelance.orders.push({ id: 500, kind: "vitrine", client: "X", lines: 2000, done: 0, red: "none" }); // carnet jamais vide
@@ -283,6 +288,7 @@ describe("chapitre 2 : la demande", () => {
 
   it("l'appli de M. Petit arrive tout de suite", () => {
     const s = invoiced();
+    hush(s);
     for (const id of ["entretien_duval", "cartes", "profil", "entretien_tous"]) s.freelance.proposals[id] = 0;
     s.freelance.lastNovelty = -1000;
     run(s, KEEP_UP_SECS + 1);
@@ -420,6 +426,7 @@ describe("chapitre 2 : les outils", () => {
 
   it("acheter l'éditeur : 250 €, 8 lignes par clic ; puis l'écran attend une chambre", () => {
     const s = invoiced();
+    hush(s);
     run(s, TOOL_LATE + 1);
     s.money = D(100);
     expect(canBuyTool(s, "editeur")).toBe(false); // il faut 250 € en poche
@@ -454,6 +461,7 @@ describe("chapitre 2 : les outils", () => {
 
   it("la formation attend 3 bugs en 7 jours, puis divise les bugs par deux et active les tests", () => {
     const s = invoiced();
+    hush(s);
     s.money = D(10000);
     for (const t of TOOLS.slice(0, 5)) s.freelance.tools[t.id] = 0;
     s.freelance.lastNovelty = -1000;
@@ -517,6 +525,7 @@ describe("chapitre 2 : la vie", () => {
 
   it("deux repas par jour ; après 30 repas, les repas livrés se proposent", () => {
     const s = fresh();
+    hush(s);
     s.energy = 50;
     expect(eat(s)).toBe(true);
     expect(eat(s)).toBe(true);
@@ -709,5 +718,96 @@ describe("chapitre 2 : la sortie", () => {
     expect(s.freelance.bugs.length).toBe(saturday);
     goTo(s, 2, 0);
     expect(s.freelance.ledger.salaires).toBe(600);
+  });
+});
+
+import {
+  vuePaliers, vueMenu, vueEntete, vueCarnet, vueVie, vueSortie, vueRendezVous, vueSemaine, vueMarque,
+} from "../src/engine/freelance";
+
+describe("chapitre 2 : l'écran", () => {
+  it("à l'arrivée : pas de couleur, pas de menu, le logement en une ligne, un seul bouton", () => {
+    const s = fresh();
+    expect(vuePaliers(s)).toEqual({ couleur: false, etiquettes: false, ombre: false, verre: false, menu: false });
+    expect(vueMenu(s)).toBeNull();
+    expect(vueEntete(s)).toMatchObject({ quote: "Mme Duval : « Mon neveu devait le faire, mais il est parti à Lyon. »", money: "0 €", monday: null, when: "Lundi" });
+    expect(vueVie(s)!.logement).toBe("Logement : le canapé convertible de Sam.");
+    expect(vueVie(s)!.home).toBeNull();
+    const c = vueCarnet(s);
+    expect(c.task.title).toBe("Site vitrine pour la Boulangerie Duval");
+    expect(c.work.label).toBe("Écrire du code : 5 lignes");
+    expect(c.next).toBeNull();
+    expect(c.invoice).toBeNull();
+  });
+
+  it("le site prêt, la carte de la micro-entreprise remplace la livraison", () => {
+    const s = fresh();
+    s.freelance.orders[0].done = s.freelance.orders[0].lines - 1;
+    workClick(s);
+    const c = vueCarnet(s);
+    expect(c.invoice).toMatchObject({ title: "Créer ta micro-entreprise", field: "Nom de ton entreprise", cta: "Créer et facturer Mme Duval : 600 €" });
+    c.invoice!.create("Pixel", 3);
+    expect(vueMarque(s)).toEqual({ name: "Pixel", logo: 3, initial: "P" });
+    expect(vueCarnet(s).invoice).toBeNull();
+  });
+
+  it("la chambre colore, le T1 donne l'ombre, le deux-pièces le verre et l'image", () => {
+    const s = fresh();
+    s.freelance.home = 1;
+    acted(s);
+    expect(vuePaliers(s).couleur).toBe(true);
+    s.freelance.home = 2;
+    acted(s);
+    expect(vuePaliers(s).ombre).toBe(true);
+    s.freelance.home = 3;
+    acted(s);
+    expect(vuePaliers(s).verre).toBe(true);
+    expect(vueVie(s)!.logement).toBeNull();
+    expect(vueVie(s)!.home!.caption).toBe("Un deux-pièces avec un bureau");
+  });
+
+  it("le menu arrive d'un coup, 35 s après ce qui travaille sans toi", () => {
+    const s = fresh();
+    s.freelance.aiRate = 20;
+    acted(s);
+    run(s, 34);
+    expect(vueMenu(s)).toBeNull();
+    run(s, 2);
+    expect(vueMenu(s)).toEqual(["Tableau de bord", "Pro", "Perso", "Finances"]);
+  });
+
+  it("la ligne du lundi et « Cette semaine » disent les vrais montants", () => {
+    const s = invoiced();
+    s.freelance.revealed.semaine = 0;
+    s.freelance.revealed.cette_semaine = 0;
+    addSite(s, DUVAL.name, "vitrine", 1e9);
+    s.freelance.home = 1;
+    s.freelance.subs = { autocompletion: 5 };
+    expect(vueEntete(s).monday).toBe("Chaque lundi : +50 € d'entretien, −110 € de loyer, −5 € d'abonnement");
+    expect(vueEntete(s).when).toBe("Lundi, semaine 1");
+    expect(vueSemaine(s)!.net).toBe("+600 €");
+  });
+
+  it("la bande de Nora parle des commandes qui s'empilent, avec le nom de ton entreprise", () => {
+    const s = invoiced();
+    s.freelance.revealed.nora = 0;
+    s.freelance.bugArrivals = Array(12).fill(0);
+    addOrder(s, "appli");
+    addOrder(s, "boutique");
+    const v = vueSortie(s)!;
+    expect(v.title).toBe("Ces 7 derniers jours : 12 bugs arrivés.");
+    expect(v.lines).toEqual(["Pendant que tu les corriges, 2 commandes attendent (4 300 €)."]);
+    expect(v.buy.label).toBe("Embaucher Nora en alternance chez Pixel");
+  });
+
+  it("le vendredi, l'invitation des amis ; « D'ici lundi » une fois le travail du soir accepté", () => {
+    const s = fresh();
+    goTo(s, 2, FRIDAY);
+    const r = vueRendezVous(s)!;
+    expect(r.title).toBeNull();
+    expect(r.items[0].title).toBe("Sam, Inès et Léo dînent ensemble ce soir.");
+    s.freelance.evening = true;
+    acted(s);
+    expect(vueRendezVous(s)!.title).toBe("D'ici lundi");
   });
 });

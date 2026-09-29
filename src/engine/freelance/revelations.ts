@@ -2,7 +2,7 @@ import type { GameState } from "../state";
 import { FL_NOVELTY_GAP, MEALS_BEFORE_DELIVERY, HOMES, PROPOSALS, TOOLS } from "../content/freelance";
 import { proposalReady } from "./demande";
 import { toolReady } from "./outils";
-import { homeWorthIt } from "./logement";
+import { homeWorthIt, currentHome, energyMax } from "./logement";
 import { exitReady } from "./sortie";
 
 // Une information à la fois. Chaque ligne de FL_REVEALS est une chose qui paraît à l'écran :
@@ -21,6 +21,21 @@ export const FL_REVEALS: FlReveal[] = [
   // [instants] ce qui ne dure qu'un moment (un dimanche), à placer avant le reste
   { id: "maman_ia", kind: "jeu", ready: (s) => s.freelance.mamanRing && s.freelance.subs.ia_mail !== undefined },
   // [interface] les paliers de la page (v5)
+  { id: "repas", kind: "jeu", ready: (s) => s.energy <= energyMax(s) - currentHome(s).meal }, // « Se faire à manger », à la première fatigue
+  { id: "semaine", kind: "geste", ready: (s) => s.freelance.proposals.entretien_duval !== undefined }, // la ligne du lundi, la semaine
+  { id: "ensuite", kind: "jeu", ready: (s) => s.freelance.orders.length + s.freelance.bugs.length >= 2 },
+  { id: "couleur", kind: "geste", ready: (s) => s.freelance.home >= 1 }, // la chambre
+  { id: "etiquettes", kind: "geste", ready: (s) => s.freelance.tools.editeur !== undefined }, // un éditeur colore le code
+  { id: "repos", kind: "geste", ready: (s) => s.freelance.delivery }, // « Ton repos : +N énergie / min »
+  { id: "cette_semaine", kind: "jeu", ready: (s) => Object.keys(s.freelance.subs).length > 0 },
+  { id: "ombre", kind: "geste", ready: (s) => s.freelance.home >= 2 }, // le T1
+  { id: "clients", kind: "geste", ready: (s) => s.freelance.maintAll },
+  { id: "ratios", kind: "jeu", ready: (s) => s.freelance.dinnerInvites > s.freelance.dinners + (s.freelance.dinnerOpen ? 1 : 0) }, // au premier dîner manqué
+  { id: "verre", kind: "geste", ready: (s) => s.freelance.home >= 3 }, // le deux-pièces
+  { id: "sans_toi", kind: "geste", ready: (s) => s.freelance.aiRate > 0 },
+  { id: "menu", kind: "jeu", ready: (s) => isRevealed(s, "sans_toi") },
+  { id: "d_ici_lundi", kind: "geste", ready: (s) => s.freelance.evening },
+  { id: "top_clients", kind: "geste", ready: (s) => s.freelance.proposals.recommander !== undefined },
   { id: "compromis", kind: "geste", ready: (s) => s.freelance.compromis !== "none" },
   // [offres] ce que tu peux accepter ou acheter, une chose à la fois
   ...HOMES.slice(1).map((h, k): FlReveal => ({ id: `home_${h.id}`, kind: "jeu", ready: (s) => homeWorthIt(s, k + 1) })),
