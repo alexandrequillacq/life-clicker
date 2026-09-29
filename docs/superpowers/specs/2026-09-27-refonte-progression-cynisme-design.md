@@ -103,7 +103,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 
 ### Acte II, confort (couleur, puis beauté)
 
-**3. Lead dev, 27 ans (~14 min)**
+**3. Lead dev, 27 ans (~14 min)** (fiche remplacée, voir « Chapitre 3 esquissé : Ton studio »)
 - Verbes : **embaucher des personnes avec un prénom** (vivier de 8, au plus 5 en poste). **L'astreinte nominative** : chaque personne bascule entre « Coder » (produit) et « Astreinte » (éteint seule un incident en 5 s, ne produit rien). Charge individuelle : +1 pastille par incident éteint ; à 5, arrêt maladie 60 s. « Offrir un afterwork » remet tout à 0 (énergie, recharge 90 s). Incident sans personne d'astreinte : « Redémarrer le serveur à 3 h ».
 - Compromis : « Garder l'équipe jusqu'à 22 h » (+30 % de production, +1 pastille/min pour tous ; le premier à 5 démissionne et sa place reste vide).
 - Vie : « Accepter le verre de Camille » (le couple démarre). Délégation de lien : « Programmer ses SMS d'anniversaire à l'avance ».
@@ -497,6 +497,54 @@ Retours d'Alexandre : « Banque » devient « Finances » avec les charges, pour
 - les ratios ne comptent que les dimanches passés (« Appels de Maman décrochés : 6 sur 7 » à la semaine 8) ;
 - « Tes clients qui paient le plus », triés ; plus de compteur « Clients » (une règle de recommandation n'existe pas) ;
 - les montants sont en euros entiers (« 10 000 € », jamais « 10 k€ ») et chaque bouton de Finances a son sous-titre (« +1 % chaque lundi »).
+
+### v4 : prix et cadence vérifiés (2026-09-29, simulation jetable v3)
+Simulation de toutes les règles v3 à 2, 4 et 6 clics/s, en arrêtant de cliquer, et en refusant tout. Déjà corrigé dans la simulation : 7 propositions au lieu de 9, la licence d'éditeur avant l'écran, le logement proposé à 5 fois son loyer, les repas livrés après 30 repas faits à la main, la sortie qui attend l'IA de la boîte mail.
+
+**Décision d'Alexandre : des prix réalistes et peu chers.** À 4 clics/s, chaque outil est payable dès qu'il paraît, avec 5 à 30 fois son prix en poche (1 190 € quand paraît la licence à 250 €, 12 377 € à l'IA de la boîte mail). C'est voulu : au chapitre 2, la contrainte est ton temps et tes bugs, pas l'argent. L'argent qui dort prépare le compte-titres du chapitre 3.
+
+**À corriger en implémentation** (à revérifier par la sonde de rythme) :
+- **Le joueur rapide finit plus tard** (18:17 à 6 clics/s, 14:26 à 4). Un outil ne se propose que quand tu ne suis plus, avec un repli à 120 s ; le joueur rapide suit toujours, donc il attend 120 s à chaque outil. Correction : un outil se propose aussi 60 s après le précédent, même quand tu suis.
+- **La fatigue ne mord qu'au-delà de 4 clics/s** (au plus bas 24 d'énergie à 4 clics/s, sous le seuil de 25). Le seuil de fatigue passe à 40 pour que les repas et le logement servent à tout le monde.
+- **Le début est creux** : les trois premières semaines rapportent 268 à 650 € de net, moins que les 432 € par minute du plongeur. Il faut plus de demande tôt, ou une vitrine mieux payée.
+- **Le compromis et l'IA de Maman** n'apparaissent souvent pas avant Nora à 4 clics/s : la sortie doit les attendre, ou ils doivent arriver plus tôt.
+- **Le salaire de Nora n'est pas encore simulé** : le test R7 de la v3 reste à passer.
+
+**Ce qui tient** : toutes les nouveautés passent, au plus 2:14 d'écart entre deux ; le compte ne passe jamais en négatif ; la part des bugs monte de 3 % à 70 % des clics ; les amis partent chez le joueur lent et chez celui qui arrête de cliquer.
+
+## Chapitre 3 esquissé : Ton studio (2026-09-29, challengé une fois, à détailler)
+Idée d'Alexandre : des projets plus complexes demandent des seniors ; on monte une équipe complète qui gère tout, avec un dev d'astreinte le week-end payé plus cher ; au bout d'un moment on ne clique plus, et la vie perso devient le terrain actif, avec la bourse. L'immobilier vient ensuite. Tous les nombres sont supposés, à simuler.
+
+**Le squelette pro garde les axes du chapitre 2** (capacité, demande, bugs, entretien). Une embauche agit sur les lignes par seconde et les bugs par jour ; pas d'axe « charge individuelle ».
+
+| Ordre | Embauche | Salaire, charges pro du lundi | Effet |
+|---|---|---|---|
+| 1 | Nora (sortie du chapitre 2) | 600 € | 3 bugs par jour ouvré |
+| 2 | « Embaucher Hugo, développeur junior » | 500 € | +20 lignes/s |
+| 3 | « Embaucher Yasmine, développeuse junior » | 500 € | +20 lignes/s |
+| 4 | « Embaucher Karim, développeur senior » | 1 100 € | +25 lignes/s, 4 bugs par jour |
+| 5 | « Embaucher Élodie, développeuse senior » | 1 200 € | idem |
+
+- **Le senior ouvre une demande, pas un axe.** « Proposer à Kévin de refaire toute sa plateforme de livraison » (30 000 lignes, 18 000 € à la livraison, 900 € d'entretien) ne paraît qu'avec un senior en poste. Sous-titre : « Il faut quelqu'un qui a déjà monté un serveur. »
+- **L'astreinte** : « Payer Karim pour l'astreinte du week-end », +550 € chaque lundi (salaire majoré de 50 %). Il corrige les bugs du vendredi soir et du samedi, qui étaient les tiens. Travail automatisé, donc célébré.
+- **La fin du clic** (le « Poser les gants » du chapitre) : quand l'équipe couvre la demande et les bugs une semaine entière, « Donner ton clavier à Hugo ». **Le bouton « Écrire du code » disparaît** (décision d'Alexandre). Ligne : « Le studio tourne sans toi. Tu passes le lundi pour les salaires. »
+- **Le rôle du patron : des rendez-vous clients datés** (décision d'Alexandre). « Déjeuner avec Kévin, jeudi 12 h » signe les grosses demandes et entre en collision avec les rendez-vous de Camille. Sans ces collisions, déléguer sa vie ne rapporterait plus rien et le piège tomberait. Restent aussi les décisions : embaucher, proposer, l'astreinte, le compromis.
+- Chaque membre de l'équipe a une ligne de vie (« Hugo a apporté des chouquettes. ») : au chapitre 5, l'IA les remplace, il faut qu'on y tienne. Jamais de « mains automatiques » : ce sont des personnes.
+
+**Le compromis : « Garder l'équipe jusqu'à 22 h »** (motif B : ton geste du chapitre 2, imposé à ton équipe).
+- Son gain doit servir la sortie (livrer la plateforme de Kévin plus tôt), environ +10 % de durée pour qui refuse.
+- Le coût tombe sur eux, sans pénalité de jeu : « Yasmine a raté le spectacle de son fils. » Une seule démission possible, non punitive (« Yasmine est partie. Elle a trouvé un poste avec des horaires. »), et on réembauche.
+- Il contraste avec l'astreinte : le week-end payé plus cher, contre les soirées gratuites.
+
+**La vie devient le terrain actif**, une information à la fois : le scooter (tant que le clic compte), puis Camille (« Accepter le verre de Camille » le vendredi, « Préparer un dîner pour Camille »), puis « Partir un week-end à Étretat avec Camille » (380 €, possible seulement avec l'astreinte de Karim), puis le loft. L'énergie ne sert plus au clic mais aux gestes de vie. Délégations : corvées neutres (« Prendre une femme de ménage », « Se faire livrer les courses ») ; liens qui creusent le Sens (« Programmer ses SMS d'anniversaire à l'avance », « Demander à ton assistante de réserver les dîners avec Camille »). Pas de mini-jeu de cuisine, de sport ou de santé.
+
+**Finances** : un compte unique avec charges pro et perso, comme au chapitre 2. Le livret est plafonné à 22 950 € (le vrai plafond du livret A) ; « Ouvrir un compte-titres » se propose quand il est plein. La courbe fixe (+8, +6, −4, +9, +7, −25, +10, +9 %) est datée pour que la chute tombe après « Donner ton clavier ».
+
+**Reporté au chapitre 4** : la voiture ; l'immobilier (apport et crédit, puis tes locataires deviennent des lignes ; « Louer ton ancien T1 ») ; « Confier ton portefeuille à un robot-conseiller ».
+
+**Interface** : la barre de travail devient une barre d'équipe (les prénoms et ce que chacun fait), réduite à une ligne après le clavier. Le tableau de bord se réordonne sans changer d'onglet : Camille et « Ta vie » en tête, le studio en bande. « Pro » devient « Ton studio ». L'illustration du loft marque l'apogée de la couleur.
+
+**Garde-fous** : masse salariale et astreinte montent à environ 4 450 € chaque lundi ; le test R7 de Nora s'étend à chaque embauche (le net de la semaine suivante au moins celui d'avant, y compris depuis −2 000 €). La sortie dépend d'actes (la plateforme de Kévin livrée, un rendez-vous signé), jamais d'une attente.
 
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
