@@ -7,6 +7,7 @@ import {
 } from "./state";
 import { incomePerSec, audienceFollowersPerSec, emprisePerSec, humanTeamSize } from "./economy";
 import { tickPlonge } from "./plonge";
+import { tickFreelance } from "./freelance";
 import { GENERATORS, generatorAvailable } from "./content/generators";
 import {
   computeInitialSens,
@@ -194,11 +195,12 @@ export function tick(state: GameState, dt: number): void {
 
   // Chapitre 1 : le restaurant a son propre moteur (pile finie, machines, fatigue des mains, études).
   if (state.job === "plongeur") tickPlonge(state, t);
+  if (state.job === "freelance") tickFreelance(state, t); // chapitre 2 : son propre moteur (le compte peut être négatif)
 
   // Revenu : assiettes × valeur. Le manuel est modulé par l'énergie ; les machines non.
   // Le net peut être négatif (équipe de juniors en perte sous IA forte) ; jamais d'argent négatif.
   const income = incomePerSec(state);
-  state.money = state.money.add(income.mul(t)).max(0);
+  if (state.job !== "freelance") state.money = state.money.add(income.mul(t)).max(0);
   // CTO : gains cumulés depuis l'entrée en poste (revenu positif) → déclenchent les cartes de décision.
   // (Le CTO ne gagne rien au clic : cette source est donc son seul apport à ctoEarned.)
   if (state.job === "cto" && income.gt(0)) {
@@ -221,8 +223,8 @@ export function tick(state: GameState, dt: number): void {
     state.sens = Math.max(0, state.sens - SENS_DRIFT_PER_SEC * t);
   }
 
-  // Énergie : régénération constante (au plongeur, la fatigue des mains est gérée par tickPlonge).
-  if (state.flags.energyVisible && state.job !== "plongeur") {
+  // Énergie : régénération constante (au plongeur et au freelance, l'énergie est gérée par leur moteur).
+  if (state.flags.energyVisible && state.job !== "plongeur" && state.job !== "freelance") {
     state.energy = Math.max(0, Math.min(ENERGY_MAX, state.energy + ENERGY_REGEN_PER_SEC * t));
   }
 

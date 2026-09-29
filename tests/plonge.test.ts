@@ -702,7 +702,7 @@ describe("Plongeur : poser les gants, les études, le livret A", () => {
     expect(canEat(s)).toBe(false);
   });
 
-  it("l'examen réussi fait paraître l'annonce de Mme Duval, qui mène au développeur", () => {
+  it("l'examen réussi fait paraître l'annonce de Mme Duval, qui mène au freelance", () => {
     const s = retired();
     for (const item of LIBRARY) {
       expect(buyStudy(s, item.id)).toBe(true);
@@ -714,7 +714,9 @@ describe("Plongeur : poser les gants, les études, le livret A", () => {
     expect(examPassed(s)).toBe(true);
     expect(canAnswerAnnonce(s)).toBe(true);
     expect(answerAnnonce(s)).toBe(true);
-    expect(s.job).toBe("developpeur");
+    expect(s.job).toBe("freelance");
+    expect(s.freelance.orders[0].client).toBe("Boulangerie Duval");
+    expect(s.flags.firstColor).toBeFalsy(); // la couleur vient maintenant de la chambre
   });
 });
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { game, resetGame, doubleMoney, reincarnate } from "./store.svelte";
   import Plonge from "./Plonge.svelte";
+  import Freelance from "./Freelance.svelte";
   import {
     work,
     buyGenerator,
@@ -339,6 +340,8 @@
 
 {#if s.job === "plongeur"}
   <Plonge />
+{:else if s.job === "freelance"}
+  <Freelance />
 {:else}
   <!-- À partir du développeur : le cadre de vie EMBELLIT l'interface. Le logement (data-home)
        pose l'ambiance du décor et la matière du panneau ; le métier/acte posent la couleur. -->

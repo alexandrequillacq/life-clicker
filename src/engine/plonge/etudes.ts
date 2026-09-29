@@ -1,4 +1,5 @@
 import type { GameState } from "../state";
+import { startFreelance } from "../freelance";
 import { LIBRARY, LIBRARY_BY_ID, TEXTES, type StudyItemDef } from "../content/plonge";
 import { fmtRate, onThePhone } from "./commun";
 import { openDayArrivalRate } from "./restaurant";
@@ -100,12 +101,10 @@ export function examPassed(s: GameState): boolean {
 export function canAnswerAnnonce(s: GameState): boolean {
   return s.job === "plongeur" && examPassed(s) && !onThePhone(s);
 }
-/** Répondre à l'annonce de Mme Duval : on quitte la plonge, on devient développeur. */
+/** Répondre à l'annonce de Mme Duval : on quitte la plonge, on devient freelance. */
 export function answerAnnonce(s: GameState): boolean {
   if (!canAnswerAnnonce(s)) return false;
-  s.job = "developpeur";
-  s.flags.energyVisible = true; // le travail de dev sollicite l'énergie
-  s.flags.firstColor = true; // récompense de fin d'Acte I : la première couleur apparaît
   s.plonge.chef = "annonce";
+  startFreelance(s); // la couleur n'arrive plus ici : c'est la chambre du chapitre 2 qui l'apporte (spec v5)
   return true;
 }
