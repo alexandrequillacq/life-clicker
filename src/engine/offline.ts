@@ -5,6 +5,7 @@ import { PLONGE_OFFLINE_CAP } from "./content/plonge";
 import { FL_OFFLINE_CAP } from "./content/freelance";
 import { aiWrite, energyMax } from "./freelance";
 import { type Decimal } from "./numbers";
+import { tick } from "./loop";
 
 export const OFFLINE_CAP_SECONDS = 4 * 3600;
 
@@ -37,4 +38,16 @@ export function applyOffline(state: GameState, now: number): { seconds: number; 
   state.energy = Math.min(ENERGY_MAX, state.energy + ENERGY_REGEN_PER_SEC * seconds);
   state.lastSeen = now;
   return { seconds, earned };
+}
+
+/** Au-delà de cet écart entre deux images (onglet revenu d'arrière-plan), le chapitre 2 passe par le hors-ligne. */
+export const FRAME_OFFLINE_GAP = 2;
+
+/**
+ * Une image du jeu. Au chapitre 2, un grand écart est une absence : le calendrier s'arrête et seule l'IA
+ * travaille (voir applyOffline). Ailleurs, le temps passe comme avant (écart plafonné à 60 s).
+ */
+export function advanceFrame(state: GameState, dt: number, now: number): void {
+  if (state.job === "freelance" && dt > FRAME_OFFLINE_GAP) applyOffline(state, now);
+  else tick(state, Math.min(dt, 60));
 }

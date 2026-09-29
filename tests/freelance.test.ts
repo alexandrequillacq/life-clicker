@@ -3,7 +3,7 @@ import { createInitialState, createFreelanceState, type GameState } from "../src
 import { serialize, deserialize } from "../src/engine/save";
 import { KINDS, START_LPC, DUVAL, TEXTES } from "../src/engine/content/freelance";
 import { tick } from "../src/engine/loop";
-import { applyOffline } from "../src/engine/offline";
+import { applyOffline, advanceFrame } from "../src/engine/offline";
 import { D } from "../src/engine/numbers";
 import { tickFreelance, startFreelance, FL_REVEALS, isRevealed, revealQueue, acted, fmtEur, dayName, weekNumber } from "../src/engine/freelance";
 import { currentTask, workClick, canWork, clickLines, aiWrite, addOrder, pendingLines, waitingValue } from "../src/engine/freelance";
@@ -805,7 +805,78 @@ describe("chapitre 2 : l'écran", () => {
   });
 });
 
-import { energyMax } from "../src/engine/freelance";
+
+describe("chapitre 2 : les grands pas de temps (retour d'un onglet en arrière-plan)", () => {
+  /** Un chapitre en cours : l'IA écrit une appli, un site entretenu envoie ses bugs, les amis invitent. */
+  function busy(): GameState {
+    const s = invoiced();
+    hush(s);
+    goTo(s, 1, 5); // samedi : le lundi tombe pendant le pas
+    s.freelance.aiRate = 20;
+    addOrder(s, "appli");
+    s.freelance.maintDuval = true;
+    addSite(s, DUVAL.name, "vitrine", s.freelance.day + 20);
+    return s;
+  }
+  const snap = (s: GameState) => {
+    const f = s.freelance;
+    return { day: f.day, money: s.money.toNumber(), done: f.orders.map((o) => o.done), bugs: f.bugs.map((b) => b.text), revealed: Object.keys(f.revealed).sort(), weeks: f.history.length };
+  };
+
+  it("un pas de 60 s donne le même état que 1 200 pas de 0,05 s", () => {
+    const a = busy();
+    const b = busy();
+    tickFreelance(a, 60);
+    run(b, 60);
+    const sa = snap(a);
+    const sb = snap(b);
+    expect(sa.day).toBeCloseTo(sb.day, 6);
+    expect(sa.money).toBeCloseTo(sb.money, 6);
+    expect(sa.done.length).toBe(sb.done.length);
+    sa.done.forEach((d, i) => expect(d).toBeCloseTo(sb.done[i], 3));
+    expect(sa.bugs).toEqual(sb.bugs);
+    expect(sa.revealed).toEqual(sb.revealed);
+    expect(sa.weeks).toBe(sb.weeks);
+  });
+
+  it("un dîner ouvert le vendredi reste visible au moins un pas, même dans un pas de 60 s", () => {
+    const s = invoiced();
+    goTo(s, 2, 3); // jeudi de la deuxième semaine : les amis invitent
+    let seen = false;
+    FL_REVEALS.push({ id: "t_diner", kind: "geste", ready: (x) => ((seen ||= x.freelance.dinnerOpen), false) });
+    try {
+      tickFreelance(s, 60);
+    } finally {
+      FL_REVEALS.splice(FL_REVEALS.findIndex((r) => r.id === "t_diner"), 1);
+    }
+    expect(seen).toBe(true);
+  });
+
+  it("l'image du jeu : un écart de plus de 2 s passe par le hors-ligne (le calendrier s'arrête), un petit écart par le temps qui passe", () => {
+    const s = invoiced();
+    s.freelance.aiRate = 1;
+    addOrder(s, "appli");
+    const day = s.freelance.day;
+    s.lastSeen = 1_000_000;
+    advanceFrame(s, 30, 1_000_000 + 30_000);
+    expect(s.freelance.day).toBe(day);
+    expect(s.freelance.orders[0].done).toBeCloseTo(30);
+    expect(s.lastSeen).toBe(1_000_000 + 30_000);
+    advanceFrame(s, 0.5, 1_000_000 + 30_500);
+    expect(s.freelance.day).toBeCloseTo(day + 0.5);
+  });
+
+  it("Nora ne corrige que les jours ouvrés, même dans un pas de 60 s", () => {
+    const s = invoiced();
+    goTo(s, 1, FRIDAY); // vendredi, samedi, dimanche, lundi, puis un souffle de mardi
+    s.freelance.nora = true;
+    for (let i = 0; i < 30; i++) s.freelance.bugs.push({ id: 2000 + i, site: null, order: null, clicks: 0, text: `n${i}` });
+    tickFreelance(s, 60);
+    const fixed = 30 - s.freelance.bugs.length;
+    expect(fixed).toBeGreaterThanOrEqual(5);
+    expect(fixed).toBeLessThanOrEqual(7);
+  });
+});
 
 describe("chapitre 2 : le hors-ligne (le calendrier s'arrête, seule l'IA travaille)", () => {
   /** Une absence de `secs` secondes, rejouée au retour. */

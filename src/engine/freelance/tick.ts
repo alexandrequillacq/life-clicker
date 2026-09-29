@@ -46,7 +46,16 @@ export function onNewDay(s: GameState, wd: number): void {
   }
 }
 
+/** Le temps qui passe, par pas d'au plus 1 s : un grand écart (onglet revenu) ne saute ni un jour, ni un dîner. */
 export function tickFreelance(s: GameState, t: number): void {
+  while (t > 1) {
+    step(s, 1);
+    t -= 1;
+  }
+  step(s, t);
+}
+
+function step(s: GameState, t: number): void {
   const f = s.freelance;
   const before = dayIndex(s);
   f.day += t;
