@@ -82,13 +82,6 @@ describe("chapitre 2 : branché", () => {
     expect(s.freelance.day).toBeCloseTo(1);
   });
 
-  it("le hors-ligne est plafonné à 10 minutes de calendrier", () => {
-    const s = fresh();
-    s.lastSeen = Date.now() - 2 * 3600 * 1000;
-    applyOffline(s, Date.now());
-    expect(s.freelance.day).toBeLessThanOrEqual(FL_OFFLINE_CAP + 1e-6);
-    expect(s.freelance.day).toBeGreaterThan(FL_OFFLINE_CAP - 1);
-  });
 });
 
 describe("chapitre 2 : la file des nouveautés", () => {
@@ -809,5 +802,73 @@ describe("chapitre 2 : l'écran", () => {
     s.freelance.evening = true;
     acted(s);
     expect(vueRendezVous(s)!.title).toBe("D'ici lundi");
+  });
+});
+
+import { energyMax } from "../src/engine/freelance";
+
+describe("chapitre 2 : le hors-ligne (le calendrier s'arrête, seule l'IA travaille)", () => {
+  /** Une absence de `secs` secondes, rejouée au retour. */
+  function away(s: GameState, secs: number): { seconds: number; earned: number } {
+    const now = 1_000_000_000;
+    s.lastSeen = now - secs * 1000;
+    const r = applyOffline(s, now);
+    return { seconds: r.seconds, earned: r.earned.toNumber() };
+  }
+  const calendar = (s: GameState): string => {
+    const f = s.freelance;
+    return JSON.stringify({ day: f.day, missed: f.friendsMissed, liens: f.liensPerdus, revealed: f.revealed, last: f.lastNovelty, souvenirs: s.souvenirs, dinner: f.dinnerOpen, weeks: f.history.length, bugs: f.bugs.length });
+  };
+
+  it("600 s d'absence : ni jour qui passe, ni dîner manqué, ni nouveauté, ni souvenir", () => {
+    const s = invoiced();
+    goTo(s, 1, FRIDAY); // le dîner est ouvert
+    s.freelance.maintDuval = true;
+    addSite(s, DUVAL.name, "vitrine", s.freelance.day + 5); // un bug qui tomberait pendant l'absence
+    const before = calendar(s);
+    away(s, 600);
+    expect(calendar(s)).toBe(before);
+  });
+
+  it("l'IA écrit pendant l'absence, au plus 10 min", () => {
+    const s = invoiced();
+    s.freelance.aiRate = 1;
+    addOrder(s, "appli");
+    const r = away(s, 2 * 3600);
+    expect(r.seconds).toBe(FL_OFFLINE_CAP);
+    expect(s.freelance.orders[0].done).toBeCloseTo(FL_OFFLINE_CAP);
+  });
+
+  it("l'énergie est pleine au retour, comme après une nuit", () => {
+    const s = invoiced();
+    s.energy = 3;
+    away(s, 30);
+    expect(s.energy).toBe(energyMax(s));
+  });
+
+  it("les euros gagnés ne comptent que les vraies livraisons (Mme Duval sans entreprise ne paie pas)", () => {
+    const s = fresh();
+    s.freelance.aiRate = 20;
+    const r = away(s, 600);
+    expect(s.freelance.pendingInvoice).toBe(true);
+    expect(r.earned).toBeCloseTo(0, 9); // (break_infinity rend −0)
+    expect(s.money.toNumber()).toBe(0);
+    s.freelance.pendingInvoice = false;
+    s.freelance.company = { name: "Pixel", logo: 0 };
+    addOrder(s, "vitrine");
+    expect(away(s, 600).earned).toBe(KINDS.vitrine.price);
+  });
+
+  it("un test rouge pendant l'absence : la commande attend, le compromis reste proposé", () => {
+    const s = invoiced();
+    s.freelance.tests = true;
+    s.freelance.reds = RED_EVERY - 1;
+    s.freelance.aiRate = 60;
+    addOrder(s, "vitrine");
+    addOrder(s, "vitrine");
+    expect(() => away(s, 600)).not.toThrow();
+    expect(s.freelance.compromis).toBe("offered");
+    expect(s.freelance.orders[0].red).toBe("failing");
+    expect(s.freelance.bugs[0].order).toBe(s.freelance.orders[0].id);
   });
 });

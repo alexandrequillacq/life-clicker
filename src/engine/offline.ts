@@ -3,7 +3,7 @@ import { passiveIncomePerSec } from "./economy";
 import { plongeOfflineIncomePerSec } from "./plonge";
 import { PLONGE_OFFLINE_CAP } from "./content/plonge";
 import { FL_OFFLINE_CAP } from "./content/freelance";
-import { tickFreelance } from "./freelance";
+import { aiWrite, energyMax } from "./freelance";
 import { type Decimal } from "./numbers";
 
 export const OFFLINE_CAP_SECONDS = 4 * 3600;
@@ -15,12 +15,14 @@ export const OFFLINE_CAP_SECONDS = 4 * 3600;
  */
 export function applyOffline(state: GameState, now: number): { seconds: number; earned: Decimal } {
   const elapsed = Math.max(0, (now - state.lastSeen) / 1000);
-  // Au chapitre 2, le hors-ligne rejoue au plus 10 min de calendrier, seconde par seconde, mains au repos :
-  // l'IA écrit, les lundis tombent, le loyer se paie ; tes mains, elles, ne font rien.
+  // Au chapitre 2, le calendrier s'arrête pendant ton absence : pas de jour qui passe, pas de lundi, pas de dîner
+  // manqué, pas de nouveauté. Seule l'IA travaille (une machine), au plus 10 min, seconde par seconde, et livre
+  // ce qu'elle finit. Tu reviens reposé, comme après une nuit.
   if (state.job === "freelance") {
     const secs = Math.min(elapsed, FL_OFFLINE_CAP) * state.tempo;
     const before = state.money;
-    for (let t = 0; t < secs - 1e-9; t += 1) tickFreelance(state, Math.min(1, secs - t));
+    for (let t = 0; t < secs - 1e-9; t += 1) aiWrite(state, Math.min(1, secs - t));
+    state.energy = energyMax(state);
     state.lastSeen = now;
     return { seconds: secs, earned: state.money.sub(before) };
   }
