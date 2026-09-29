@@ -312,6 +312,8 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 
 ## Chapitre 2 détaillé : Freelance (v1, décidé avec Alexandre le 2026-09-28, challengé deux fois, à relire)
 
+État : implémenté sur la branche claude/narrative-coherence-diver-phase-363174 (plan docs/superpowers/plans/2026-09-29-chapitre-2-freelance.md).
+
 **Pourquoi le refaire.** « Répondre à l'annonce de Mme Duval » menait à l'ancien écran : « Résoudre un bug » payé 1 € au clic, et des missions « 10 bugs en 30 s ». On promettait un site et l'on corrigeait les bugs d'un site qui n'existait pas. On était payé au bug alors que la spec disait « à la livraison ». Mme Duval disparaissait, et l'interface sautait de la feuille blanche au tableau de bord.
 
 **Intention.** Rejouer la grammaire du plongeur dans un monde de code, avec deux sources d'argent qui tirent en sens contraire. **Construire** paie une fois à la livraison. **Entretenir** paie chaque lundi sans toi, mais envoie des bugs. Chaque contrat que tu proposes te charge un peu plus, et c'est toi qui le proposes. Le chapitre se termine quand tu ne suis plus seul : tu embauches, ce qui ouvre le studio. Personne ne te propose de poste, tu grandis.
@@ -320,7 +322,7 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 
 ### La boucle : deux axes et un carnet
 - **Capacité** (lignes de code par seconde) : le bouton « Écrire du code », les outils, puis le générateur.
-- **Demande** (lignes commandées par semaine) : des propositions que tu fais toi-même, gratuites, qui ne paraissent que quand tu suis (comme les demandes au chef : carnet vide pendant 6 s, au moins 35 s après la nouveauté précédente, au plus 120 s).
+- **Demande** (lignes commandées par semaine) : des propositions que tu fais toi-même, gratuites, qui ne paraissent que quand tu suis (comme les demandes au chef : carnet vide pendant 6 s, au moins 35 s après la nouveauté précédente, au plus 60 s).
 - **Le tarif** dépend du type de commande et monte un peu avec la taille (sinon deux petits sites valent un gros, et la taille n'est pas un levier).
 - **Le carnet** est une seule file. Les bugs passent en tête et le clic les traite en premier. Un bug coûte **10 clics fixes, quels que soient les outils** : un clavier ne trouve pas un bug, et le générateur n'écrit que des pages neuves. C'est ce travail de jugement qui sature et justifie l'embauche (chapitre 3), puis l'IA (chapitre 5).
 - **Bug ouvert, client qui ne paie pas** : tant que le site d'un client a un bug ouvert, il ne paie pas l'entretien du lundi. La perte est chiffrée (« M. Petit ne paiera pas lundi : l'appli plante au lancement. »), jamais définitive : il suffit de corriger. Les livraisons continuent de payer, donc aucun blocage.
