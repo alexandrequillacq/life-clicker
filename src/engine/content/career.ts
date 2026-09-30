@@ -17,6 +17,12 @@ export const JOBS: Record<Job, JobDef> = {
     clickValue: D(0),
     clickEnergyCost: 0,
   },
+  freelance: {
+    label: "Développeur freelance",
+    clickLabel: "Écrire du code",
+    clickValue: D(0), // le chapitre 2 a son propre moteur (engine/freelance)
+    clickEnergyCost: 0,
+  },
   developpeur: {
     label: "Développeur",
     clickLabel: "Résoudre un bug",

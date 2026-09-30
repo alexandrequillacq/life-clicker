@@ -1,5 +1,6 @@
 import { load, clearSave } from "../engine/save";
 import { applyOffline } from "../engine/offline";
+import { startAtChapter } from "../engine/chapitres";
 import { createInitialState, type GameState } from "../engine/state";
 import { karmaGain } from "../engine/content/power";
 
@@ -13,6 +14,12 @@ export const game = $state<{ state: GameState }>({ state: initial });
 export function resetGame(): void {
   clearSave();
   game.state = createInitialState(Date.now());
+}
+
+// Bouton de test : efface la sauvegarde et repart au début d'un chapitre.
+export function startChapter(n: number): void {
+  clearSave();
+  game.state = startAtChapter(n, Date.now());
 }
 
 // Bouton de test : double l'argent courant (pour avancer plus vite en playtest).

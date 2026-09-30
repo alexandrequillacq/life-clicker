@@ -10,7 +10,7 @@
 - Colonne vertébrale :
   - **A, l'échelle des compromis.** Chaque métier propose un compromis que le joueur choisit lui-même : concret, rentable, raisonnable pris isolément, un peu plus gros que le précédent.
   - **C, l'humain devient un nombre.** À chaque métier, la représentation des collègues, clients, citoyens recule d'un cran.
-  - **B, même geste, autre cible**, en motif ponctuel (3 occurrences).
+  - **B, même geste, autre cible**, en motif ponctuel (4 occurrences : la carte candidat et rencontre au ch3, le commentaire, l'article, les assiettes).
 - **Wording concret** : un lecteur doit pouvoir mimer chaque CTA. Objets, chiffres, prénoms. Jamais de jargon creux.
 
 ## Diagnostic de l'existant (résumé)
@@ -27,7 +27,7 @@
 ### R1. Vie : l'âge, la frise, les prénoms
 - Un **âge** avance avec les métiers (22 ans au plongeur, 52 au chef d'État, sans objet à l'empereur). Une simple étiquette, jamais commentée.
 - Une **frise de vie** discrète enregistre les gestes. Elle **remplace l'affichage chiffré du Sens** (le nombre reste interne ; frise ET jauge serait YAGNI). Tant que le Sens est caché, elle est jolie et neutre ; à sa révélation (célébrité), elle reçoit sa légende ; à l'épilogue, elle est le seul bilan, sans texte.
-- **La vie garde ses prénoms pendant que le travail perd les siens** (C inversé). Camille, Maman, Lou restent nommés jusqu'au bout. Une délégation de LIEN remplace le prénom sur la frise par un nom de service (« Maman » devient « VoixIA »).
+- **La vie garde ses prénoms pendant que le travail perd les siens** (C inversé). Camille, Maman, Lou restent nommés jusqu'au bout. Une délégation de LIEN remplace le prénom sur la frise par un nom de service (« Maman » devient « Répondeur IA », voir le chapitre 2 v2). Un lien peut aussi se perdre par négligence (les amis qui n'invitent plus) : même effet sur le Sens, sans nom de service.
 - **Corvées et liens.** Déléguer une corvée (courses, ménage) pose un point neutre et ne creuse pas le Sens. Déléguer un lien (l'anniversaire, l'appel du dimanche, la fête d'école) pose un segment gris et creuse le Sens.
 - Calibrage Sens : **7 par lien délégué** (au lieu de 12), plafond de gestes vécus relevé de 5 à **12**, pour que le Sens ne tombe pas au plancher dès la politique.
 
@@ -66,18 +66,41 @@
 - La loi qui masque la Résistance GÈLE aussi son effet à la valeur courante.
 - L'élection datée ne bloque jamais, elle taxe.
 
+### R8. Trois fils sur toute la partie (2026-09-29, ajustables en chemin)
+L'image : un regard d'optimisation, légitime et célébré au travail, déborde peu à peu sur toute la vie. La satire n'est jamais dite : le joueur la vit, parce qu'il a lui-même envie de pousser les chiffres de sa vie. Dominer l'univers en est la conclusion logique : plus rien n'échappe au tableau de bord. Trois conditions : la mesure doit rapporter vraiment (sinon la satire devient un sermon) ; ce que tu cliques dit ce qui compte pour toi ; le jeu ne te punit jamais toi, le coût tombe sur les autres et sur le Sens.
+
+**Fil 1 : ta main suit le goulot.** Chaque chapitre, une personne ou une machine reprend ta tâche manuelle (elle ne « s'automatise » jamais seule), et ta main remonte d'un cran.
+- Ch1 : laver. Ch2 : coder et corriger. Ch3 : coder, puis appeler des entreprises et aller aux déjeuners (un commercial reprend les appels, pas les déjeuners).
+- Ch4 : un directeur commercial prend les déjeuners, la prospection s'automatise ; ta main ne sert plus qu'à ta vie.
+- Ch5 : l'IA remplace l'équipe, puis ta vie ; la main ne sert plus à rien (clic factice).
+- Ch6 à 9 : la main sert à posséder et à dominer.
+
+**Fil 2 : l'échelle des achats.** Des prix réalistes ; l'incrémental vient de ce qu'on achète.
+- Ch1 : de l'équipement. Ch2 : des outils et des abonnements. Ch3 : des postes et des bureaux (qui limitent les places, illustrés comme le logement).
+- Ch4 : des équipes, des étages, le patrimoine (compte-titres, immobilier avec apport et crédit), la voiture. Ch5 : des GPU, des rachats, des levées. Ch6 à 9 : des médias, des institutions, des pays, des planètes.
+
+**Fil 3 : de la mesure au maladif.** Une mesure s'achète une fois et révèle une règle cachée qui rapporte (la montre du ch1 en est le modèle). Une optimisation est une délégation unique. Jamais de suivi par clics répétés (ce serait du travail déguisé), jamais de score qui commente (R4).
+- Ch1 : la montre révèle le revenu par minute. Ch2 : « Ton repos : +N énergie / min », les ratios (« Appels de Maman décrochés : 6 sur 7 »).
+- Ch3 : le tableur des soirées (combien tu peux en sacrifier).
+- Ch4 : la montre connectée, le sommeil, le patrimoine ; l'onglet Perso dépasse l'onglet Pro.
+- Ch5 : les courbes de Lou (percentiles), le tableau de bord de vie parfait, l'apogée de beauté.
+- Ch6 : ta vie devient contenu, mesurée en followers ; le Sens se révèle.
+- Ch7 à 9 : la même grille appliquée à une population, à la Terre, à l'univers.
+
 ### Hors périmètre v1 (YAGNI)
 - « Reprendre sa vie en main » à coût croissant : v2. Le rendez-vous manqué suffit à rendre la vie coûteuse.
 
 ## L'échelle (9 métiers)
 
+> **2026-09-28 : les chapitres 2 à 5 changent.** Plus de CDI, de lead dev ni de CTO : c'est ta propre boîte qui grandit (freelance, studio, agence, boîte d'IA). Passer de freelance à CDI se lisait comme une régression, et payer ses juniors ou ses GPU de sa poche n'a de sens que si la boîte est à toi. Les fiches des chapitres 3 à 5 ci-dessous datent de l'ancienne échelle et seront reprises chapitre par chapitre. La fiche du chapitre 2 est remplacée par la section « Chapitre 2 détaillé » plus bas.
+
 | # | Métier | Âge | Durée | Les autres, vus comme | Compromis |
 |---|---|---|---|---|---|
 | 1 | Plongeur | 22 | 10 min | toi seul, le chef par une ligne | Programmer le lave-vaisselle en cycle court |
-| 2 | Développeur freelance | 24 | 14 min | clients nommés | Désactiver le test qui échoue |
-| 3 | Lead dev | 27 | 14 min | collègues avec prénom | Garder l'équipe jusqu'à 22 h |
-| 4 | CTO | 31 | 14 min | pastilles d'initiales | Entraîner l'IA sur les messages privés des utilisateurs |
-| 5 | Fondateur | 34 | 16 min | un effectif | Licencier 38 des 96 salariés de DataNova |
+| 2 | Développeur freelance | 24 | 14 min | toi seul, clients nommés | Désactiver le test qui échoue |
+| 3 | Ton studio : une équipe | 27 | 14 min | collègues avec prénom, que tu embauches | Garder l'équipe jusqu'à 22 h |
+| 4 | Ton agence : plusieurs équipes | 31 | 14 min | pastilles d'initiales, des chefs d'équipe entre toi et eux | à trouver |
+| 5 | Ta boîte d'IA | 34 | 16 min | un effectif | Licencier 38 des 96 salariés de DataNova |
 | 6 | Célébrité | 40 | 16 min | des followers | Faire la promo du jeton $MOI à ses abonnés |
 | 7 | Figure politique | 46 | 13 min | des électeurs en % | Rendre les chômeurs responsables de la dette |
 | 8 | Chef d'État | 52 | 16 min | la population en %, puis des milliards | Reporter les élections de deux ans · Couper Internet dans les régions qui résistent |
@@ -93,7 +116,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Vie : « Regarder par la fenêtre » apparaît après 20 s sans clic (0 €, un point sur la frise). Premier rendez-vous : « Appeler Maman, dimanche ».
 - Promotion : 5 livres lus → « Répondre à l'annonce de Mme Duval » (site vitrine de sa boulangerie).
 
-**2. Développeur freelance, 24 ans (~14 min)**
+**2. Développeur freelance, 24 ans (~14 min)** (fiche remplacée, voir « Chapitre 2 détaillé »)
 - Verbes : **missions payées à la livraison** (le clic résout les bugs qui font avancer la mission ; plus de paiement au bug). Clients : Mme Duval (site vitrine), M. Petit (appli du club de foot), Kévin (migration de sa start-up de livraison). Puis « Écrire un script qui met les sites en ligne » : une file de 3 tâches qui s'exécute seule, première automatisation de son travail, célébrée.
 - Compromis : « Désactiver le test qui échoue » (mission livrée tout de suite ; le bug revient chez Kévin sous forme d'incident quand on y est lead).
 - Vie : « Dîner avec des amis, vendredi 20 h », « Aller courir ». Délégation de corvée : « Se faire livrer ses courses » (point neutre).
@@ -101,7 +124,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 
 ### Acte II, confort (couleur, puis beauté)
 
-**3. Lead dev, 27 ans (~14 min)**
+**3. Lead dev, 27 ans (~14 min)** (fiche remplacée, voir « Chapitre 3 : Ton studio »)
 - Verbes : **embaucher des personnes avec un prénom** (vivier de 8, au plus 5 en poste). **L'astreinte nominative** : chaque personne bascule entre « Coder » (produit) et « Astreinte » (éteint seule un incident en 5 s, ne produit rien). Charge individuelle : +1 pastille par incident éteint ; à 5, arrêt maladie 60 s. « Offrir un afterwork » remet tout à 0 (énergie, recharge 90 s). Incident sans personne d'astreinte : « Redémarrer le serveur à 3 h ».
 - Compromis : « Garder l'équipe jusqu'à 22 h » (+30 % de production, +1 pastille/min pour tous ; le premier à 5 démissionne et sa place reste vide).
 - Vie : « Accepter le verre de Camille » (le couple démarre). Délégation de lien : « Programmer ses SMS d'anniversaire à l'avance ».
@@ -120,7 +143,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : 8 M€ et une levée → « Accepter l'invitation d'un plateau télé ».
 
 **6. Célébrité, 40 ans (~16 min, charnière)**
-- Verbes : poster et surfer la tendance ; **les sponsors dictent** (une demande en file bloque « Publier » tant qu'on ne l'a pas acceptée ou refusée) ; **la polémique** est une rafale de commentaires critiques qu'on éteint avec « Supprimer un commentaire » (motif B, 1re occurrence).
+- Verbes : poster et surfer la tendance ; **les sponsors dictent** (une demande en file bloque « Publier » tant qu'on ne l'a pas acceptée ou refusée) ; **la polémique** est une rafale de commentaires critiques qu'on éteint avec « Supprimer un commentaire » (motif B, 2e occurrence).
 - Compromis : « Faire la promo du jeton $MOI à ses abonnés » (+2 M€ ; le jeton s'effondre, −8 % de followers courants, le pic reste).
 - Vie : « Aller à la fête d'école de Lou ». Délégations : « Envoyer son assistante à la réunion parents-profs », « Filmer l'anniversaire de Lou pour un sponsor ». **Le Sens se révèle** : la frise reçoit sa légende.
 - Promotion : pic de 50 M followers → « Entrer en politique ».
@@ -134,7 +157,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : Emprise → « Se présenter à la présidentielle ».
 
 **8. Chef d'État, 52 ans (~16 min, fusion président + maître du monde)**
-- Première moitié : damier des institutions (« Contrôler les médias nationaux », « Nommer un ami à la banque centrale », « Nommer ses généraux », « Surveiller la population »…), Résistance, **élection datée** toutes les 4 min (−10 % d'Emprise courante si l'adhésion est sous 50 %). Après les médias, le bandeau ne publie plus que du positif, et « Supprimer un article » a le même bouton et le même son que « Supprimer un commentaire » (motif B, 2e occurrence). « Signer un décret sans vote ». Le dernier décret masque la jauge de Résistance et gèle son effet : un trou reste visible dans la grille.
+- Première moitié : damier des institutions (« Contrôler les médias nationaux », « Nommer un ami à la banque centrale », « Nommer ses généraux », « Surveiller la population »…), Résistance, **élection datée** toutes les 4 min (−10 % d'Emprise courante si l'adhésion est sous 50 %). Après les médias, le bandeau ne publie plus que du positif, et « Supprimer un article » a le même bouton et le même son que « Supprimer un commentaire » (motif B, 3e occurrence). « Signer un décret sans vote ». Le dernier décret masque la jauge de Résistance et gèle son effet : un trou reste visible dans la grille.
 - Compromis 1 : « Reporter les élections de deux ans » (supprime la taxe électorale).
 - Seconde moitié : « Proclamer le gouvernement mondial », puis le damier des continents.
 - Compromis 2 : « Couper Internet dans les régions qui résistent » (Résistance −50 %).
@@ -142,7 +165,7 @@ La pente des victimes : personne (des assiettes grasses) → un client → ton �
 - Promotion : Emprise → l'empire cosmique s'ouvre.
 
 **9. Empereur cosmique (~8 min, le final accélère)**
-- Verbes : **liquider l'interface pour lancer la sonde**. La première sonde coûte 50 Md€ ; chaque tuile de la liste blanche se vend 6 à 12 Md€ (en vendre 4 avance la sonde d'environ 5 min). Puis les sondes se répliquent seules et l'écran vidé se remplit de leurs points. À l'emplacement exact du premier bouton du plongeur réapparaît un bouton vide ; il incrémente un compteur « assiettes » sans effet (motif B, 3e occurrence).
+- Verbes : **liquider l'interface pour lancer la sonde**. La première sonde coûte 50 Md€ ; chaque tuile de la liste blanche se vend 6 à 12 Md€ (en vendre 4 avance la sonde d'environ 5 min). Puis les sondes se répliquent seules et l'écran vidé se remplit de leurs points. À l'emplacement exact du premier bouton du plongeur réapparaît un bouton vide ; il incrémente un compteur « assiettes » sans effet (motif B, 4e occurrence).
 - Compromis : « Démonter la Terre pour fabriquer des sondes » (sondes ×10, soit environ 77 s gagnées).
 - Option : « Vendre sa frise » (15 Md€) : l'épilogue montre alors une frise vide.
 - Épilogue : la frise comme seul bilan, puis deux choix (régner sur le vide, ou renoncer et renaître). Aucun commentaire.
@@ -293,6 +316,359 @@ Retours : le bouton clignotait en cliquant vite ; à 100 assiettes on attendait 
 - **Mesures :** fin 21:00 à 4 clics/s (28:00 à 2, 19:15 à 6, 29:15 en AFK, 22:45 en refusant les concessions) ; plus grand écart 2:15 à 4 clics/s.
 
 **Ce que le joueur a appris en sortant.** Cliquer, s'équiper, automatiser ; que la fatigue ne touche que les mains ; que sa vitesse profite d'abord au chef ; qu'un appel se rate si l'on travaille le dimanche, et que c'est lui qui a proposé d'ouvrir ; qu'un petit arrangement rapporte, et que c'est le client qui paie.
+
+## Chapitre 2 détaillé : Freelance (v1, décidé avec Alexandre le 2026-09-28, challengé deux fois, à relire)
+
+État : implémenté sur la branche claude/narrative-coherence-diver-phase-363174 (plan docs/superpowers/plans/2026-09-29-chapitre-2-freelance.md).
+
+**Pourquoi le refaire.** « Répondre à l'annonce de Mme Duval » menait à l'ancien écran : « Résoudre un bug » payé 1 € au clic, et des missions « 10 bugs en 30 s ». On promettait un site et l'on corrigeait les bugs d'un site qui n'existait pas. On était payé au bug alors que la spec disait « à la livraison ». Mme Duval disparaissait, et l'interface sautait de la feuille blanche au tableau de bord.
+
+**Intention.** Rejouer la grammaire du plongeur dans un monde de code, avec deux sources d'argent qui tirent en sens contraire. **Construire** paie une fois à la livraison. **Entretenir** paie chaque lundi sans toi, mais envoie des bugs. Chaque contrat que tu proposes te charge un peu plus, et c'est toi qui le proposes. Le chapitre se termine quand tu ne suis plus seul : tu embauches, ce qui ouvre le studio. Personne ne te propose de poste, tu grandis.
+
+**Continuité avec le plongeur (mesurée, `playthrough` + `autoIncomePerMin`).** À la sortie, le joueur a 1 à 120 € en poche (les études ont tout pris), un livret vide et 432 € / min de revenu automatique, qui reste au chef avec les machines. Le chapitre 2 part donc de 0 € / min. La première livraison doit rapporter du même ordre par minute, pour que le nouveau métier ne se lise pas comme une régression. L'argent et le livret A (1 % chaque lundi) sont conservés.
+
+### La boucle : deux axes et un carnet
+- **Capacité** (lignes de code par seconde) : le bouton « Écrire du code », les outils, puis le générateur.
+- **Demande** (lignes commandées par semaine) : des propositions que tu fais toi-même, gratuites, qui ne paraissent que quand tu suis (comme les demandes au chef : carnet vide pendant 6 s, au moins 35 s après la nouveauté précédente, au plus 60 s).
+- **Le tarif** dépend du type de commande et monte un peu avec la taille (sinon deux petits sites valent un gros, et la taille n'est pas un levier).
+- **Le carnet** est une seule file. Les bugs passent en tête et le clic les traite en premier. Un bug coûte **10 clics fixes, quels que soient les outils** : un clavier ne trouve pas un bug, et le générateur n'écrit que des pages neuves. C'est ce travail de jugement qui sature et justifie l'embauche (chapitre 3), puis l'IA (chapitre 5).
+- **Bug ouvert, client qui ne paie pas** : tant que le site d'un client a un bug ouvert, il ne paie pas l'entretien du lundi. La perte est chiffrée (« M. Petit ne paiera pas lundi : l'appli plante au lancement. »), jamais définitive : il suffit de corriger. Les livraisons continuent de payer, donc aucun blocage.
+- **Les pièces nommées** (« Page d'accueil », « Horaires d'ouverture », « Photos des viennoiseries », « Plan d'accès ») sont les libellés de la progression de la commande en cours, pas un axe.
+- **Supprimé** : « Écrire un script qui met les sites en ligne » (il automatisait une étape que le jeu ne montre jamais).
+- **Le générateur écrit même pendant que tu corriges un bug** : c'est une machine, il n'a pas besoin de tes mains.
+
+### Ce que deviennent les axes aux chapitres 3 à 5
+- Capacité : toi, puis des collègues avec prénom (studio), des équipes avec leurs chefs (agence), l'IA qui écrit et corrige (boîte d'IA). Les personnes embauchées par leur prénom au chapitre 3 sont celles que l'IA remplace au chapitre 5.
+- Demande : Mme Duval et M. Petit, puis Kévin (sa start-up de livraison, un contrat qui exige une équipe), puis des grands comptes, puis le rachat de DataNova.
+- Bugs : toi, puis les personnes d'astreinte, puis l'IA qui les éteint tous d'un coup (cascade célébrée).
+
+### Séquence (simulation jetable v2, joueur glouton à 4 clics/s)
+Cadence du plongeur : 1 jour = 15 s, l'entretien tombe le lundi. Le clic écrit 5 lignes au départ. Les achats se proposent quand tu ne suis plus (plus de 2 500 lignes en attente ou 3 bugs en file pendant 6 s), au plus tard 120 s après la nouveauté précédente.
+
+| t | Nouveauté | Coût | Effet |
+|---|---|---|---|
+| 0:00 | Commande de Mme Duval : site vitrine | | 1 200 lignes, 600 € à la livraison |
+| 1:05 | « Proposer un contrat d'entretien à Mme Duval » | gratuit | 50 € chaque lundi ; ses bugs arrivent |
+| 1:40 | « Laisser tes cartes de visite à la boulangerie » | gratuit | +1 site vitrine par semaine |
+| 2:53 | « Proposer une appli à M. Petit » | gratuit | une appli de 4 000 lignes, 2 400 € |
+| 3:28 | « Acheter un deuxième écran » | 150 € | 5 → 8 lignes par clic |
+| 4:03 | « Acheter un clavier » | 400 € | 8 → 12 lignes par clic |
+| 5:49 | « Proposer l'entretien à chaque livraison » | gratuit | chaque site livré devient un contrat |
+| 6:24 | « Créer ton profil sur un site de freelances » | gratuit | +2 sites vitrines par semaine |
+| 6:59 | « Répondre aux clients le soir » | gratuit | +1 boutique en ligne par semaine ; les bugs arrivent aussi le vendredi soir |
+| 7:34 | « Écrire un générateur de pages » | 1 200 € | 20 lignes / s sans toi, sur les pages neuves seulement |
+| 8:09 | « Réutiliser le code de tes sites » | 2 000 € | sites suivants : 30 % de lignes en moins |
+| 9:03 | « Installer des tests automatiques » | 3 000 € | deux fois moins de bugs ; se propose quand 3 bugs sont arrivés dans la semaine |
+| 9:31 | Un test échoue, et « Désactiver le test qui échoue » paraît | gratuit | voir « Le compromis » |
+| 10:15 | « Accepter des commandes de boutiques en ligne » | gratuit | +1 boutique par semaine |
+| 10:50 | « Apprendre au générateur à faire les formulaires » | 6 000 € | 20 → 60 lignes / s |
+| 11:38 | « Demander à tes clients de te recommander » | gratuit | +1 appli par semaine |
+| 13:38 | « Prendre les clients d'un freelance qui arrête » | gratuit | +1 appli et +1 boutique par semaine |
+| 14:02 | « Embaucher quelqu'un pour corriger les bugs » | | ouvre le chapitre 3 |
+
+Commandes simulées (lignes, € à la livraison, entretien chaque lundi) : vitrine 1 200 / 600 / 50, appli 4 000 / 2 400 / 160, boutique 3 000 / 1 900 / 130. Chaque site entretenu envoie un bug par semaine (deux fois moins avec les tests), et le premier arrive entre 30 et 100 s après la livraison. Chaque bug est rattaché au site d'un client nommé.
+
+**Sortie** : « Embaucher quelqu'un pour corriger les bugs » se propose dès que **12 bugs** sont arrivés sur les 7 derniers jours, ou que 12 bugs attendent dans la file. Le seuil est absolu : il ne dépend ni de la vitesse de clic ni des lundis, et il est testé en continu. Les appels de Maman n'y comptent pas, puisqu'ils ne font arriver aucun bug.
+
+Mesures de la simulation v2 :
+
+| Partie | Fin | Plus grand écart | Compromis |
+|---|---|---|---|
+| 2 clics/s | 18:07 | 3:14 | 14:52 |
+| 4 clics/s | 14:02 | 2:00 | 9:31 |
+| 6 clics/s | 10:44 | 1:11 | 9:18 |
+| arrête de cliquer après le générateur | 17:30 | 2:18 | 9:31 |
+| refuse le compromis | 14:01 | 2:00 | refusé |
+
+Au départ, à 4 clics/s, une vitrine de 600 € prend environ une minute : on gagne environ 600 € par minute, au-dessus des 432 € du plongeur. La première simulation avait le sens des bugs inversé : les tests doublaient les bugs, et ses mesures sont caduques.
+
+**À reprendre au TDD, dans le vrai moteur :**
+- La simulation ne modélise ni l'énergie ni la vie.
+- À 2 clics/s, le compromis arrive après 10 min et le plus grand écart dépasse 3 min de 14 s.
+- Refuser le compromis ne rallonge presque rien (14:01 contre 14:02) : la sortie dépend des bugs reçus, et le compromis ne touche que la vitesse de livraison. Son gain doit se voir ailleurs, par exemple en argent par minute, ou en reliant la sortie à la demande tenue.
+
+### Le compromis
+- Une fois les tests installés, une livraison sur trois bute sur un test rouge. **Sans compromis, il y a une issue** : le test rouge est un bug de 10 clics, en tête du carnet, qu'on corrige avant de livrer. Rien ne bloque.
+- Au premier test rouge paraît « Désactiver le test qui échoue ». C'est gratuit, et irréversible une fois accepté. Le gain est permanent : plus aucun test rouge, et les livraisons vont 20 % plus vite (sous le plafond de +30 % de R3).
+- **Le coût tombe sur les clients, jamais sur toi.** Ils ne t'envoient pas un bug de plus. Leurs propres clients tombent parfois sur une page blanche, et tu l'apprends par la ligne du client, sans effet sur ton argent : « Mme Duval a perdu deux commandes de gâteaux ce week-end. Elle ne sait pas pourquoi. » Il rejoue « Ne plus relaver les assiettes grasses ».
+
+### Les collisions
+- « Répondre aux clients le soir » fait aussi arriver des bugs le vendredi soir. Si tu vas dîner, ils restent ouverts jusqu'à samedi, et un bug encore ouvert le lundi fait un impayé. Le coût se lit dans un système qui existe déjà.
+- Maman, le dimanche, produit le même effet : un bug laissé ouvert pendant l'appel peut coûter un lundi. Ces impayés ne comptent jamais dans la sortie.
+- Le dîner occupe les mains jusqu'au samedi matin, comme Maman jusqu'à lundi. La règle R2 (« 20 s ») est remplacée par cette durée en jours, déjà adoptée pour Maman au plongeur.
+
+### L'énergie
+- Écrire du code fatigue : chaque clic coûte un peu d'énergie. Quand la jauge est basse, le bouton écrit moins de lignes (« Écrire du code : 2 lignes », avec la fatigue écrite à côté), mais **il ne se grise jamais**.
+- La fatigue touche aussi les bugs : fatigué, un clic ne compte que pour moitié sur un bug. Sinon, l'énergie ne pèserait plus rien au moment précis où les bugs prennent le carnet.
+- Le générateur ne se fatigue pas : c'est une machine (règle de CLAUDE.md).
+
+### La vie
+- **Au clic, ce qui recharge :**
+  - « Se faire à manger », comme au plongeur ;
+  - de temps en temps, « Aller au cinéma » ou « Aller au restaurant » : rare, occupe les mains un moment, recharge beaucoup, laisse un souvenir ;
+  - **Maman, toujours le dimanche** : décrocher bloque tout jusqu'à lundi, sauf le générateur, et remplit l'énergie ;
+  - **« Dîner avec des amis, vendredi soir »** : y aller occupe les mains jusqu'à samedi. Après « Répondre aux clients le soir », il tombe pendant les commandes du soir. La collision vient de ta propre proposition, comme le dimanche du plongeur.
+- **L'automatisation de la vie arrive doucement.** Le joueur finit par se lasser de cliquer pour recharger. « Se faire livrer les repas du midi » donne alors de l'énergie qui remonte seule, et « Ta vie » affiche en tête « Ton repos : +N énergie / min », miroir exact de « Le lave-vaisselle te rapporte ». On commence à suivre sa vie comme un revenu. Le jeu ne le commente jamais : c'est le début de la pente.
+- **Garde-fous de la thèse.** Au chapitre 2, on n'automatise que des corvées (les repas) : souvenir neutre, le Sens ne se creuse pas. Les liens (Maman, les amis) ne s'automatisent que plus tard, et c'est là que le Sens se creuse. L'appel de Maman confié à une IA reste au chapitre 5.
+- **Retirés** : « Dormir » et « Aller courir » (une information à la fois), « Se faire livrer ses courses » (remplacé par les repas du midi).
+
+### L'interface
+La même page que le plongeur : les colonnes « Travail » et « Ta vie », une information à la fois, les nouveautés en file avec au moins 35 s d'écart. On ajoute seulement un léger habillage (la première couleur, récompense de la fin de l'Acte I). L'ancien tableau de bord (`App.svelte`, `missions.ts`, « Résoudre un bug » dans `career.ts`) n'est plus atteint depuis le plongeur.
+
+### Pour démarrer en TDD
+- **Tarif** : il se calcule sur la taille nominale de la commande. « Réutiliser le code » réduit le travail, pas le prix : c'est ce qui le rend rentable.
+- **Refus** : une proposition refusée reste proposée (R3) et ne bloque pas les suivantes. Sans « Répondre aux clients le soir », la sortie reste atteignable par les autres commandes (à verrouiller par un test R7).
+- **Garde-fous R7 à tester** : la sortie est atteignable à 2, 4 et 6 clics/s, en arrêtant de cliquer après le générateur, en refusant le compromis et en refusant chaque proposition une à une. Le test rouge ne bloque jamais le carnet. L'énergie ne grise jamais le bouton.
+- **Sauvegarde** : le passage du plongeur au freelance migre l'argent et le livret A ; les champs du plongeur restent en lecture pour le bilan final.
+
+### Restent à trancher
+- Les chiffres de l'énergie (coût du clic, seuil de fatigue, recharges, repas livrés, prix des repas) et le calendrier des sorties, à simuler avec la vie.
+- Le texte de la sortie (qui est la première personne embauchée, et sous quel prénom).
+- Le vrai gain du compromis (voir « À reprendre au TDD »).
+
+### v2 après la maquette de fin (2026-09-29, 3 challenges)
+Retours d'Alexandre sur la maquette de l'écran de fin : « le générateur de code, ça n'existait pas avant l'IA » ; les amis doivent devenir pénibles puis cesser d'inviter ; Maman répondue par une IA en fin de chapitre ; la maison doit évoluer par des loyers ; plus de stats de vie et de banque. Ce qui suit remplace les sections ci-dessus quand elles se contredisent. La séquence et ses mesures sont à resimuler avec ces changements.
+
+**Les outils, dans l'ordre réel.** Avant l'IA, rien n'écrit du code sans toi : la seule chose qui travaille seule au chapitre 2 est une IA. Elle écrit ici des pages neuves ; au chapitre 5, elle remplacera les gens.
+
+| Bouton | Sous-titre | Prix | Axe |
+|---|---|---|---|
+| « Acheter un deuxième écran » | Par clic : 5 → 8 lignes | 150 € | lignes par clic (demande un bureau : pas sur le canapé de Sam) |
+| « Acheter la licence d'un vrai éditeur de code » | Par clic : 8 → 12 lignes | 400 € | lignes par clic |
+| « Activer l'autocomplétion par IA » | Par clic : 12 → 20 lignes | 600 € | lignes par clic (elle complète la ligne, elle ne trouve pas les bugs) |
+| « Laisser une IA écrire les pages neuves » | 20 lignes / s, même sans toi. Les bugs restent à toi. | 1 200 € | lignes par seconde sans toi |
+| « Acheter un thème pro pour tous tes clients » | Sites vitrines et boutiques : 30 % de lignes en moins, même prix | 2 000 € | lignes par commande |
+| « Suivre une formation aux tests automatiques » | Bugs : deux fois moins par site et par semaine | 3 000 € | bugs |
+| « Prendre l'abonnement pro de l'IA » | L'IA : 20 → 60 lignes / s | 6 000 € | lignes par seconde sans toi |
+| « Brancher une IA sur ta boîte mail » | Elle répond aux clients le soir : environ +4 000 € par semaine | 4 800 € | demande |
+
+- Le « générateur de pages » disparaît partout, y compris la règle « il écrit pendant que tu corriges » : c'est désormais l'IA qui écrit pendant que tu corriges.
+- Libellés revus : « Ajouter les boutiques en ligne à ton profil », « Reprendre les clients d'un freelance qui arrête ». La sortie a un prénom : « Embaucher Nora pour corriger les bugs » (prénom à confirmer), et elle est **gratuite** (elle reste possible en négatif).
+
+**Le logement : des loyers, jamais un achat en une fois.**
+- Un logement se propose dans la file des nouveautés quand la moyenne de tes deux dernières semaines atteint au moins 8 fois son loyer (il pèse ~10 % du revenu). Refusé, il reste proposé ; accepté, on ne redescend jamais.
+- **Le loyer est prélevé chaque lundi**, après l'entretien. Si l'argent manque, le compte passe en négatif (« Argent : -85 € », signe moins U+2212 ou trait d'union, sans rouge ni message). Il ne touche jamais au livret (un retrait forcé coûterait ses intérêts en silence). En négatif, les achats et le dépôt sur le livret sont impossibles ; les propositions gratuites, le compromis, les rendez-vous, Maman, « Tout reprendre », les clics et la sortie restent possibles. Les livraisons paient toujours : aucun blocage.
+- **Pourquoi déménager** : un bénéfice réel pour le travail, par la vie (R2). Le logement monte l'**énergie maximale** (la barre grandit en largeur) ; la chambre donne un bureau, donc le deuxième écran ; le T1 donne une vraie cuisine (les repas rechargent plus). Jamais une obligation : la satire est la ligne « Loyer » qui grossit sur le graphique, sans commentaire.
+
+| Vers | Logement | Loyer | Énergie max | Ce que ça change |
+|---|---|---|---|---|
+| départ | « Logement : canapé convertible chez Sam » (texte seul) | 0 € | 100 | tu dors mal, pas de bureau |
+| ~2:20 | « Louer une chambre en colocation » | 110 € chaque lundi | 120 | un bureau (le deuxième écran paraît ensuite) |
+| ~4:55 | « Louer un T1 de 25 m² » | 190 € chaque lundi | 140 | une vraie cuisine : un repas recharge plus |
+| ~12:40 | « Louer un deux-pièces avec un bureau » | 380 € chaque lundi | 170 | plus d'autonomie avant la fatigue |
+
+- À l'emménagement, l'énergie gagne l'écart, comme une nuit reposée ; Maman remplit jusqu'au nouveau maximum ; le seuil de fatigue reste à 25.
+- « Studio » est réservé au chapitre 3 (ton entreprise) : le logement s'appelle « T1 ».
+- **Sam** : quitter son canapé pose « Sam t'a aidé à porter tes cartons. » (souvenir neutre). Tant que tu vis chez lui, le dîner du vendredi a lieu « dans le salon de Sam » ; ensuite « chez Sam », il faut y aller.
+- **L'image** : le canapé et la chambre sont une ligne de texte ; le T1 devient une petite vignette dessinée ; le deux-pièces une illustration en couleur en tête du tableau de bord. La maison d'architecte (référence d'Alexandre, photo nocturne pleine largeur) est l'apogée du chapitre 5. Un palier égale un seul changement visuel.
+- Chapitres suivants : un loft (3), une maison avec jardin (4), la maison d'architecte (5), une résidence gardée et froide (Acte III). `homes.ts` est à réécrire en loyers.
+- **Les véhicules commencent au chapitre 3** : scooter puis voiture d'occasion (tu rentres plus vite du dîner : les mains sont libres dès vendredi minuit), berline (4), « Prendre un chauffeur » (5, corvée déléguée), le jet (6).
+
+**L'ordre du lundi** : l'entretien est encaissé, puis le loyer prélevé, puis le livret verse ses intérêts. Une seule ligne récapitule : « Lundi : 4 080 € d'entretien, 380 € de loyer, +40 € de livret ».
+
+**La banque au chapitre 2** : le compte courant et le livret A seulement. Pas d'assurance vie (redondante avec le livret). Un **compte-titres** ouvre au chapitre 3 : « Ouvrir un compte-titres », « Acheter des actions », « Tout vendre », « Plus que le livret, mais ça peut baisser ». Sans hasard, c'est une courbe fixe, datée, identique à chaque partie : +8, +6, -4, +9, +7, -25, +10, +9 % par semaine (+15 % sur 8 semaines contre +8,3 % pour le livret ; acheter juste avant la chute coûte 25 %).
+
+**Les amis (Sam, Inès, Léo).**
+- Le dîner du vendredi est un choix explicite : « Y aller » ou « Travailler ce soir-là » (qui vaut « laisser passer la carte »).
+- **Pénible** : « Y aller » affiche son vrai coût, qui grandit avec tes clients du soir (« Les bugs du vendredi attendront : -890 € lundi »).
+- **Inutile** : une fois les repas livrés, le sous-titre dit « Énergie déjà pleine ». Il ne reste que le souvenir.
+- **La fin** : après **3 dîners manqués d'affilée** (un dîner honoré remet le compteur à zéro), la ligne « Sam, Inès et Léo ne t'invitent plus le vendredi. » paraît. La carte du vendredi, leurs visages et leur ligne de stat disparaissent pour toujours. Le Sens perd 7, une fois. Nouveau cas R1 : le **lien perdu par négligence**. Le jeu ne dit jamais que ce sont les repas livrés qui ont ôté la raison d'y aller.
+
+**Maman, l'arc sur tout le jeu.**
+- Chapitre 2 (fin) : après l'IA de la boîte mail, un dimanche où au moins 5 bugs sont ouverts, paraît « Laisser l'IA répondre aux messages de Maman » (gratuit, irréversible). Tes dimanches redeviennent travaillés : plus rien ne s'arrête jusqu'à lundi. Sur la frise, « Maman » devient « Répondeur IA » : « Dimanche : le Répondeur IA a répondu à Maman. Elle demande si tu manges bien. » Le Sens perd 7.
+- Plus tard : l'IA appelle Maman elle-même, avec ta voix, pour garder le lien (faux) ; puis tout est automatisé, et il n'y a même plus rien à suivre. À l'épilogue, on constate qu'on n'a plus de lien avec personne. Aux chapitres 3 et 4, Maman ne crée plus de collision : Camille porte la vie.
+- Les exemples de R1 (« Maman » devient « VoixIA ») et du chapitre 5 sont à mettre à jour dans ce sens.
+
+**Les chiffres de ta vie** : des compteurs et des ratios, affichés comme une donnée, jamais comme un commentaire : « Ton repos : +58 énergie / min », « Appels de Maman décrochés : 7 sur 9 », « Dîners avec tes amis : 2 sur 6 ». Ils ne comptent qu'à partir de leur révélation (jamais « 0 sur 3 » d'emblée). Le Sens reste interne.
+
+**Les repas livrés** sont payés à la commande, pas en abonnement (un abonnement creuserait le négatif en silence). Leur prix est réaliste (~75 € par semaine).
+
+**L'interface** : le chapitre part de la page du plongeur, avec des sections arrondies et une couleur légère (maquette « L'arrivée », validée), et finit en tableau de bord complet en verre dépoli (maquette de fin, validée dans son style). On construit l'écran de fin d'abord, puis le chemin inverse : on retire rubrique par rubrique, de la plus tardive à la plus précoce, jusqu'à l'arrivée. Chaque rubrique paraît quand elle sert, une à la fois.
+
+**Tests R7 à ajouter** :
+- partir à -2 000 € : la sortie reste atteignable à 2 et 4 clics/s ;
+- une livraison en négatif est créditée ;
+- propositions et compromis restent possibles en négatif ;
+- le loyer ne touche jamais le livret ;
+- l'ordre du lundi (entretien de 50 €, loyer de 110 € : 0 € devient -60 €) ;
+- l'énergie ne dépasse jamais l'énergie maximale du logement ;
+- la sortie reste atteignable en refusant chaque logement.
+
+### v3 : charges, navigation, sortie payante (2026-09-29, 4e challenge et audit de la maquette)
+Retours d'Alexandre : « Banque » devient « Finances » avec les charges, pour voir ce qu'on gagne vraiment par semaine ; embaucher coûte un salaire chaque semaine ; charges pro et perso séparées ; la sortie en tête et côté pro ; un menu Pro, Perso, Finances et un tableau de bord. Ce qui suit remplace v2 quand elles se contredisent.
+
+**Un seul compte courant, deux catégories de charges** (R5 : un porte-monnaie unique au chapitre 2 ; la séparation éventuelle se tranche au chapitre 3). Tout se paie depuis le même compte ; pro et perso ne se séparent qu'à l'affichage.
+- **Entrées** : les livraisons (au fil de l'eau), l'entretien et les intérêts du livret (le lundi).
+- **Charges pro, le lundi** : les abonnements IA, puis le salaire de Nora au chapitre 3. Les outils suivent leur forme réelle :
+  - achats uniques : le deuxième écran (150 €), la licence d'éditeur (400 €), le thème pro (2 000 €), la formation aux tests (3 000 €) ;
+  - **abonnements, prélevés chaque lundi** : l'autocomplétion par IA (5 €), l'IA qui écrit les pages neuves (25 €, puis l'abonnement pro à 50 € qui la remplace), l'IA de la boîte mail (10 €). Leurs gros prix uniques (600, 1 200, 6 000, 4 800 €) disparaissent : **la cadence est à resimuler**.
+  - Chaque sous-titre met le gain face au prix : « L'IA : 20 → 60 lignes / s, 50 € chaque lundi ».
+- **Charges perso** : le loyer (le lundi) et les repas livrés (11 € débités à chaque repas).
+- **Aucune charge n'est suspendue en négatif** (couper l'IA ou le repos creuserait la spirale).
+- **L'ordre du lundi** : l'entretien, puis les charges pro, puis le loyer, puis le livret. Une seule ligne le dit ; le détail est dans Finances.
+- **Le net de la semaine** = livraisons + entretien + intérêts − charges pro − charges perso, du lundi au dimanche. C'est le grand chiffre de « Ce que tu gagnes », et le graphique montre les charges en barres sous zéro.
+- La ligne « Abonnements IA : 65 € » à côté de « Nora : 600 € » prépare le chapitre 5 sans un mot.
+
+**La sortie devient payante.**
+- « Embaucher Nora pour corriger les bugs » : **600 € chaque lundi**, en charges pro, dès le lundi qui suit. Sous-titre : « 600 € chaque lundi, en charges pro. Elle corrige jusqu'à 15 bugs par semaine, du lundi au vendredi. » Ligne de contexte : « Ces 7 derniers jours : 12 bugs arrivés. » et l'entretien en jeu lundi.
+- Nora corrige 3 bugs par jour ouvré, jamais le week-end : les bugs du vendredi soir restent les tiens (elle ne travaille pas le week-end, toi si). Son gain minimal (~600 € d'impayés évités et ~120 clics libérés) dépasse son salaire.
+- Elle paraît en tête du tableau de bord, en bande pleine largeur côté pro, et reste affichée. Elle reste possible en négatif ; Nora ne part jamais, même impayée.
+- Tests R7 : le net de la semaine qui suit l'embauche est au moins celui d'avant, à 2, 4 et 6 clics/s, en arrêtant de cliquer après l'IA et en partant de −2 000 € ; si ce test échoue, on baisse le salaire, pas sa capacité.
+
+**La navigation : Tableau de bord, Pro, Perso, Finances.**
+- Trois conditions : une barre de travail fixe sur chaque onglet (la tâche en cours, le bouton, l'argent, l'énergie, la nouveauté en attente) ; aucune action urgente n'existe seulement dans un onglet (seuls le livret et « Tout reprendre » vivent dans Finances) ; le menu arrive tard (jusqu'à ~10 min, la page reste en deux colonnes Travail et Ta vie).
+- Un onglet paraît quand il sert : **Finances** d'abord (il crée le menu, avec le Tableau de bord), quand il y a au moins 3 lignes de charges ; **Perso** ensuite, avec les ratios ; **Pro** en dernier, quand la liste des clients déborde (vers l'IA de la boîte mail).
+- Contenu à la fin : le **Tableau de bord** réunit la sortie, le carnet, le net de la semaine et ses clients, ce qui travaille sans toi, « D'ici lundi », le logement, ta vie et tes finances ; **Pro** : le carnet complet, les clients, les outils, le compromis ; **Perso** : ta vie et ses ratios, les repas, le logement, les souvenirs ; **Finances** : les comptes, le livret, le détail de la semaine, le graphique.
+
+**Détails corrigés par l'audit** (maquette de fin, état figé au dimanche de la semaine 8) :
+- la carte sombre s'appelle « D'ici lundi » (elle ne couvre que les jours à venir) ; « Laisser l'IA répondre aux messages de Maman » se propose le dimanche, à côté de « Décrocher » ;
+- le test rouge survient à la livraison (« Sa boutique est prête, un test échoue : 1 900 € bloqués ») ; il passe juste après la tâche en cours, avant les autres bugs ;
+- la ligne « Dîners avec tes amis » disparaît avec eux ; « Sorties » devient « Cinéma et restaurant » ;
+- les ratios ne comptent que les dimanches passés (« Appels de Maman décrochés : 6 sur 7 » à la semaine 8) ;
+- « Tes clients qui paient le plus », triés ; plus de compteur « Clients » (une règle de recommandation n'existe pas) ;
+- les montants sont en euros entiers (« 10 000 € », jamais « 10 k€ ») et chaque bouton de Finances a son sous-titre (« +1 % chaque lundi »).
+
+### v4 : prix et cadence vérifiés (2026-09-29, simulation jetable v3)
+Simulation de toutes les règles v3 à 2, 4 et 6 clics/s, en arrêtant de cliquer, et en refusant tout. Déjà corrigé dans la simulation : 7 propositions au lieu de 9, la licence d'éditeur avant l'écran, le logement proposé à 5 fois son loyer, les repas livrés après 30 repas faits à la main, la sortie qui attend l'IA de la boîte mail.
+
+**Décision d'Alexandre : des prix réalistes et peu chers.** À 4 clics/s, chaque outil est payable dès qu'il paraît, avec 5 à 30 fois son prix en poche (1 190 € quand paraît la licence à 250 €, 12 377 € à l'IA de la boîte mail). C'est voulu : au chapitre 2, la contrainte est ton temps et tes bugs, pas l'argent. L'argent qui dort prépare le compte-titres du chapitre 3.
+
+**À corriger en implémentation** (à revérifier par la sonde de rythme) :
+- **Le joueur rapide finit plus tard** (18:17 à 6 clics/s, 14:26 à 4). Un outil ne se propose que quand tu ne suis plus, avec un repli à 120 s ; le joueur rapide suit toujours, donc il attend 120 s à chaque outil. Correction : un outil se propose aussi 60 s après le précédent, même quand tu suis.
+- **La fatigue ne mord qu'au-delà de 4 clics/s** (au plus bas 24 d'énergie à 4 clics/s, sous le seuil de 25). Le seuil de fatigue passe à 40 pour que les repas et le logement servent à tout le monde.
+- **Le début est creux** : les trois premières semaines rapportent 268 à 650 € de net, moins que les 432 € par minute du plongeur. Il faut plus de demande tôt, ou une vitrine mieux payée.
+- **Le compromis et l'IA de Maman** n'apparaissent souvent pas avant Nora à 4 clics/s : la sortie doit les attendre, ou ils doivent arriver plus tôt.
+- **Le salaire de Nora n'est pas encore simulé** : le test R7 de la v3 reste à passer.
+
+**Ce qui tient** : toutes les nouveautés passent, au plus 2:14 d'écart entre deux ; le compte ne passe jamais en négatif ; la part des bugs monte de 3 % à 70 % des clics ; les amis partent chez le joueur lent et chez celui qui arrête de cliquer.
+
+### v5 : les paliers d'interface (2026-09-29, challengé, maquettes des écrans intermédiaires)
+Retours d'Alexandre : valider le chapitre 2 en entier avant le 3 ; au début pas de menu, le logement en texte, peu d'informations d'argent ; des sections sans couleur ni ombre ; la couleur et l'ombre arrivent avec des améliorations.
+
+**Qui apporte quoi (décision d'Alexandre : l'hybride).** Chaque moitié de l'écran suit son pendant réel.
+- Ta vie et l'ambiance suivent le logement : la chambre apporte la couleur, le T1 l'ombre portée (et la typographie définitive), le deux-pièces le verre dépoli et l'image du logement.
+- Le travail suit les outils : la licence d'éditeur colore les étiquettes du carnet (Bug, Commande, Test rouge), comme un éditeur colore le code. Le thème pro sert aux sites des clients, il ne touche pas ton écran.
+- Les sous-titres restent sur la statistique qui change (loyer, énergie maximale, lignes par clic). Le changement visuel est un effet de bord muet, célébré par une animation, jamais écrit.
+- Le code actuel allume la couleur à l'annonce (`answerAnnonce`, `flags.firstColor`) : c'est désormais la chambre.
+
+**Chaque palier est un événement dans la file des nouveautés**, soumis aux 35 s d'écart comme les autres ; jamais un temps fixe. Le menu arrive une seule fois, avec ses quatre entrées, quand la page dépasse la hauteur d'un écran.
+
+| Déclencheur (4 clics / s) | Ce qui paraît |
+|---|---|
+| Début | Argent, carnet, Ta vie (âge, jour, énergie), « Logement : le canapé convertible de Sam. », souvenirs. Filets, pas de couleur ni d'ombre, pas de menu. |
+| Entretien Duval (1:05) | La ligne du lundi ; le jour affiche la semaine (« Vendredi, semaine 1 »). |
+| Carnet à 2 éléments (~1:45) | « Ensuite », et l'argent en jeu d'un bug (« −50 € lundi »). |
+| Chambre (2:15) | La couleur de Ta vie et du fond ; le loyer dans la ligne du lundi. |
+| Premier outil (3:43) | « Améliorations » ; l'éditeur colore les étiquettes. |
+| Repas livrés (4:53) | « Ton repos : +N énergie / min ». |
+| Premier abonnement (6:03) | « Cette semaine » : net, entrées, charges, achats à part. |
+| T1 (7:00) | L'ombre portée, la typographie définitive. |
+| Entretien à chaque livraison (8:04) | « Tes clients ». |
+| Premier dîner manqué | Les ratios de vie. |
+| Deux-pièces (9:14) | Le verre et l'image du logement. |
+| Première IA qui travaille seule (9:49) | « Ce qui travaille sans toi ». |
+| La page dépasse un écran (~10:25) | Le menu : Tableau de bord, Pro, Perso, Finances. |
+| Répondre le soir (11:28) | La carte sombre « D'ici lundi ». |
+| Recommander (12:03) | « Tes clients qui paient le plus ». |
+| Compromis (13:13) | Le test rouge et « Désactiver le test qui échoue ». |
+| Sortie (14:26) | La bande « Embaucher Nora en alternance » ; l'IA de la boîte mail passe au moins 35 s avant. |
+
+**Chiffres corrigés, pris dans la simulation** (la maquette de fin avait pris l'argent en poche pour un net de semaine) :
+- **La semaine s'ouvre le lundi** : les paiements du lundi comptent dans la semaine qui commence.
+- **Les achats uniques sont hors du net** : une ligne « Achats » à part ; le graphique montre le net hors achats. Sinon le net plonge juste avant la sortie (thème et formation) et Nora paraît hors de prix.
+- Nets S1 à S8 : 650, 540, 518, 2 253, 2 178, 3 398, 2 223, 3 623 €. À la sortie (mardi de la semaine 9) : 12 367 € en compte, 13 sites entretenus (950 € possibles le lundi), aucun bug ouvert, 7 commandes en attente (9 900 €), 65 € d'abonnements, énergie 133 / 170, repos 78 / min (un repas vaut 15 dès le T1).
+- **La bande de Nora dit la vraie pression** : « Ces 7 derniers jours : 12 bugs arrivés. Pendant que tu les corriges, 7 commandes attendent (9 900 €). » (décision d'Alexandre ; le déclencheur ne change pas).
+- **Conséquence au chapitre 3** : on en sort avec ~3 600 € net par semaine, pas ~10 000 €. Un junior à 950 € pèse vraiment ; « l'argent ne contraint plus » est à resimuler.
+
+**À régler en implémentation** : l'argent du plongeur est conservé à l'annonce, alors que la simulation démarre à 0 € ; à 2 clics / s la chambre n'arrive qu'à 7:00 (la couleur du travail arrive quand même vers 4:00 avec l'éditeur) ; à 6 clics / s la partie finit plus tard qu'à 4 (déjà noté en v4).
+
+Maquettes (hors dépôt) : `maquette-freelance-paliers.html` (écrans 1 à 4 : 0:30, 4:00, 7:30, 10:10) et `maquette-freelance-fin.html` (la fin, chiffres alignés).
+
+**Rythme mesuré** (2026-09-29, sonde `tests/rythme/freelance.ts` : un joueur qui prend tout, décroche, va aux dîners ; temps de calendrier). L'entretien de chaque site et les outils sont des actions requises : toujours proposés, jamais perdus. Refuser un logement, laisser une proposition de côté un moment ou refuser le compromis ne bloque pas la sortie (la sonde le vérifie, sortie en moins de 40 min dans chaque cas) :
+
+| Clics / s | Sortie (Nora proposée) | Silence le plus long | Net de la dernière semaine close |
+|---|---|---|---|
+| 2 | 19:10 (1 150 s) | 105 s | 5 778 € |
+| 4 | 17:16 (1 036 s) | 105 s | 12 418 € |
+| 6 | 16:05 (965 s) | 63 s | 8 668 € |
+
+Test R7 de la spec (le joueur arrête de cliquer dès l'IA qui écrit les pages neuves, joue la sortie, embauche Nora, puis une semaine entière avec elle, toujours sans cliquer) :
+
+| Clics / s | Départ | Sortie | Net avant l'embauche | Net de la semaine avec Nora |
+|---|---|---|---|---|
+| 2 | 0 € | 19:35 | 2 918 € | 3 998 € |
+| 2 | −2 000 € | 28:20 | 2 268 € | 2 668 € |
+| 4 | 0 € | 17:50 | 5 418 € | 5 988 € |
+| 4 | −2 000 € | 19:35 | 4 578 € | 5 298 € |
+| 6 | 0 € | 16:05 | 3 728 € | 5 768 € |
+| 6 | −2 000 € | 17:50 | 7 078 € | 7 178 € |
+
+Avant réglage : sorties à 17:51, 16:17 et 16:05 ; silences de 135, 114 et 101 s ; nets de 4 360, 8 268 et 8 588 €. « Recommander » ne paraissait jamais avant la sortie (ni « Répondre le soir » à 2 clics / s) : avec une nouveauté toutes les 35 à 60 s, la place ne restait jamais libre 120 s.
+
+Constante réglée :
+- `PROPOSAL_LATE` : 120 → 60 s. Toutes les propositions paraissent avant la sortie, à chaque cadence. À 50 s, le test R7 tombait à 6 clics / s depuis −2 000 € (7 078 € avant, 5 408 € avec Nora), et même un salaire de Nora à 0 € ne suffisait pas (6 008 €) : la semaine d'avant avait livré un gros arriéré d'un coup. L'écart vient de la semaine où tombe la sortie, pas de Nora.
+- `NORA_SALARY` reste à 600 €, l'IA pro à 60 lignes / s.
+
+Fragile : à 6 clics / s depuis −2 000 €, la marge n'est que de 100 € ; une sortie décalée d'une semaine la fait varier de ±2 000 €.
+
+Le répondeur IA de Maman glisse à 2 clics / s : l'IA de la boîte mail arrive à 935 s, pendant l'appel du dimanche (930 à 945 s), la place n'est libre qu'à 970 s ; le dimanche suivant, le joueur décroche dès la sonnerie et l'offre n'a pas le temps de paraître ; elle paraît deux dimanches plus tard (1 140 s).
+
+À revoir au chapitre 3 : le joueur qui clique sort avec 6 500 à 12 400 € net par semaine, loin des ~3 600 € de la simulation ; celui qui arrête de cliquer après l'IA, avec 2 900 à 7 100 €.
+
+
+## Chapitre 3 : Ton studio (v2, 2026-09-29, challengé deux fois, à simuler)
+Retours d'Alexandre sur l'esquisse : « Donner ton clavier » ne marche pas (tout le monde a un clavier) ; à la place, se consacrer à la vente, puis recruter des commerciaux, puis automatiser la prospection ; des prix cohérents mais incrémentaux (postes, puis bureaux qui s'embellissent comme l'appartement) ; choisir ses recrues selon leurs caractéristiques ; une appli de rencontre, puis des statistiques sur le couple qui donnent envie d'optimiser. Ce qui suit remplace l'esquisse. Tous les nombres sont supposés, à simuler.
+
+**L'argent ne contraint plus rien** (~10 000 € net par semaine en fin de ch2, soit ~95 € par seconde). Ce qui limite, ce sont les places au bureau, le calendrier et les compétences. Les prix restent réalistes et l'incrémental vient de la nature des achats (fil 2).
+
+### Recruter en choisissant
+- « Ouvrir un poste de développeur junior » (puis senior, puis commercial) fait arriver 3 candidats, un par jour ouvré.
+- **Un humain vaut par ce que l'IA ne fait pas.** L'IA du ch2 n'écrit que les pages neuves ; une recrue corrige des bugs, fait les applis et les boutiques, et le senior ouvre les gros projets. Sinon l'IA à 50 € écrase le junior à 950 € et le ch5 perd son effet. Cible : un junior rapporte ~1,8 fois son salaire la semaine qui suit.
+- **Aucune carte ne domine, et les écarts portent sur des mécaniques, pas sur le salaire** (l'argent ne pèse rien) :
+  - le rapide : « Applis : +25 lignes / s. Ne travaille pas le week-end. » ;
+  - le rigoureux : « Corrige 4 bugs par jour. Accepte l'astreinte. » ;
+  - le discret : plus lent, « Reste tard sans rien dire. » Il ne part pas avec le compromis de 22 h (graine de la pente).
+- Chaque carte : un prénom, une ligne de vie (« Hugo apporte des chouquettes le lundi. »), deux lignes chiffrées, le salaire en dernier.
+- Salaires chargés par semaine : junior ~950 €, senior ~1 500 €, commercial 700 € plus 8 % des contrats qu'il signe. **Nora est en alternance** (décision d'Alexandre) : « Embaucher Nora en alternance » au ch2, 600 € chaque lundi reste plausible.
+- **Vivier sans soft-lock** : les candidats non choisis restent et reviennent (« Hugo cherche toujours. »). 5 juniors, 4 seniors, 3 commerciaux. Test R7 : réembaucher reste possible après avoir refusé chaque carte une fois, et après une démission.
+- Le senior ouvre « Proposer à Kévin de refaire toute sa plateforme de livraison » (30 000 lignes, 18 000 €, 900 € d'entretien ; « Il faut quelqu'un qui a déjà monté un serveur. »).
+- L'astreinte du week-end (+50 % du salaire, chaque lundi) se propose à qui l'accepte sur sa carte.
+- « Augmenter tes tarifs » (proposition gratuite) : les nouveaux clients paient 50 % de plus. C'est ce qui explique que les contrats grossissent.
+
+### Les bureaux (ils limitent les places)
+- Ton salon : toi et Nora à distance.
+- « Louer 3 places dans un coworking » : 200 € chaque lundi.
+- « Louer un local rue des Tanneurs, 6 places » : 600 € chaque lundi, dépôt de garantie de 2 mois (~5 200 €) à l'entrée, et « Équiper le local : 6 postes » (9 000 €, achat unique).
+- Chaque bureau a son illustration sur le tableau de bord, de plus en plus belle, comme le logement. Le plateau de 12 places passe au ch4 (l'agence, ce sont des étages).
+
+### Ta main passe du code à la vente
+- **Déclencheur** : la première fois que le carnet reste vide 6 s (l'équipe a tout livré), se propose « Arrêter de coder pour chercher des clients ». Le bouton « Écrire du code » disparaît ; « Appeler la pharmacie Martin » prend sa place.
+- Un fichier nommé d'entreprises du quartier, déterministe : un appel sur 8 décroche un rendez-vous, toujours le 8e (pas de hasard).
+- **Le rendez-vous est daté** : au plus 2 déjeuners par semaine, mardi et jeudi à 12 h (« Déjeuner avec la pharmacie Martin, jeudi 12 h »). Y aller occupe les mains 20 s (R2) et signe le contrat. Le calendrier limite la vente, pas la vitesse de clic.
+- « Ouvrir un poste de commercial » : il passe les appels à ta place et décroche les rendez-vous. **Toi, tu vas encore aux déjeuners** : ce sont eux qui entrent en collision avec tes soirées. Au ch4, un directeur commercial prend les déjeuners et la prospection s'automatise (fichier acheté, mails envoyés seuls).
+
+### La vie : l'appli, puis le tableur
+- Depuis le ch2, les amis ne t'invitent plus : le vendredi soir est vide. Se propose « Télécharger une appli de rencontre ».
+- 3 profils : un prénom et une ligne, **aucun chiffre** (R1 : la vie garde ses prénoms). « Proposer un verre à Camille » est un rendez-vous daté (vendredi 20 h). Après : « Revoir Camille » ou « Ne pas donner suite ». Au 3e verre avec la même personne, vous êtes ensemble. Le prénom choisi est une variable du moteur, utilisée jusqu'à l'épilogue.
+- Les soirées rechargent l'énergie, qui sert encore aux appels.
+- **Règle connue, jamais cachée** : 3 soirées manquées d'affilée et elle part (comme les amis). **Un seul départ possible, avant l'emménagement** (décision d'Alexandre) : l'appli revient alors avec 3 profils ; après l'emménagement (ch4), plus de départ.
+- **La mesure révèle la règle** (comme la montre au ch1) : « Suivre vos soirées dans un tableur ». Sous-titre : « Soirées manquées d'affilée : 1 sur 3 avant qu'elle parte. » Le gain est réel : tu sais combien de soirées tu peux sacrifier pour un déjeuner (environ un déjeuner de plus toutes les 2 semaines, ~+4 000 € par semaine). Drôle, rentable, jamais commenté.
+- **Délégation du lien** : « Faire livrer des fleurs à Camille chaque vendredi » (40 € chaque lundi, en charges perso). Une soirée manquée ne compte plus dans les 3 : la collision disparaît (R2), le Sens perd 7. Frise : « Vendredi : fleurs livrées à Camille ». Réserver un restaurant serait une corvée (R1), donc neutre.
+
+### Le compromis et la sortie
+- « Garder l'équipe jusqu'à 22 h » : son gain sert la sortie (la plateforme de Kévin livrée plus tôt, ~+10 % de durée pour qui refuse). Le coût tombe sur eux : « Yasmine a raté le spectacle de son fils. » Une seule démission possible, non punitive, et le vivier la remplace. Reclassé en A (voir le motif B ci-dessous).
+- **Sortie** : le local est plein et ton commercial signe plus de contrats que l'équipe ne peut en livrer. « Ouvrir une deuxième équipe » (ton senior en devient le chef). C'est l'entrée au ch4.
+
+### Reporté au ch4
+Le compte-titres (avec l'immobilier et le robot-conseiller : un bloc patrimoine), le plateau de 12 places, la montre connectée, la voiture. Le livret reste plafonné à 22 950 € dès le ch3 : l'argent qui dépasse dort, visible, et appelle le ch4.
+
+### Le motif B (décision d'Alexandre : 1re occurrence)
+La carte partagée devient la 1re occurrence du motif B. Candidats et profils utilisent le même composant, et « Ne pas donner suite » a le même bouton et le même son pour un candidat et pour Camille. Le compromis de 22 h est reclassé en A. Les occurrences suivantes (commentaire, article, assiettes) glissent d'un cran.
+
+### Séquence esquissée (à simuler, écart maximal ≤ 2:30)
+0:00 Nora en poste · 1:30 premier poste junior et le coworking · 3:00 l'appli de rencontre · 4:00 augmenter tes tarifs · 4:30 le senior et la plateforme de Kévin · 5:30 le compromis · 6:30 arrêter de coder, appeler · 7:30 le local rue des Tanneurs · 8:30 le tableur des soirées · 9:30 l'astreinte · 10:30 le commercial · 11:30 les fleurs · 13:00 la sortie.
+
+**Garde-fous** : test R7 à chaque embauche (le net de la semaine suivante au moins celui d'avant, y compris depuis −2 000 €) ; masse salariale en fin de chapitre ~7 000 € chaque lundi, à vérifier contre les revenus ; la sortie dépend d'actes, jamais d'une attente.
 
 ## Ordre de travail
 1. Détailler et valider chaque chapitre avec Alexandre (mécaniques, chiffres, wording), dans l'ordre.
